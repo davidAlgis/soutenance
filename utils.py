@@ -1,6 +1,8 @@
 import re
 
 from manim import *
+from manim import logger
+from PIL import Image as PILImage
 
 
 def parse_selection(sel: str, max_n: int) -> set[int]:
@@ -22,3 +24,4 @@ def parse_selection(sel: str, max_n: int) -> set[int]:
         elif part.isdigit():
             s.add(int(part))
     return {i for i in s if 1 <= i <= max_n}
+
