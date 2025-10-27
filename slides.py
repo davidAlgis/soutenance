@@ -15,7 +15,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "2"
+SLIDES_SELECTION = "3"
 
 
 class Presentation(Slide):
@@ -227,10 +227,67 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_03(self):
-        self._show_text(
-            "Objectifs : réalisme, physique (pas rendu), 60 FPS, couplage solide/fluide..."
-        )
-        self.default_end_slide("Objectifs")
+        # --- Top bar ---
+        bar = self._top_bar("Objectifs")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # ----- Grid geometry (area below the bar) -----
+        bar_rect = bar.submobjects[0]  # the Rectangle of the top bar
+        y_top = bar_rect.get_bottom()[1] - 0.15  # small gap below bar
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+
+        total_w = x_right - x_left
+        total_h = y_top - y_bottom
+
+        cols, rows = 3, 2
+        hgap, vgap = 0.6, 0.6
+        cell_w = (total_w - (cols - 1) * hgap) / cols
+        cell_h = (total_h - (rows - 1) * vgap) / rows
+
+        # ----- Titles only (images will come later) -----
+        titles = [
+            "1. Simulation de surface",
+            "2. Grande échelle",
+            "3. Image par secondes",
+            "4. Action du solide sur le fluide",
+            "5. Action du fluide sur le solide",
+            "6. Précision physique",
+        ]
+
+        titles_mobs = []
+
+        for r in range(rows):
+            for c in range(cols):
+                cx = x_left + c * (cell_w + hgap) + cell_w / 2.0
+                cy = y_top - r * (cell_h + vgap) - cell_h / 2.0
+
+                rect = Rectangle(
+                    width=cell_w,
+                    height=cell_h,
+                    stroke_color=GREY_B,
+                    stroke_opacity=0.25,
+                    fill_opacity=0.0,
+                ).move_to([cx, cy, 0.0])
+
+                t = Text(
+                    titles[r * cols + c],
+                    color=BLACK,
+                    font_size=self.BODY_FONT_SIZE - 8,
+                )
+                # place title at the top-center inside the cell
+                t.set_x(cx)
+                t.set_y(rect.get_top()[1] - 0.25)
+                titles_mobs.append(t)
+
+        self.add(*titles_mobs)
+
+        # End slide
+        self.pause()
+        self.clear()
+        self.next_slide()
 
     def slide_04(self):
         self._show_text(
