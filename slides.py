@@ -171,55 +171,55 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_02(self):
-        # Top bar with label (unchanged position)
+        # --- Top bar + title (kept static, on top) ---
         bar = self._top_bar("Contexte")
         self.add(bar)
-        self.add_foreground_mobject(
-            bar
-        )  # ensure the bar stays on top visually
+        self.add_foreground_mobject(bar)  # keep the bar above everything
 
-        # Initialize body flow under the bar
+        # --- Body text (static) ---
         self.start_body()
         self.add_body_text(
-            "Formation en réalité virtuelle : manipulation complexe sur un navire", font_size=self.BODY_FONT_SIZE
+            "Formation en réalité virtuelle : manipulation complexe sur un navire",
+            font_size=self.BODY_FONT_SIZE,
         )
 
-        # Decorative lines (their right endpoints will define the left corners of the new image)
-        line1 = Line([-4.5, 0, 0], [-1, -2, 0], color=pc.blueGreen)
-        line2 = Line([-4.5, 0.5, 0], [-1, 2, 0], color=pc.blueGreen)
-        self.add(line1, line2)
+        # Optional background grid (behind everything else)
+        # numberplane = NumberPlane(color=BLACK)
+        # self.add(numberplane)
 
-        # --- Keep the existing left image ---
-        img_left_path = "Figures/man_head_set.png"
-        img_left = ImageMobject(img_left_path)
+        # --- Left image (headset) - appears first (fade in) ---
+        img_left = ImageMobject("Figures/man_head_set.png")
         img_left.to_edge(LEFT, buff=0.6)
         img_left.to_edge(DOWN, buff=0.1)
         img_left.scale(0.7)
-        self.add(img_left)
+        self.play(FadeIn(img_left, shift=RIGHT * 0.15, run_time=0.6))
 
-        # --- Add the new image anchored to the two line endpoints ---
-        # Target corners:
-        #   left-lower  = (-1, -2, 0)
-        #   left-upper  = (-1,  2, 0)
-        # So the image height must be 4, centered at y = 0, and its left edge at x = -1.
-        img_boat = ImageMobject("Figures/inside_boat.jpeg")
-        img_boat.set_height(4.0)  # span from y=-2 to y=+2
-        img_boat.set_y(0.0)  # vertical center at 0
-        img_boat.set_x(
-            -1.0 + img_boat.get_width() / 2.0
-        )  # left edge exactly at x = -1
-
-        # Surround the image with a blueGreen rectangle (tight fit)
-        img_boat_box = SurroundingRectangle(
-            img_boat, color=pc.blueGreen, buff=0.0, stroke_width=4
+        # --- Lines (draw from their start to end) ---
+        line1 = Line([-4.5, 0, 0], [-1, -2, 0], color=pc.blueGreen)
+        line2 = Line([-4.5, 0.5, 0], [-1, 2, 0], color=pc.blueGreen)
+        # Draw them sequentially for clarity
+        self.play(
+            Create(line1, rate_func=smooth, run_time=0.9),
+            Create(line2, rate_func=smooth, run_time=0.9),
         )
 
-        # Add without animation
-        self.add(img_boat, img_boat_box)
+        # --- Right image placement (anchored to the two line endpoints) ---
+        # Targets: left-lower = (-1, -2, 0), left-upper = (-1,  2, 0)
+        img_boat = ImageMobject("Figures/inside_boat.jpeg")
+        img_boat.set_height(4.0)  # span from y=-2 to y=+2
+        img_boat.set_y(0.0)  # vertical center
+        img_boat.set_x(
+            -1.0 + img_boat.get_width() / 2.0
+        )  # left edge at x = -1
 
-        # Optional background helpers (kept as in your version)
-        numberplane = NumberPlane(color=BLACK)
-        self.add(numberplane)
+        # Surrounding rectangle (tight fit), fade in AFTER the lines are drawn
+        img_boat_box = SurroundingRectangle(
+            img_boat, color=pc.blueGreen, buff=0.0, stroke_width=16
+        )
+        self.play(FadeIn(img_boat_box, run_time=0.5))
+
+        # Finally, fade in the image inside the rectangle
+        self.play(FadeIn(img_boat, run_time=0.6))
 
         # End the slide
         self.pause()
