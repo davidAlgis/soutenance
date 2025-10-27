@@ -180,26 +180,44 @@ class Presentation(Slide):
 
         # Initialize body flow under the bar
         self.start_body()
+        self.add_body_text(
+            "Formation en réalité virtuelle : manipulation complexe sur un navire", font_size=self.BODY_FONT_SIZE
+        )
 
-        # Add lines that will stack neatly
-        self.add_body_text("Formation en réalité virtuelle")
-
-        # Image on the left, NOT placed under the bar.
-        # It will be sized to native resolution (no up/downscale)
-        img_path = "Figures/man_head_set.png"
-        img = ImageMobject(img_path)
-
-        # Place on the left; adjust vertical so that the bar is ABOVE the bottom of the image
-        img.to_edge(LEFT, buff=0.6)
-        img.to_edge(DOWN, buff=0.1)
-        img.scale(0.7)
-
+        # Decorative lines (their right endpoints will define the left corners of the new image)
         line1 = Line([-4.5, 0, 0], [-1, -2, 0], color=pc.blueGreen)
         line2 = Line([-4.5, 0.5, 0], [-1, 2, 0], color=pc.blueGreen)
-        self.add(line1)
-        self.add(line2)
+        self.add(line1, line2)
+
+        # --- Keep the existing left image ---
+        img_left_path = "Figures/man_head_set.png"
+        img_left = ImageMobject(img_left_path)
+        img_left.to_edge(LEFT, buff=0.6)
+        img_left.to_edge(DOWN, buff=0.1)
+        img_left.scale(0.7)
+        self.add(img_left)
+
+        # --- Add the new image anchored to the two line endpoints ---
+        # Target corners:
+        #   left-lower  = (-1, -2, 0)
+        #   left-upper  = (-1,  2, 0)
+        # So the image height must be 4, centered at y = 0, and its left edge at x = -1.
+        img_boat = ImageMobject("Figures/inside_boat.jpeg")
+        img_boat.set_height(4.0)  # span from y=-2 to y=+2
+        img_boat.set_y(0.0)  # vertical center at 0
+        img_boat.set_x(
+            -1.0 + img_boat.get_width() / 2.0
+        )  # left edge exactly at x = -1
+
+        # Surround the image with a blueGreen rectangle (tight fit)
+        img_boat_box = SurroundingRectangle(
+            img_boat, color=pc.blueGreen, buff=0.0, stroke_width=4
+        )
+
         # Add without animation
-        self.add(img)
+        self.add(img_boat, img_boat_box)
+
+        # Optional background helpers (kept as in your version)
         numberplane = NumberPlane(color=BLACK)
         self.add(numberplane)
 
