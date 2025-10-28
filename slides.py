@@ -10,7 +10,7 @@ from manim import *
 from manim import logger
 from manim_slides import Slide
 from manim_tikz import Tikz
-from utils import parse_selection
+from utils import parse_selection, tikz_from_file
 
 config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
@@ -233,144 +233,65 @@ class Presentation(Slide):
         self.add(bar)
         self.add_foreground_mobject(bar)
 
-        # ----- Grid geometry (area below the bar) -----
+        # ---- Compute the area available below the bar ----
         bar_rect = bar.submobjects[0]  # the Rectangle of the top bar
         y_top = bar_rect.get_bottom()[1] - 0.15  # small gap below bar
         x_left = -config.frame_width / 2 + 0.6
         x_right = config.frame_width / 2 - 0.6
         y_bottom = -config.frame_height / 2 + 0.6
 
-        total_w = x_right - x_left
-        total_h = y_top - y_bottom
+        area_center = np.array(
+            [(x_left + x_right) * 0.5, (y_top + y_bottom) * 0.5, 0.0]
+        )
 
-        cols, rows = 3, 2
-        hgap, vgap = 0.6, 0.6
-        cell_w = (total_w - (cols - 1) * hgap) / cols
-        cell_h = (total_h - (rows - 1) * vgap) / rows
+        # ---- TikZ packages / libraries ----
+        # Prefer xcolor over color
+        packages = [
+            "physics",
+            "amsmath",
+            "tikz",
+            "mathdots",
+            "yhmath",
+            "cancel",
+            "xcolor",
+            "siunitx",
+            "array",
+            "multirow",
+            "amssymb",
+            "gensymb",
+            "tabularx",
+            "extarrows",
+            "booktabs",
+            "latex/extensionAlgisColor",  # your color definitions
+        ]
+        libraries = ["fadings", "patterns", "shadows.blur", "shapes"]
 
-        # ----- Titles -----
-        titles = [
-            "1. Simulation de surface",
-            "2. Grande échelle",
-            "3. Image par secondes",
-            "4. Action du solide sur le fluide",
-            "5. Action du fluide sur le solide",
-            "6. Précision physique",
+        # KEY: set TikZ units to points and flip Y in TikZ (avoid Manim-side flip/scale gaps)
+        # Also scale=2 here (as you requested), and transform shape so strokes/markers scale properly.
+        tikzset = [
+            r"every picture/.style={x=1pt, y=-1pt, scale=5, transform shape}",  # <- units + flip + scale x2
+            # you can also enforce joins/caps globally if needed:
+            # r"every path/.style={line join=round, line cap=round}",
         ]
 
-        title_size_default = self.BODY_FONT_SIZE - 8
-        title_size_big = title_size_default + 6
+        preamble = None
+        use_pdf = True  # safer for advanced TikZ features
 
-        titles_mobs = []
-        t1 = None  # title #1 ref
-        t2 = None  # title #2 ref
-
-        # We also keep the rect of cell (0,0) to position the cosine
-        rect00 = None
-
-        for r in range(rows):
-            for c in range(cols):
-                cx = x_left + c * (cell_w + hgap) + cell_w / 2.0
-                cy = y_top - r * (cell_h + vgap) - cell_h / 2.0
-
-                rect = Rectangle(
-                    width=cell_w,
-                    height=cell_h,
-                    stroke_color=GREY_B,
-                    stroke_opacity=0.15,
-                    fill_opacity=0.0,
-                ).move_to([cx, cy, 0.0])
-                # If you want to see cell borders, add them:
-                # self.add(rect)
-
-                title = Text(
-                    titles[r * cols + c],
-                    color=BLACK,
-                    font_size=title_size_default,
-                )
-                # place title at the top-center inside the cell
-                title.set_x(cx)
-                title.set_y(rect.get_top()[1] - 0.25)
-                titles_mobs.append(title)
-
-                if r == 0 and c == 0:
-                    t1 = title
-                    rect00 = rect
-                if r == 0 and c == 1:
-                    t2 = title
-
-        self.add(*titles_mobs)
-
-        # ---------- Cosine image under cell (0,0) title ----------
-        # Area for the plot: from just under the title to the bottom of the cell, with padding
-        top_y = t1.get_bottom()[1] - 0.15
-        bottom_y = rect00.get_bottom()[1] + 0.25
-        plot_h = max(0.1, top_y - bottom_y)  # safety
-
-        left_x = rect00.get_left()[0] + 0.25
-        right_x = rect00.get_right()[0] - 0.25
-        plot_w = max(0.1, right_x - left_x)
-
-        axes = Axes(
-            x_range=[-3.5, 3.5, 1.0],
-            y_range=[-0.75, 0.75, 0.25],
-            axis_config=dict(
-                stroke_color=GREY_B, stroke_opacity=0.5, stroke_width=2
-            ),
-            tips=False,
-        )
-        # # Fit axes into the reserved box
-        axes.set_width(plot_w)
-        axes.set_height(plot_h)
-        axes.move_to([(left_x + right_x) * 0.5, (top_y + bottom_y) * 0.5, 0])
-
-        # self.add(axes)
-
-        # Animated cosine: 0.5*cos(x - t)
-        t_tracker = ValueTracker(0.0)
-
-        def f_animated(x):
-            return 0.2 * np.cos(x - 3 * t_tracker.get_value())
-
-        animated_curve = always_redraw(
-            lambda: axes.plot(
-                f_animated,
-                x_range=[-3.5, 3.5],
-                color=pc.blueGreen,
-                stroke_width=6,
-            )
+        # ---- Load the TikZ figure (no Manim-side scaling or flipping) ----
+        tikz_img = tikz_from_file(
+            file_path="tikz/thesis_goals.tikz",
+            packages=packages,
+            libraries=libraries,
+            tikzset=tikzset,
+            preamble=preamble,
+            use_pdf=use_pdf,
         )
 
-        # 1) Increase font size of title #1
-        self.play(t1.animate.set_font_size(title_size_big), run_time=0.35)
+        # Center in the area (avoid additional scale/flip to keep paths connected)
+        tikz_img.move_to(area_center)
 
-        # 2) Show the animated cosine
-        self.play(FadeIn(animated_curve, run_time=0.4))
-        self.play(
-            t_tracker.animate.set_value(2.5 * TAU),
-            # run_time=2 * 3.1415,
-            run_time=20,
-            rate_func=linear,
-        )
-
-        # 3) Wait for user input (manim-slides pause)
-        self.next_slide()
-
-        # 4) Restore default size of title #1
-        self.play(t1.animate.set_font_size(title_size_default), run_time=0.35)
-
-        # 5) Freeze the cos to 0.5*cos(x)
-        # static_curve = axes.plot(
-        #     lambda x: 0.5 * np.cos(x),
-        #     x_range=[-3.5, 3.5],
-        #     color=pc.blueGreen,
-        #     stroke_width=6,
-        # )
-        # self.play(Transform(animated_curve, static_curve), run_time=0.4)
-        # animated_curve.clear_updaters()  # ensure it no longer updates
-
-        # 6) Increase the font size of title #2
-        self.play(t2.animate.set_font_size(title_size_big), run_time=0.35)
+        # Add to scene
+        self.add(tikz_img)
 
         # End the slide
         self.pause()
