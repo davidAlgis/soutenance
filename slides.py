@@ -271,6 +271,7 @@ class Presentation(Slide):
                 "II) Hybridation SPH/Airy",
             ]
         )
+        self.next_slide()
         self.pause()
         self.clear()
         self.next_slide()
@@ -291,8 +292,8 @@ class Presentation(Slide):
         bar = self._top_bar("I) Introduction au calcul parallèle : CPU/GPU")
         self.add(bar)
         self.add_foreground_mobject(bar)
-        numberplane = NumberPlane(color=BLACK)
-        self.add(numberplane)
+        # numberplane = NumberPlane(color=BLACK)
+        # self.add(numberplane)
         # --- Data for the example ---
         a_vals = [1, 4, 2, 3, 5]
         b_vals = [3, 1, 6, 2, 4]
@@ -497,6 +498,116 @@ class Presentation(Slide):
 
         # --- Pause to discuss the parallel model ---
         self.pause()
+
+        # --- End the slide ---
+        self.clear()
+        self.next_slide()
+        bar = self._top_bar("I) Introduction au calcul parallèle : CPU/GPU")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Column layout parameters ---
+        col_pad_x = 1.0
+        col_center_left = np.array(
+            [-config.frame_width * 0.25 - col_pad_x, 0.2, 0.0]
+        )
+        col_center_right = np.array(
+            [config.frame_width * 0.25 + col_pad_x - 0.6, 0.2, 0.0]
+        )
+
+        # --- CPU column: title + 2x4 grid with labels ---
+        cpu_title = Text("CPU", font_size=46, color=BLACK)
+        cpu_title.move_to(col_center_left + np.array([0.0, 2.4, 0.0]))
+
+        cpu_rows, cpu_cols = 2, 4
+        cpu_box_w, cpu_box_h = 0.9, 0.9
+        cpu_gap = 0.14
+
+        # Compute top-left position of the CPU grid
+        cpu_total_w = cpu_cols * cpu_box_w + (cpu_cols - 1) * cpu_gap
+        cpu_total_h = cpu_rows * cpu_box_h + (cpu_rows - 1) * cpu_gap
+        cpu_top_left = col_center_left + np.array(
+            [-cpu_total_w / 2.0, +cpu_total_h / 2.0, 0.0]
+        )
+
+        cpu_boxes = []
+        cpu_labels = []
+        for r in range(cpu_rows):
+            for c in range(cpu_cols):
+                x = (
+                    cpu_top_left[0]
+                    + c * (cpu_box_w + cpu_gap)
+                    + cpu_box_w / 2.0
+                )
+                y = (
+                    cpu_top_left[1]
+                    - r * (cpu_box_h + cpu_gap)
+                    - cpu_box_h / 2.0
+                )
+                rect = Rectangle(
+                    width=cpu_box_w,
+                    height=cpu_box_h,
+                    stroke_opacity=1.0,
+                    fill_opacity=0.05,
+                    color=pc.blueGreen,
+                ).move_to([x, y, 0.0])
+                lbl = Tex(r"c\oe ur", font_size=15, color=BLACK).move_to(
+                    rect.get_center()
+                )
+                cpu_boxes.append(rect)
+                cpu_labels.append(lbl)
+
+        cpu_group = VGroup(*cpu_boxes, *cpu_labels)
+
+        # --- GPU column: title + large grid (tens of squares) ---
+        gpu_title = Text("GPU", font_size=46, color=BLACK)
+        gpu_title.move_to(col_center_right + np.array([-0.7, 2.4, 0.0]))
+
+        gpu_rows, gpu_cols = 8, 10  # 80 squares (tens of them)
+        gpu_box_w, gpu_box_h = 0.5, 0.5
+        gpu_gap = 0.08
+
+        gpu_total_w = gpu_cols * gpu_box_w + (gpu_cols - 1) * gpu_gap
+        gpu_total_h = gpu_rows * gpu_box_h + (gpu_rows - 1) * gpu_gap
+        gpu_top_left = col_center_right + np.array(
+            [-gpu_total_w / 2.0, +gpu_total_h / 2.0, 0.0]
+        )
+
+        gpu_boxes = []
+        for r in range(gpu_rows):
+            for c in range(gpu_cols):
+                x = (
+                    gpu_top_left[0]
+                    + c * (gpu_box_w + gpu_gap)
+                    + gpu_box_w / 2.0
+                )
+                y = (
+                    gpu_top_left[1]
+                    - r * (gpu_box_h + gpu_gap)
+                    - gpu_box_h / 2.0
+                )
+                rect = Rectangle(
+                    width=gpu_box_w,
+                    height=gpu_box_h,
+                    stroke_opacity=1.0,
+                    fill_opacity=0.03,
+                    color=pc.blueGreen,
+                ).move_to([x, y, 0.0])
+                gpu_boxes.append(rect)
+
+        gpu_group = VGroup(*gpu_boxes)
+        gpu_group.shift(
+            LEFT * 0.6 + DOWN * 0.4
+        )  # move grid left and slightly down
+
+        # --- Add all elements with minimal animations to avoid tiny clips ---
+        self.play(
+            FadeIn(cpu_title, run_time=0.3),
+            FadeIn(gpu_title, run_time=0.3),
+        )
+        # Batch grid appearances to keep rendering robust on Windows
+        self.play(FadeIn(cpu_group, run_time=0.4))
+        self.play(FadeIn(gpu_group, run_time=0.5))
 
         # --- End the slide ---
         self.clear()
