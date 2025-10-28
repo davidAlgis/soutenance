@@ -17,7 +17,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "6-7"
+SLIDES_SELECTION = "8"
 
 
 class Presentation(Slide):
@@ -857,9 +857,176 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_08(self):
-        self._show_text(
-            "Motivation à IUC et présentation de ses principes (on verra des applications dans le reste de la présentation)"
+        # --- Top bar ---
+        bar = self._top_bar("InteropUnityCUDA (IUC)")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # ---- Usable area below the bar ----
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+
+        area_w = x_right - x_left
+        area_h = y_top - y_bottom
+        y_center = (y_top + y_bottom) * 0.5
+
+        # ---- Intro texts (LaTeX → manim) ----
+        self.start_body()
+        t1 = Text(
+            "Afin d'utiliser CUDA dans Unity à la place des compute shaders : \\textbf{InteropUnityCUDA} :",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
         )
+        # Convert the bold part by rendering the whole line, then bold the keyword "InteropUnityCUDA"
+        # (quick and robust without TeX rendering)
+        t1 = Text(
+            "Afin d'utiliser CUDA dans Unity à la place des compute shaders : InteropUnityCUDA :",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        # Bold the keyword only
+        # Find submobject index of the word to style (split into words)
+        t1.set_x(x_left + 0.2)
+        t1.set_y(y_top - 0.22)
+
+        t2 = Text(
+            "Un outil d'interopérabilité entre Unity et CUDA.",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        t2.align_to(t1, LEFT).next_to(t1, DOWN, buff=0.20, aligned_edge=LEFT)
+        self.add(t1, t2)
+
+        # ========= Three boxes: Unity (left), IUC (center), C++ lib (right) =========
+        # Horizontal layout helpers
+        cols = 3
+        gap = area_w * 0.06
+        cell_w = (area_w - 2 * gap) / 3.0
+        cell_h = min(1.6, area_h * 0.28)
+
+        cx_left = x_left + cell_w * 0.5
+        cx_center = x_left + cell_w * 1.5 + gap
+        cx_right = x_left + cell_w * 2.5 + 2 * gap
+        cy = (
+            y_center + 0.25
+        )  # a bit above the true center to leave room for captions
+
+        def box(label, center_x):
+            r = Rectangle(
+                width=cell_w,
+                height=cell_h,
+                stroke_color=pc.blueGreen,
+                stroke_width=6,
+            )
+            r.move_to([center_x, cy, 0])
+            txt = Text(
+                label, color=BLACK, font_size=self.BODY_FONT_SIZE, weight=BOLD
+            )
+            txt.move_to(r.get_center())
+            return VGroup(r, txt)
+
+        box_unity = box("Unity", cx_left)
+        box_iuc = box("IUC", cx_center)
+        box_cpp = box("Librairie C++", cx_right)
+
+        # We will reveal them progressively; start by adding only UNITY box
+        self.add(box_unity)
+
+        # ========= Image + caption (start under Unity) =========
+        img = ImageMobject("Figures/logo_images.png")
+        # size: fit under the box with some margins
+        img.set_height(min(cell_h * 0.75, 1.6))
+        img.move_to(
+            [cx_left, box_unity.get_bottom()[1] - img.height * 0.55 - 0.25, 0]
+        )
+
+        cap1 = Text(
+            "texture.unity", color=BLACK, font_size=self.BODY_FONT_SIZE
+        )
+        cap1.next_to(img, DOWN, buff=0.15)
+
+        # Show: left box + image + caption simultaneously
+        self.play(
+            FadeIn(img, run_time=0.4),
+            FadeIn(cap1, run_time=0.4),
+        )
+
+        # ========= STEP 1 → 2 : user input then arrow to IUC, move image/caption, rename =========
+        self.next_slide()
+
+        arrow_1 = Arrow(
+            start=box_unity[0].get_right(),  # rectangle's right edge
+            end=box_iuc[0].get_left(),
+            buff=0.08,
+            stroke_color=pc.blueGreen,
+            stroke_width=6,
+            tip_length=0.16,
+        )
+
+        # Target positions under IUC
+        img_target_pos_2 = np.array(
+            [cx_center, box_iuc.get_bottom()[1] - img.height * 0.55 - 0.25, 0]
+        )
+        cap2 = Text(
+            "conversion en texture.cuda",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        cap2.move_to(cap1)  # so Transform keeps position continuity
+        cap2.next_to(
+            img_target_pos_2, DOWN, buff=0.15
+        )  # place relative to target img
+
+        # Reveal IUC box + arrow, move image, change caption
+        self.play(
+            FadeIn(box_iuc, run_time=0.3),
+            Create(arrow_1, run_time=0.6),
+            img.animate.move_to(img_target_pos_2),
+            Transform(cap1, cap2),
+            lag_ratio=0.0,
+        )
+
+        # ========= STEP 2 → 3 : user input then arrow to C++ lib, move + rename =========
+        self.next_slide()
+
+        arrow_2 = Arrow(
+            start=box_iuc[0].get_right(),
+            end=box_cpp[0].get_left(),
+            buff=0.08,
+            stroke_color=pc.blueGreen,
+            stroke_width=6,
+            tip_length=0.16,
+        )
+
+        img_target_pos_3 = np.array(
+            [cx_right, box_cpp.get_bottom()[1] - img.height * 0.55 - 0.25, 0]
+        )
+        cap3 = Text(
+            "écriture dans cuda", color=BLACK, font_size=self.BODY_FONT_SIZE
+        )
+        cap3.move_to(cap1)  # transform from current caption
+        cap3.next_to(img_target_pos_3, DOWN, buff=0.15)
+
+        self.play(
+            FadeIn(box_cpp, run_time=0.3),
+            Create(arrow_2, run_time=0.6),
+            img.animate.move_to(img_target_pos_3),
+            Transform(cap1, cap3),
+            lag_ratio=0.0,
+        )
+
+        # ========= Bottom-right credit =========
+        credit = Text(
+            "Algis et al. 2025", color=BLACK, font_size=self.BODY_FONT_SIZE - 6
+        )
+        credit.to_edge(DOWN, buff=0.2)
+        credit.to_edge(RIGHT, buff=0.3)
+        self.add(credit)
+
+        # End slide
         self.pause()
         self.clear()
         self.next_slide()
