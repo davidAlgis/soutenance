@@ -9,6 +9,7 @@ import palette_colors as pc
 from manim import *
 from manim import logger
 from manim_slides import Slide
+from manim_tikz import Tikz
 from utils import parse_selection
 
 config.background_color = WHITE
@@ -247,7 +248,7 @@ class Presentation(Slide):
         cell_w = (total_w - (cols - 1) * hgap) / cols
         cell_h = (total_h - (rows - 1) * vgap) / rows
 
-        # ----- Titles only (images will come later) -----
+        # ----- Titles -----
         titles = [
             "1. Simulation de surface",
             "2. Grande échelle",
@@ -257,7 +258,15 @@ class Presentation(Slide):
             "6. Précision physique",
         ]
 
+        title_size_default = self.BODY_FONT_SIZE - 8
+        title_size_big = title_size_default + 6
+
         titles_mobs = []
+        t1 = None  # title #1 ref
+        t2 = None  # title #2 ref
+
+        # We also keep the rect of cell (0,0) to position the cosine
+        rect00 = None
 
         for r in range(rows):
             for c in range(cols):
@@ -268,23 +277,102 @@ class Presentation(Slide):
                     width=cell_w,
                     height=cell_h,
                     stroke_color=GREY_B,
-                    stroke_opacity=0.25,
+                    stroke_opacity=0.15,
                     fill_opacity=0.0,
                 ).move_to([cx, cy, 0.0])
+                # If you want to see cell borders, add them:
+                # self.add(rect)
 
-                t = Text(
+                title = Text(
                     titles[r * cols + c],
                     color=BLACK,
-                    font_size=self.BODY_FONT_SIZE - 8,
+                    font_size=title_size_default,
                 )
                 # place title at the top-center inside the cell
-                t.set_x(cx)
-                t.set_y(rect.get_top()[1] - 0.25)
-                titles_mobs.append(t)
+                title.set_x(cx)
+                title.set_y(rect.get_top()[1] - 0.25)
+                titles_mobs.append(title)
+
+                if r == 0 and c == 0:
+                    t1 = title
+                    rect00 = rect
+                if r == 0 and c == 1:
+                    t2 = title
 
         self.add(*titles_mobs)
 
-        # End slide
+        # ---------- Cosine image under cell (0,0) title ----------
+        # Area for the plot: from just under the title to the bottom of the cell, with padding
+        top_y = t1.get_bottom()[1] - 0.15
+        bottom_y = rect00.get_bottom()[1] + 0.25
+        plot_h = max(0.1, top_y - bottom_y)  # safety
+
+        left_x = rect00.get_left()[0] + 0.25
+        right_x = rect00.get_right()[0] - 0.25
+        plot_w = max(0.1, right_x - left_x)
+
+        axes = Axes(
+            x_range=[-3.5, 3.5, 1.0],
+            y_range=[-0.75, 0.75, 0.25],
+            axis_config=dict(
+                stroke_color=GREY_B, stroke_opacity=0.5, stroke_width=2
+            ),
+            tips=False,
+        )
+        # # Fit axes into the reserved box
+        axes.set_width(plot_w)
+        axes.set_height(plot_h)
+        axes.move_to([(left_x + right_x) * 0.5, (top_y + bottom_y) * 0.5, 0])
+
+        # self.add(axes)
+
+        # Animated cosine: 0.5*cos(x - t)
+        t_tracker = ValueTracker(0.0)
+
+        def f_animated(x):
+            return 0.2 * np.cos(x - 3 * t_tracker.get_value())
+
+        animated_curve = always_redraw(
+            lambda: axes.plot(
+                f_animated,
+                x_range=[-3.5, 3.5],
+                color=pc.blueGreen,
+                stroke_width=6,
+            )
+        )
+
+        # 1) Increase font size of title #1
+        self.play(t1.animate.set_font_size(title_size_big), run_time=0.35)
+
+        # 2) Show the animated cosine
+        self.play(FadeIn(animated_curve, run_time=0.4))
+        self.play(
+            t_tracker.animate.set_value(2.5 * TAU),
+            # run_time=2 * 3.1415,
+            run_time=20,
+            rate_func=linear,
+        )
+
+        # 3) Wait for user input (manim-slides pause)
+        self.next_slide()
+
+        # 4) Restore default size of title #1
+        self.play(t1.animate.set_font_size(title_size_default), run_time=0.35)
+
+        # 5) Freeze the cos to 0.5*cos(x)
+        # static_curve = axes.plot(
+        #     lambda x: 0.5 * np.cos(x),
+        #     x_range=[-3.5, 3.5],
+        #     color=pc.blueGreen,
+        #     stroke_width=6,
+        # )
+        # self.play(Transform(animated_curve, static_curve), run_time=0.4)
+        # animated_curve.clear_updaters()  # ensure it no longer updates
+
+        # 6) Increase the font size of title #2
+        self.play(t2.animate.set_font_size(title_size_big), run_time=0.35)
+
+        # End the slide
         self.pause()
         self.clear()
         self.next_slide()
