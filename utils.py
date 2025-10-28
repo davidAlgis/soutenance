@@ -1,3 +1,4 @@
+import math
 import re
 from typing import List, Optional
 
@@ -65,3 +66,75 @@ def tikz_from_file(
         use_pdf=use_pdf,
         **kwargs,
     )
+
+
+def make_triangle_bullet(color, size=0.18, rotation=-math.pi / 2):
+    b = Triangle(fill_color=color, fill_opacity=1.0, stroke_width=0)
+    b.set_width(size)
+    b.rotate(rotation)
+    return b
+
+
+def make_bullet_list(
+    items,
+    *,
+    bullet_color,  # e.g., pc.blueGreen
+    font_size=32,
+    line_gap=0.18,  # vertical spacing between lines
+    left_pad=0.25,  # space between bullet and text
+):
+    rows = []
+    for s in items:
+        bullet = make_triangle_bullet(bullet_color)
+        txt = Text(s, color=BLACK, font_size=font_size)
+        row = VGroup(bullet, txt)
+        txt.next_to(bullet, RIGHT, buff=left_pad)
+        rows.append(row)
+
+    group = VGroup(*rows)
+    # Stack rows vertically
+    for i in range(1, len(rows)):
+        rows[i].next_to(rows[i - 1], DOWN, buff=line_gap, aligned_edge=LEFT)
+
+    # Align bullets in a column
+    left_x = rows[0][0].get_left()[0]
+    for r in rows:
+        r[0].align_to([left_x, 0, 0], LEFT)
+
+    return group
+
+
+def make_pro_cons(
+    pros,
+    cons,
+    *,
+    pro_color,  # e.g., pc.apple
+    con_color,  # e.g., pc.bittersweet
+    font_size=32,
+    icon_size=32,
+    col_gap=1.2,
+    row_gap=0.18,
+    left_pad=0.20,
+):
+    def make_rows(items, color, icon_char):
+        rows = []
+        for s in items:
+            icon = Text(
+                icon_char, color=color, font_size=icon_size, weight=BOLD
+            )
+            txt = Text(s, color=BLACK, font_size=font_size)
+            row = VGroup(icon, txt)
+            txt.next_to(icon, RIGHT, buff=left_pad)
+            rows.append(row)
+        # vertical stack
+        for i in range(1, len(rows)):
+            rows[i].next_to(rows[i - 1], DOWN, buff=row_gap, aligned_edge=LEFT)
+        return VGroup(*rows)
+
+    pros_col = make_rows(pros, pro_color, "✓")
+    cons_col = make_rows(cons, con_color, "✗")
+
+    # put columns side by side
+    group = VGroup(pros_col, cons_col)
+    cons_col.next_to(pros_col, RIGHT, buff=col_gap, aligned_edge=UP)
+    return group
