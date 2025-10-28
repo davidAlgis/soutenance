@@ -243,55 +243,20 @@ class Presentation(Slide):
         area_center = np.array(
             [(x_left + x_right) * 0.5, (y_top + y_bottom) * 0.5, 0.0]
         )
+        max_w = (x_right - x_left) * 0.95
+        max_h = (y_top - y_bottom) * 0.95
 
-        # ---- TikZ packages / libraries ----
-        # Prefer xcolor over color
-        packages = [
-            "physics",
-            "amsmath",
-            "tikz",
-            "mathdots",
-            "yhmath",
-            "cancel",
-            "xcolor",
-            "siunitx",
-            "array",
-            "multirow",
-            "amssymb",
-            "gensymb",
-            "tabularx",
-            "extarrows",
-            "booktabs",
-            "latex/extensionAlgisColor",  # your color definitions
-        ]
-        libraries = ["fadings", "patterns", "shadows.blur", "shapes"]
+        # ---- PNG image centered in the remaining area ----
+        img = ImageMobject("Figures/thesis_goals.png")
 
-        # KEY: set TikZ units to points and flip Y in TikZ (avoid Manim-side flip/scale gaps)
-        # Also scale=2 here (as you requested), and transform shape so strokes/markers scale properly.
-        tikzset = [
-            r"every picture/.style={x=1pt, y=-1pt, scale=5, transform shape}",  # <- units + flip + scale x2
-            # you can also enforce joins/caps globally if needed:
-            # r"every path/.style={line join=round, line cap=round}",
-        ]
+        # Fit within the area while preserving aspect ratio (don't upscale beyond 1:1)
+        scale_w = max_w / img.width
+        scale_h = max_h / img.height
+        scale_factor = min(scale_w, scale_h, 1.0)
+        img.scale(scale_factor)
 
-        preamble = None
-        use_pdf = True  # safer for advanced TikZ features
-
-        # ---- Load the TikZ figure (no Manim-side scaling or flipping) ----
-        tikz_img = tikz_from_file(
-            file_path="tikz/thesis_goals.tikz",
-            packages=packages,
-            libraries=libraries,
-            tikzset=tikzset,
-            preamble=preamble,
-            use_pdf=use_pdf,
-        )
-
-        # Center in the area (avoid additional scale/flip to keep paths connected)
-        tikz_img.move_to(area_center)
-
-        # Add to scene
-        self.add(tikz_img)
+        img.move_to(area_center)
+        self.add(img)
 
         # End the slide
         self.pause()
