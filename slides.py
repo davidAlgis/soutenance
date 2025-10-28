@@ -674,7 +674,7 @@ class Presentation(Slide):
         lst.next_to(h1, DOWN, buff=0.22, aligned_edge=LEFT)
 
         h2 = Text(
-            "Les avantages et les inconvénients :",
+            "Les avantages et les inconvénients des compute shaders:",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
             weight=BOLD,
