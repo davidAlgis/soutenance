@@ -314,7 +314,6 @@ class Presentation(Slide):
         self.clear()
         self.next_slide()
 
-
     def slide_02(self):
         # --- Top bar + title (kept static, on top) ---
         bar = self._top_bar("Contexte")
@@ -1016,22 +1015,13 @@ class Presentation(Slide):
         area_h = y_top - y_bottom
         y_center = (y_top + y_bottom) * 0.5
 
-        # ---- Intro texts (LaTeX → manim) ----
+        # ---- Intro texts ----
         self.start_body()
-        t1 = Text(
-            "Afin d'utiliser CUDA dans Unity à la place des compute shaders : \\textbf{InteropUnityCUDA} :",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE,
-        )
-        # Convert the bold part by rendering the whole line, then bold the keyword "InteropUnityCUDA"
-        # (quick and robust without TeX rendering)
         t1 = Text(
             "Afin d'utiliser CUDA dans Unity à la place des compute shaders : InteropUnityCUDA :",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
-        # Bold the keyword only
-        # Find submobject index of the word to style (split into words)
         t1.set_x(x_left + 0.2)
         t1.set_y(y_top - 0.22)
 
@@ -1044,8 +1034,6 @@ class Presentation(Slide):
         self.add(t1, t2)
 
         # ========= Three boxes: Unity (left), IUC (center), C++ lib (right) =========
-        # Horizontal layout helpers
-        cols = 3
         gap = area_w * 0.06
         cell_w = (area_w - 2 * gap) / 3.0
         cell_h = min(1.6, area_h * 0.28)
@@ -1053,9 +1041,7 @@ class Presentation(Slide):
         cx_left = x_left + cell_w * 0.5
         cx_center = x_left + cell_w * 1.5 + gap
         cx_right = x_left + cell_w * 2.5 + 2 * gap
-        cy = (
-            y_center + 0.25
-        )  # a bit above the true center to leave room for captions
+        cy = y_center + 0.25  # leave room below for image/captions
 
         def box(label, center_x):
             r = Rectangle(
@@ -1063,45 +1049,49 @@ class Presentation(Slide):
                 height=cell_h,
                 stroke_color=pc.blueGreen,
                 stroke_width=6,
-            )
-            r.move_to([center_x, cy, 0])
+            ).move_to([center_x, cy, 0])
             txt = Text(
                 label, color=BLACK, font_size=self.BODY_FONT_SIZE, weight=BOLD
-            )
-            txt.move_to(r.get_center())
+            ).move_to(r.get_center())
             return VGroup(r, txt)
 
         box_unity = box("Unity", cx_left)
         box_iuc = box("IUC", cx_center)
         box_cpp = box("Librairie C++", cx_right)
 
-        # We will reveal them progressively; start by adding only UNITY box
+        # Start by showing only UNITY box
         self.add(box_unity)
 
         # ========= Image + caption (start under Unity) =========
         img = ImageMobject("Figures/logo_images.png")
-        # size: fit under the box with some margins
         img.set_height(min(cell_h * 0.75, 1.6))
-        img.move_to(
-            [cx_left, box_unity.get_bottom()[1] - img.height * 0.55 - 0.25, 0]
-        )
 
-        cap1 = Text(
-            "texture.unity", color=BLACK, font_size=self.BODY_FONT_SIZE
-        )
-        cap1.next_to(img, DOWN, buff=0.15)
+        # Helper to compute the desired image center under a given box
+        def img_center_under(box_group):
+            box_rect = box_group[0]
+            return np.array(
+                [
+                    box_rect.get_center()[0],
+                    box_rect.get_bottom()[1] - img.height * 0.55 - 0.25,
+                    0.0,
+                ]
+            )
 
-        # Show: left box + image + caption simultaneously
-        self.play(
-            FadeIn(img, run_time=0.4),
-            FadeIn(cap1, run_time=0.4),
-        )
+        # Initial placement (under Unity box)
+        img.move_to(img_center_under(box_unity))
 
-        # ========= STEP 1 → 2 : user input then arrow to IUC, move image/caption, rename =========
+        cap = Text("texture.unity", color=BLACK, font_size=self.BODY_FONT_SIZE)
+        cap.next_to(img, DOWN, buff=0.15)
+
+        # Group image + caption so they move together (use Group, not VGroup)
+        ic_group = Group(img, cap)
+        self.play(FadeIn(ic_group, run_time=0.4))
+
+        # ========= STEP 1 → 2 : user input, arrow to IUC, move group, THEN rename caption =========
         self.next_slide()
 
         arrow_1 = Arrow(
-            start=box_unity[0].get_right(),  # rectangle's right edge
+            start=box_unity[0].get_right(),
             end=box_iuc[0].get_left(),
             buff=0.08,
             stroke_color=pc.blueGreen,
@@ -1109,30 +1099,21 @@ class Presentation(Slide):
             tip_length=0.16,
         )
 
-        # Target positions under IUC
-        img_target_pos_2 = np.array(
-            [cx_center, box_iuc.get_bottom()[1] - img.height * 0.55 - 0.25, 0]
-        )
-        cap2 = Text(
+        self.play(FadeIn(box_iuc, run_time=0.3), Create(arrow_1, run_time=0.6))
+
+        target_img_center_2 = img_center_under(box_iuc)
+        shift_vec_2 = target_img_center_2 - img.get_center()
+        self.play(ic_group.animate.shift(shift_vec_2), run_time=0.6)
+
+        new_cap_2 = Text(
             "conversion en texture.cuda",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
-        cap2.move_to(cap1)  # so Transform keeps position continuity
-        cap2.next_to(
-            img_target_pos_2, DOWN, buff=0.15
-        )  # place relative to target img
+        new_cap_2.move_to(cap)  # keep position; only the glyphs change
+        self.play(Transform(cap, new_cap_2), run_time=0.35)
 
-        # Reveal IUC box + arrow, move image, change caption
-        self.play(
-            FadeIn(box_iuc, run_time=0.3),
-            Create(arrow_1, run_time=0.6),
-            img.animate.move_to(img_target_pos_2),
-            Transform(cap1, cap2),
-            lag_ratio=0.0,
-        )
-
-        # ========= STEP 2 → 3 : user input then arrow to C++ lib, move + rename =========
+        # ========= STEP 2 → 3 : user input, arrow to C++ lib, move group, THEN rename caption ======
         self.next_slide()
 
         arrow_2 = Arrow(
@@ -1143,23 +1124,17 @@ class Presentation(Slide):
             stroke_width=6,
             tip_length=0.16,
         )
+        self.play(FadeIn(box_cpp, run_time=0.3), Create(arrow_2, run_time=0.6))
 
-        img_target_pos_3 = np.array(
-            [cx_right, box_cpp.get_bottom()[1] - img.height * 0.55 - 0.25, 0]
-        )
-        cap3 = Text(
+        target_img_center_3 = img_center_under(box_cpp)
+        shift_vec_3 = target_img_center_3 - img.get_center()
+        self.play(ic_group.animate.shift(shift_vec_3), run_time=0.6)
+
+        new_cap_3 = Text(
             "écriture dans cuda", color=BLACK, font_size=self.BODY_FONT_SIZE
         )
-        cap3.move_to(cap1)  # transform from current caption
-        cap3.next_to(img_target_pos_3, DOWN, buff=0.15)
-
-        self.play(
-            FadeIn(box_cpp, run_time=0.3),
-            Create(arrow_2, run_time=0.6),
-            img.animate.move_to(img_target_pos_3),
-            Transform(cap1, cap3),
-            lag_ratio=0.0,
-        )
+        new_cap_3.move_to(cap)
+        self.play(Transform(cap, new_cap_3), run_time=0.35)
 
         # ========= Bottom-right credit =========
         credit = Text(
