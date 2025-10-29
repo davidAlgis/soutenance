@@ -198,21 +198,27 @@ class Presentation(Slide):
         )
 
         card_w = min((x_right - x_left) * 0.94, 13.5)
-        card_h = 1.9
+        card_h = 2.3  # slightly taller for bigger title
         card = RoundedRectangle(
-            corner_radius=0.25,
+            corner_radius=0.28,
             width=card_w,
             height=card_h,
             fill_color=pc.blueGreen,
             fill_opacity=1.0,
             stroke_opacity=0.0,
-        ).move_to([0.0, y_top - card_h / 2.0 - 0.25, 0.0])
+        ).move_to([0.0, y_top - card_h / 2 - 0.20, 0.0])
 
+        # Bigger text
         t = Text(
-            title, color=WHITE, font_size=self.BODY_FONT_SIZE + 8, weight=BOLD
+            title,
+            color=WHITE,
+            font_size=self.BODY_FONT_SIZE + 14,  # Increased
+            weight=BOLD,
         )
+
+        # Fit inside
         inner_w = card_w - 0.6
-        inner_h = card_h - 0.4
+        inner_h = card_h - 0.45
         if t.width and t.height:
             s = min(inner_w / t.width, inner_h / t.height, 1.0)
             if s < 1.0:
@@ -228,7 +234,7 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE + 2,
             weight=BOLD,
         )
-        author.next_to(card, DOWN, buff=0.35)
+        author.next_to(card, DOWN, buff=0.45)
         self.add(author)
 
         # ========= Logos grid (3×2) =========
@@ -242,17 +248,19 @@ class Presentation(Slide):
         ]
 
         cols, rows = 3, 2
-        hgap, vgap = 0.7, 0.6
+        hgap, vgap = 0.7, 0.55
 
         area_w = x_right - x_left
-        grid_w = area_w * 0.94
+        grid_w = area_w * 0.90
         cell_w = (grid_w - (cols - 1) * hgap) / cols
 
-        grid_top_y = author.get_bottom()[1] - 0.5
-        max_grid_h = (grid_top_y - y_bot) * 0.92
-        cell_h = min((max_grid_h - (rows - 1) * vgap) / rows, 2.2)
+        grid_top_y = author.get_bottom()[1] - 0.6
 
-        grid_left_x = -grid_w / 2.0  # already centered around x=0
+        # Reduced height for smaller images
+        max_grid_h = (grid_top_y - y_bot) * 0.80
+        cell_h = min((max_grid_h - (rows - 1) * vgap) / rows, 1.5)
+
+        grid_left_x = -grid_w / 2.0
 
         imgs = []
         for i, p in enumerate(img_paths):
@@ -262,14 +270,17 @@ class Presentation(Slide):
             cy = grid_top_y - r * (cell_h + vgap) - cell_h / 2.0
 
             im = ImageMobject(p)
-            max_w = cell_w * 0.9
-            max_h = cell_h * 0.9
+
+            # Smaller scaling
+            max_w = cell_w * 0.60
+            max_h = cell_h * 0.60
             s = min(max_w / im.width, max_h / im.height, 1.0)
             im.scale(s)
+
             im.move_to([cx, cy, 0.0])
             imgs.append(im)
 
-        # Use Group (not VGroup) because these are ImageMobjects (Mobject)
+        # Use Group because images are Mobjects
         grid_group = Group(*imgs)
         self.add(grid_group)
 
