@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "1,8"
+SLIDES_SELECTION = "1-10"
 
 
 class Presentation(Slide):
@@ -1015,23 +1015,24 @@ class Presentation(Slide):
         area_h = y_top - y_bottom
         y_center = (y_top + y_bottom) * 0.5
 
-        # ---- Intro texts ----
+        # ---- Intro texts (fit to bounds, then place) ----
         self.start_body()
-        t1 = Text(
-            "Afin d'utiliser CUDA dans Unity à la place des compute shaders : InteropUnityCUDA :",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE,
+        self.add_body_text(
+            "Afin d'utiliser CUDA dans Unity à la place des compute shaders : InteropUnityCUDA",
+            font_size=self.BODY_FONT_SIZE - 4,
         )
-        t1.set_x(x_left + 0.2)
-        t1.set_y(y_top - 0.22)
-
-        t2 = Text(
+        self.add_body_text(
             "Un outil d'interopérabilité entre Unity et CUDA.",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE,
+            font_size=self.BODY_FONT_SIZE - 4,
         )
-        t2.align_to(t1, LEFT).next_to(t1, DOWN, buff=0.20, aligned_edge=LEFT)
-        self.add(t1, t2)
+
+        # ========= Bottom-right credit =========
+        credit = Text(
+            "Algis et al. 2025", color=BLACK, font_size=self.BODY_FONT_SIZE - 6
+        )
+        credit.to_edge(DOWN, buff=0.2)
+        credit.to_edge(RIGHT, buff=0.3)
+        self.add(credit)
 
         # ========= Three boxes: Unity (left), IUC (center), C++ lib (right) =========
         gap = area_w * 0.06
@@ -1059,14 +1060,13 @@ class Presentation(Slide):
         box_iuc = box("IUC", cx_center)
         box_cpp = box("Librairie C++", cx_right)
 
-        # Start by showing only UNITY box
+        # Show only UNITY box initially
         self.add(box_unity)
 
-        # ========= Image + caption (start under Unity) =========
+        # ========= Image + caption (initial state) =========
         img = ImageMobject("Figures/logo_images.png")
         img.set_height(min(cell_h * 0.75, 1.6))
 
-        # Helper to compute the desired image center under a given box
         def img_center_under(box_group):
             box_rect = box_group[0]
             return np.array(
@@ -1077,17 +1077,17 @@ class Presentation(Slide):
                 ]
             )
 
-        # Initial placement (under Unity box)
+        # Initial placement (Unity)
         img.move_to(img_center_under(box_unity))
 
         cap = Text("texture.unity", color=BLACK, font_size=self.BODY_FONT_SIZE)
         cap.next_to(img, DOWN, buff=0.15)
 
-        # Group image + caption so they move together (use Group, not VGroup)
+        # Move image + caption together as a single unit
         ic_group = Group(img, cap)
         self.play(FadeIn(ic_group, run_time=0.4))
 
-        # ========= STEP 1 → 2 : user input, arrow to IUC, move group, THEN rename caption =========
+        # ========= STEP 1 → 2 =========
         self.next_slide()
 
         arrow_1 = Arrow(
@@ -1098,7 +1098,6 @@ class Presentation(Slide):
             stroke_width=6,
             tip_length=0.16,
         )
-
         self.play(FadeIn(box_iuc, run_time=0.3), Create(arrow_1, run_time=0.6))
 
         target_img_center_2 = img_center_under(box_iuc)
@@ -1110,10 +1109,10 @@ class Presentation(Slide):
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
-        new_cap_2.move_to(cap)  # keep position; only the glyphs change
+        new_cap_2.move_to(cap)  # keep position; only glyphs change
         self.play(Transform(cap, new_cap_2), run_time=0.35)
 
-        # ========= STEP 2 → 3 : user input, arrow to C++ lib, move group, THEN rename caption ======
+        # ========= STEP 2 → 3 =========
         self.next_slide()
 
         arrow_2 = Arrow(
@@ -1135,14 +1134,6 @@ class Presentation(Slide):
         )
         new_cap_3.move_to(cap)
         self.play(Transform(cap, new_cap_3), run_time=0.35)
-
-        # ========= Bottom-right credit =========
-        credit = Text(
-            "Algis et al. 2025", color=BLACK, font_size=self.BODY_FONT_SIZE - 6
-        )
-        credit.to_edge(DOWN, buff=0.2)
-        credit.to_edge(RIGHT, buff=0.3)
-        self.add(credit)
 
         # End slide
         self.pause()
