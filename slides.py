@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "1,10"
+SLIDES_SELECTION = "1,8"
 
 
 class Presentation(Slide):
@@ -185,6 +185,8 @@ class Presentation(Slide):
 
     # --------- Slides ---------
     def slide_01(self):
+        import textwrap
+
         # --- Layout bounds (no top bar) ---
         x_left = -config.frame_width / 2 + 0.6
         x_right = config.frame_width / 2 - 0.6
@@ -198,7 +200,7 @@ class Presentation(Slide):
         )
 
         card_w = min((x_right - x_left) * 0.94, 13.5)
-        card_h = 2.3  # slightly taller for bigger title
+        card_h = 2.3
         card = RoundedRectangle(
             corner_radius=0.28,
             width=card_w,
@@ -208,24 +210,46 @@ class Presentation(Slide):
             stroke_opacity=0.0,
         ).move_to([0.0, y_top - card_h / 2 - 0.20, 0.0])
 
-        # Bigger text
-        t = Text(
-            title,
+        # ---- Helper: wrap title into <=3 lines ----
+        def wrap_title(t: str, max_lines: int = 3):
+            for width in (48, 44, 40, 36, 32, 28, 24):
+                lines = textwrap.wrap(
+                    t,
+                    width=width,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                )
+                if 1 <= len(lines) <= max_lines:
+                    return lines
+            words = t.split()
+            chunks = [[] for _ in range(max_lines)]
+            for i, w in enumerate(words):
+                chunks[i % max_lines].append(w)
+            return [" ".join(c) for c in chunks]
+
+        lines = wrap_title(title, max_lines=3)
+
+        # Build Paragraph
+        base_fs = self.BODY_FONT_SIZE + 18
+        para = Paragraph(
+            *lines,
+            alignment="center",
+            font_size=base_fs,
             color=WHITE,
-            font_size=self.BODY_FONT_SIZE + 14,  # Increased
-            weight=BOLD,
+            line_spacing=0.8,
         )
 
-        # Fit inside
-        inner_w = card_w - 0.6
-        inner_h = card_h - 0.45
-        if t.width and t.height:
-            s = min(inner_w / t.width, inner_h / t.height, 1.0)
-            if s < 1.0:
-                t.scale(s)
-        t.move_to(card.get_center())
+        inner_w = card_w - 0.8
+        inner_h = card_h - 0.55
+        if para.width and para.height:
+            scale_w = inner_w / para.width
+            scale_h = inner_h / para.height
+            scale = min(scale_w, scale_h, 1.0)
+            if scale < 1.0:
+                para.scale(scale)
 
-        self.add(card, t)
+        para.move_to(card.get_center())
+        self.add(card, para)
 
         # ========= Author =========
         author = Text(
@@ -237,7 +261,7 @@ class Presentation(Slide):
         author.next_to(card, DOWN, buff=0.45)
         self.add(author)
 
-        # ========= Logos grid (3×2) =========
+        # ========= Logos grid (3×2), larger and lower =========
         img_paths = [
             "Figures/nyx.png",
             "Figures/aurora.jpg",
@@ -247,40 +271,41 @@ class Presentation(Slide):
             "Figures/ensip.png",
         ]
 
-        cols, rows = 3, 2
-        hgap, vgap = 0.7, 0.55
+        COLS, ROWS = 3, 2
+        HGAP, VGAP = 0.35, 0.30
+        GRID_WIDTH_RATIO = 0.96
+        GRID_HEIGHT_RATIO = 0.90
+        GRID_TOP_OFFSET = 1.00
+        LOGO_FILL = 1.10
+        MAX_UPSCALE = 2.5
 
         area_w = x_right - x_left
-        grid_w = area_w * 0.90
-        cell_w = (grid_w - (cols - 1) * hgap) / cols
+        grid_w = area_w * GRID_WIDTH_RATIO
+        cell_w = (grid_w - (COLS - 1) * HGAP) / COLS
 
-        grid_top_y = author.get_bottom()[1] - 0.6
-
-        # Reduced height for smaller images
-        max_grid_h = (grid_top_y - y_bot) * 0.80
-        cell_h = min((max_grid_h - (rows - 1) * vgap) / rows, 1.5)
+        grid_top_y = author.get_bottom()[1] - GRID_TOP_OFFSET
+        max_grid_h = (grid_top_y - y_bot) * GRID_HEIGHT_RATIO
+        cell_h = min((max_grid_h - (ROWS - 1) * VGAP) / ROWS, 2.20)
 
         grid_left_x = -grid_w / 2.0
 
         imgs = []
         for i, p in enumerate(img_paths):
-            r = i // cols
-            c = i % cols
-            cx = grid_left_x + c * (cell_w + hgap) + cell_w / 2.0
-            cy = grid_top_y - r * (cell_h + vgap) - cell_h / 2.0
+            r = i // COLS
+            c = i % COLS
+            cx = grid_left_x + c * (cell_w + HGAP) + cell_w / 2.0
+            cy = grid_top_y - r * (cell_h + VGAP) - cell_h / 2.0
 
             im = ImageMobject(p)
-
-            # Smaller scaling
-            max_w = cell_w * 0.60
-            max_h = cell_h * 0.60
-            s = min(max_w / im.width, max_h / im.height, 1.0)
+            max_w = cell_w * LOGO_FILL
+            max_h = cell_h * LOGO_FILL
+            scale_w = max_w / im.width
+            scale_h = max_h / im.height
+            s = min(scale_w, scale_h, MAX_UPSCALE)
             im.scale(s)
-
             im.move_to([cx, cy, 0.0])
             imgs.append(im)
 
-        # Use Group because images are Mobjects
         grid_group = Group(*imgs)
         self.add(grid_group)
 
@@ -288,6 +313,7 @@ class Presentation(Slide):
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_02(self):
         # --- Top bar + title (kept static, on top) ---
