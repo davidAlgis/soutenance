@@ -91,7 +91,7 @@ class Presentation(Slide):
         h = config.frame_height / 10.0
         w = config.frame_width
 
-        bar = Rectangle(  
+        bar = Rectangle(
             width=w,
             height=h,
             fill_color=pc.blueGreen,
@@ -185,9 +185,95 @@ class Presentation(Slide):
 
     # --------- Slides ---------
     def slide_01(self):
-        self._show_text(
-            "Titre (Thèse CIFRE, entre Poitiers, Angoulême et Strasbourg)"
+        # --- Layout bounds (no top bar) ---
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_top = config.frame_height / 2 - 0.6
+        y_bot = -config.frame_height / 2 + 0.6
+
+        # ========= Title card =========
+        title = (
+            "Hybridation de la méthode de Tessendorf et de l'hydrodynamique "
+            "des particules lissées pour la simulation d'océan en temps réel"
         )
+
+        card_w = min((x_right - x_left) * 0.94, 13.5)
+        card_h = 1.9
+        card = RoundedRectangle(
+            corner_radius=0.25,
+            width=card_w,
+            height=card_h,
+            fill_color=pc.blueGreen,
+            fill_opacity=1.0,
+            stroke_opacity=0.0,
+        ).move_to([0.0, y_top - card_h / 2.0 - 0.25, 0.0])
+
+        t = Text(
+            title, color=WHITE, font_size=self.BODY_FONT_SIZE + 8, weight=BOLD
+        )
+        inner_w = card_w - 0.6
+        inner_h = card_h - 0.4
+        if t.width and t.height:
+            s = min(inner_w / t.width, inner_h / t.height, 1.0)
+            if s < 1.0:
+                t.scale(s)
+        t.move_to(card.get_center())
+
+        self.add(card, t)
+
+        # ========= Author =========
+        author = Text(
+            "David Algis",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 2,
+            weight=BOLD,
+        )
+        author.next_to(card, DOWN, buff=0.35)
+        self.add(author)
+
+        # ========= Logos grid (3×2) =========
+        img_paths = [
+            "Figures/nyx.png",
+            "Figures/aurora.jpg",
+            "Figures/xlim.png",
+            "Figures/up.png",
+            "Figures/inria.png",
+            "Figures/ensip.png",
+        ]
+
+        cols, rows = 3, 2
+        hgap, vgap = 0.7, 0.6
+
+        area_w = x_right - x_left
+        grid_w = area_w * 0.94
+        cell_w = (grid_w - (cols - 1) * hgap) / cols
+
+        grid_top_y = author.get_bottom()[1] - 0.5
+        max_grid_h = (grid_top_y - y_bot) * 0.92
+        cell_h = min((max_grid_h - (rows - 1) * vgap) / rows, 2.2)
+
+        grid_left_x = -grid_w / 2.0  # already centered around x=0
+
+        imgs = []
+        for i, p in enumerate(img_paths):
+            r = i // cols
+            c = i % cols
+            cx = grid_left_x + c * (cell_w + hgap) + cell_w / 2.0
+            cy = grid_top_y - r * (cell_h + vgap) - cell_h / 2.0
+
+            im = ImageMobject(p)
+            max_w = cell_w * 0.9
+            max_h = cell_h * 0.9
+            s = min(max_w / im.width, max_h / im.height, 1.0)
+            im.scale(s)
+            im.move_to([cx, cy, 0.0])
+            imgs.append(im)
+
+        # Use Group (not VGroup) because these are ImageMobjects (Mobject)
+        grid_group = Group(*imgs)
+        self.add(grid_group)
+
+        # End slide
         self.pause()
         self.clear()
         self.next_slide()
