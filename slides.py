@@ -1217,10 +1217,11 @@ class Presentation(Slide):
 
     def slide_10(self):
         """
-        La theorie des vagues d'Airy.
-        Montre successivement : cos(x), cos(x+t), A cos(x+t), A cos(kx+t), A cos(kx+omega t),
-        avec une courbe pleine largeur sous la barre de titre et un label dynamique
-        qui n'affiche que les parametres deja introduits.
+        Airy wave theory demonstration.
+        Shows, in order: cos(x), cos(x+t), A cos(x+t), A cos(kx+t), A cos(kx+omega t).
+        Keeps the intro and formulas left-aligned at a fixed anchor. Uses
+        ReplacementTransform to avoid overlapping formulas. The label under the
+        curve displays only parameters that have been introduced so far.
         """
         # --- Top bar --------------------------------------------------------------
         bar = self._top_bar("La théorie des vagues d'Airy")
@@ -1233,20 +1234,18 @@ class Presentation(Slide):
         x_left = -config.frame_width / 2 + 0.6
         x_right = config.frame_width / 2 - 0.6
         y_bottom = -config.frame_height / 2 + 0.6
-
         area_w = x_right - x_left
 
-        # Left margin anchor to keep intro and formulas aligned and visible
+        # Left anchor for intro/formulas to prevent horizontal drift
         anchor_x = x_left + 0.2
 
-        # --- Intro line (left aligned, below the bar) ----------------------------
+        # --- Intro line (left aligned, placed under the bar) ---------------------
         self.start_body()
         intro = Text(
             "Modèle linéaire qui simule l'océan comme une simple vague :",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
-        # Place by left edge: move center to left anchor plus half width
         intro_y = y_top - 0.35
         intro.move_to([anchor_x + intro.width / 2.0, intro_y, 0.0])
         self.add(intro)
@@ -1254,10 +1253,8 @@ class Presentation(Slide):
         # --- Initial formula (left aligned under intro) --------------------------
         formula = MathTex(r"h(x,t)=\cos(x)", color=BLACK)
         formula.next_to(intro, DOWN, buff=0.25, aligned_edge=LEFT)
-        # Lock to left anchor
         dx0 = anchor_x - formula.get_left()[0]
         formula.shift(RIGHT * dx0)
-        # Record a fixed Y so subsequent formulas will not drift vertically
         formula_y = formula.get_y()
         self.add(formula)
 
@@ -1278,7 +1275,7 @@ class Presentation(Slide):
         axes.move_to([0, axes_bottom + axes_height / 2.0, 0])
         self.add(axes)
 
-        # --- Helper to lock any new formula to the same left and y --------------
+        # --- Helper to lock any new formula to same left and y -------------------
         def _lock_left(mobj: Mobject) -> Mobject:
             dx = anchor_x - mobj.get_left()[0]
             mobj.shift(RIGHT * dx)
@@ -1288,7 +1285,7 @@ class Presentation(Slide):
         # --- Trackers ------------------------------------------------------------
         A = ValueTracker(1.0)
         k = ValueTracker(1.0)
-        omega = ValueTracker(0.0)  # start with cos(x), i.e., omega = 0
+        omega = ValueTracker(0.0)  # start with cos(x)
         t = ValueTracker(0.0)
 
         # --- Curve depending on trackers -----------------------------------------
@@ -1302,18 +1299,18 @@ class Presentation(Slide):
                 lambda x: f_y(x),
                 x_range=[-2 * PI, 2 * PI],
                 stroke_width=4,
-                color=pc.oxfordBlue if hasattr(pc, "oxfordBlue") else BLACK,
+                color=(pc.oxfordBlue if hasattr(pc, "oxfordBlue") else BLACK),
             )
         )
         self.add(curve)
 
-        # --- Adaptive label: only show introduced parameters ---------------------
+        # --- Adaptive label: show only introduced params -------------------------
         show_t = False
         show_A = False
         show_k = False
         show_omega = False
 
-        def label_text():
+        def label_text() -> Mobject:
             parts = []
             if show_A:
                 parts.append(rf"A={A.get_value():.2f}")
@@ -1325,7 +1322,7 @@ class Presentation(Slide):
                 parts.append(rf"t={t.get_value():.2f}")
 
             if not parts:
-                # Transparent spacer to avoid TeX on empty label and keep layout stable
+                # Transparent spacer to avoid TeX on empty label
                 return Rectangle(
                     width=0.1, height=0.1, stroke_opacity=0.0, fill_opacity=0.0
                 )
@@ -1340,30 +1337,26 @@ class Presentation(Slide):
         )
         self.add(value_label)
 
-        # ===================== Step 1: h = cos(x) ================================
-        # Nothing animated yet; user can proceed.
-        self.next_slide()  # no loop
-
-        # ===================== Step 2: h = cos(x + t) ============================
-        new_formula = MathTex(r"h(x,t)=\cos(x+t)", color=BLACK)
-        _lock_left(new_formula)
-        # Use Transform (not TransformMatchingTex) to keep exact position
-        self.play(Transform(formula, new_formula))
-        formula = new_formula
-        self.wait(
-            0.3
-        )  # ensure the last clip is static (prevents auto-loop on change)
+        # ===================== Step 1: h = cos(x) =================================
         self.next_slide()  # no loop here
 
-        omega.set_value(1.0)  # set directly to avoid tiny clips
+        # ===================== Step 2: h = cos(x + t) =============================
+        new_formula = MathTex(r"h(x,t)=\cos(x+t)", color=BLACK)
+        _lock_left(new_formula)
+        self.play(ReplacementTransform(formula, new_formula))
+        formula = new_formula
+        self.wait(0.3)
+        self.next_slide()  # no loop on formula change
+
+        omega.set_value(1.0)
         show_t = True
         self.play(t.animate.set_value(2 * PI), rate_func=linear, run_time=4.0)
-        self.next_slide(loop=True)  # loop only on the time animation
+        self.next_slide(loop=True)
 
-        # ===================== Step 3: h = A cos(x + t) ==========================
+        # ===================== Step 3: h = A cos(x + t) ===========================
         new_formula = MathTex(r"h(x,t)=A\cos(x+t)", color=BLACK)
         _lock_left(new_formula)
-        self.play(Transform(formula, new_formula))
+        self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
         self.next_slide()  # no loop on formula change
@@ -1373,12 +1366,12 @@ class Presentation(Slide):
         self.play(
             A.animate.set_value(2.0), rate_func=there_and_back, run_time=4.0
         )
-        self.next_slide(loop=True)  # loop on amplitude variation
+        self.next_slide(loop=True)
 
-        # ===================== Step 4: h = A cos(k x + t) ========================
+        # ===================== Step 4: h = A cos(kx + t) ==========================
         new_formula = MathTex(r"h(x,t)=A\cos(kx+t)", color=BLACK)
         _lock_left(new_formula)
-        self.play(Transform(formula, new_formula))
+        self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
         self.next_slide()  # no loop on formula change
@@ -1390,12 +1383,12 @@ class Presentation(Slide):
         self.play(
             k.animate.set_value(10.0), rate_func=there_and_back, run_time=5.0
         )
-        self.next_slide(loop=True)  # loop on k sweep
+        self.next_slide(loop=True)
 
-        # ============ Step 5: h = A cos(k x + omega t) ===========================
+        # ===================== Step 5: h = A cos(kx + omega t) ====================
         new_formula = MathTex(r"h(x,t)=A\cos(kx+\omega t)", color=BLACK)
         _lock_left(new_formula)
-        self.play(Transform(formula, new_formula))
+        self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
         self.next_slide()  # no loop on formula change
@@ -1413,7 +1406,7 @@ class Presentation(Slide):
             rate_func=linear,
             run_time=5.0,
         )
-        self.next_slide(loop=True)  # loop on omega/t animation
+        self.next_slide(loop=True)
 
         # --- End of slide --------------------------------------------------------
         self.pause()
