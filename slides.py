@@ -1254,11 +1254,9 @@ class Presentation(Slide):
 
     def slide_10(self):
         """
-        Airy wave theory demonstration.
+        Airy wave theory demonstration with color highlights.
         Shows, in order: cos(x), cos(x+t), A cos(x+t), A cos(kx+t), A cos(kx+omega t).
-        Keeps the intro and formulas left-aligned at a fixed anchor. Uses
-        ReplacementTransform to avoid overlapping formulas. The label under the
-        curve displays only parameters that have been introduced so far.
+        The evolving variables are colorized both in the formula and in the value label.
         """
         # --- Top bar --------------------------------------------------------------
         bar = self._top_bar("La théorie des vagues d'Airy")
@@ -1276,6 +1274,12 @@ class Presentation(Slide):
         # Left anchor for intro/formulas to prevent horizontal drift
         anchor_x = x_left + 0.2
 
+        # --- Colors for highlights ------------------------------------------------
+        col_A = pc.apple
+        col_k = pc.tiffanyBlue
+        col_t = pc.bittersweet
+        col_omega = pc.uclaGold
+
         # --- Intro line (left aligned, placed under the bar) ---------------------
         self.start_body()
         intro = Text(
@@ -1287,8 +1291,21 @@ class Presentation(Slide):
         intro.move_to([anchor_x + intro.width / 2.0, intro_y, 0.0])
         self.add(intro)
 
+        # --- Helper: build a formula and colorize given symbols -------------------
+        def make_formula(tex_expr: str, highlight: dict) -> MathTex:
+            m = MathTex(
+                tex_expr,
+                color=BLACK,
+                substrings_to_isolate=(
+                    list(highlight.keys()) if highlight else None
+                ),
+            )
+            for key, col in (highlight or {}).items():
+                m.set_color_by_tex(key, col)
+            return m
+
         # --- Initial formula (left aligned under intro) --------------------------
-        formula = MathTex(r"h(x,t)=\cos(x)", color=BLACK)
+        formula = make_formula(r"h(x,t)=\cos(x)", highlight={})
         formula.next_to(intro, DOWN, buff=0.25, aligned_edge=LEFT)
         dx0 = anchor_x - formula.get_left()[0]
         formula.shift(RIGHT * dx0)
@@ -1310,7 +1327,7 @@ class Presentation(Slide):
             tips=False,
         )
         axes.move_to([0, axes_bottom + axes_height / 2.0, 0])
-        self.add(axes)
+        # self.add(axes)
 
         # --- Helper to lock any new formula to same left and y -------------------
         def _lock_left(mobj: Mobject) -> Mobject:
@@ -1341,7 +1358,7 @@ class Presentation(Slide):
         )
         self.add(curve)
 
-        # --- Adaptive label: show only introduced params -------------------------
+        # --- Adaptive label: show only introduced params (colorized) -------------
         show_t = False
         show_A = False
         show_k = False
@@ -1350,13 +1367,13 @@ class Presentation(Slide):
         def label_text() -> Mobject:
             parts = []
             if show_A:
-                parts.append(rf"A={A.get_value():.2f}")
+                parts.append(r"A=" + f"{A.get_value():.2f}")
             if show_k:
-                parts.append(rf"k={k.get_value():.2f}")
+                parts.append(r"k=" + f"{k.get_value():.2f}")
             if show_omega:
-                parts.append(rf"\omega={omega.get_value():.2f}")
+                parts.append(r"\omega=" + f"{omega.get_value():.2f}")
             if show_t:
-                parts.append(rf"t={t.get_value():.2f}")
+                parts.append(r"t=" + f"{t.get_value():.2f}")
 
             if not parts:
                 # Transparent spacer to avoid TeX on empty label
@@ -1365,53 +1382,67 @@ class Presentation(Slide):
                 )
 
             expr = r"\quad ".join(parts)
+            tex_colors = {
+                "A": col_A,
+                "k": col_k,
+                r"\omega": col_omega,
+                "t": col_t,
+            }
             return MathTex(
-                expr, font_size=self.BODY_FONT_SIZE - 2, color=BLACK
+                expr,
+                font_size=self.BODY_FONT_SIZE + 10,
+                color=BLACK,
+                tex_to_color_map=tex_colors,
             )
 
         value_label = always_redraw(
-            lambda: label_text().next_to(axes, DOWN, buff=0.15)
+            lambda: label_text().next_to(axes, DOWN, buff=0.2)
         )
         self.add(value_label)
 
         # ===================== Step 1: h = cos(x) =================================
-        self.next_slide()  # no loop here
+        self.next_slide()
 
         # ===================== Step 2: h = cos(x + t) =============================
-        new_formula = MathTex(r"h(x,t)=\cos(x+t)", color=BLACK)
+        new_formula = make_formula(r"h(x,t)=\cos(x+t)", highlight={"t": col_t})
         _lock_left(new_formula)
         self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
-        self.next_slide()  # no loop on formula change
+        self.next_slide()
 
         omega.set_value(1.0)
         show_t = True
         self.play(t.animate.set_value(2 * PI), rate_func=linear, run_time=4.0)
-        self.next_slide(loop=True)
+        self.next_slide()
 
         # ===================== Step 3: h = A cos(x + t) ===========================
-        new_formula = MathTex(r"h(x,t)=A\cos(x+t)", color=BLACK)
+        new_formula = make_formula(
+            r"h(x,t)=A\cos(x+t)", highlight={"A": col_A, "t": col_t}
+        )
         _lock_left(new_formula)
         self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
-        self.next_slide()  # no loop on formula change
+        self.next_slide()
 
         self.play(t.animate.set_value(0.0), run_time=0.3)
         show_A = True
         self.play(
             A.animate.set_value(2.0), rate_func=there_and_back, run_time=4.0
         )
-        self.next_slide(loop=True)
+        self.next_slide()
 
         # ===================== Step 4: h = A cos(kx + t) ==========================
-        new_formula = MathTex(r"h(x,t)=A\cos(kx+t)", color=BLACK)
+        new_formula = make_formula(
+            r"h(x,t)=A\cos(kx+t)",
+            highlight={"A": col_A, "k": col_k, "t": col_t},
+        )
         _lock_left(new_formula)
         self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
-        self.next_slide()  # no loop on formula change
+        self.next_slide()
 
         self.play(
             A.animate.set_value(1.0), t.animate.set_value(0.0), run_time=0.3
@@ -1420,15 +1451,23 @@ class Presentation(Slide):
         self.play(
             k.animate.set_value(10.0), rate_func=there_and_back, run_time=5.0
         )
-        self.next_slide(loop=True)
+        self.next_slide()
 
         # ===================== Step 5: h = A cos(kx + omega t) ====================
-        new_formula = MathTex(r"h(x,t)=A\cos(kx+\omega t)", color=BLACK)
+        new_formula = make_formula(
+            r"h(x,t)=A\cos(kx+\omega t)",
+            highlight={
+                "A": col_A,
+                "k": col_k,
+                r"\omega": col_omega,
+                "t": col_t,
+            },
+        )
         _lock_left(new_formula)
         self.play(ReplacementTransform(formula, new_formula))
         formula = new_formula
         self.wait(0.3)
-        self.next_slide()  # no loop on formula change
+        self.next_slide()
 
         self.play(
             A.animate.set_value(1.0), k.animate.set_value(1.0), run_time=0.3
@@ -1443,7 +1482,7 @@ class Presentation(Slide):
             rate_func=linear,
             run_time=5.0,
         )
-        self.next_slide(loop=True)
+        self.next_slide()
 
         # --- End of slide --------------------------------------------------------
         self.pause()
