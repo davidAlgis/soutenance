@@ -82,10 +82,16 @@ class Presentation(Slide):
     # --------- Utilitaires ---------
 
     def _top_bar(self, label: str, *, font_size: int = 48):
-        h = config.frame_height / 10
+        """
+        Create a top bar with a left-aligned title that auto-scales to fit.
+        The text is reduced in size if it would exceed the bar's inner width
+        (accounting for horizontal padding) or height.
+        """
+        # Bar geometry
+        h = config.frame_height / 10.0
         w = config.frame_width
 
-        bar = Rectangle(
+        bar = Rectangle(  
             width=w,
             height=h,
             fill_color=pc.blueGreen,
@@ -93,15 +99,28 @@ class Presentation(Slide):
             stroke_opacity=0.0,
         )
 
-        elements = [bar]
-
+        # Create text at requested size
         txt = Text(label, color=WHITE, weight=BOLD, font_size=font_size)
-        txt.align_to(bar, LEFT)  # temp align; final after group placement
-        elements.append(txt)
 
+        # Available inner space for the title
+        inner_w = w - 2.0 * self.DEFAULT_PAD
+        # Keep a small vertical margin so text does not touch bar edges
+        inner_h = h * 0.82
+
+        # Compute scale factors to fit width and height; only down-scale
+        if txt.width > 0 and txt.height > 0:
+            scale_w = inner_w / txt.width
+            scale_h = inner_h / txt.height
+            scale = min(1.0, scale_w, scale_h)
+            if scale < 1.0:
+                txt.scale(scale)
+
+        # Assemble group and position
+        elements = [bar, txt]
         group = VGroup(*elements)
         group.to_edge(UP, buff=0)
 
+        # Left align with padding and vertically center in the bar
         txt.align_to(bar, LEFT)
         txt.shift(RIGHT * self.DEFAULT_PAD)
         txt.set_y(bar.get_center()[1])
