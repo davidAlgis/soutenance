@@ -2,6 +2,7 @@
 # 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
 # Texte conservé exactement tel qu'écrit par l'utilisateur.
 
+# flake8: noqa: F405
 import os
 
 import numpy as np
