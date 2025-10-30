@@ -2423,7 +2423,212 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_16(self):
-        self._show_text("Fluide->Solide présentation de la méthode des forces")
+        # --- Top bar ---
+        bar = self._top_bar("Action du fluide sur le solide")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # ---- Usable area below the bar ----
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        area_w = x_right - x_left
+
+        # ========= Body text (3 lines) =========
+        self.start_body()
+        l1 = Text(
+            "L'action du fluide sur le solide est approximée comme ",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        l1.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        l1.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l1.get_left()[0]))
+        self.add(l1)
+
+        l2 = Text(
+            "des forces appliquées sur le maillage du solide.",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        l2.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l2.get_left()[0]))
+        self.add(l2)
+
+        l3 = Text("Découpage en 4 forces :", color=BLACK, font_size=self.BODY_FONT_SIZE)
+        l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        l3.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l3.get_left()[0]))
+        self.add(l3)
+
+        # ========= Bullet list (Text + MathTex) =========
+        def bullet_row(prefix_text: str, math_expr: str, color_map: dict) -> VGroup:
+            dot = Dot(radius=0.06, color=pc.blueGreen)
+            head = Text(prefix_text + " ", color=BLACK, font_size=self.BODY_FONT_SIZE)
+            # math part (safe for coloring)
+            eq = MathTex(
+                math_expr,
+                color=BLACK,
+                font_size=self.BODY_FONT_SIZE,
+                tex_to_color_map=color_map,
+            )
+            line = VGroup(head, eq).arrange(RIGHT, buff=0.12, aligned_edge=DOWN)
+            return VGroup(dot, line).arrange(RIGHT, buff=0.25, aligned_edge=DOWN)
+
+        b1 = bullet_row(
+            "Force de gravité",
+            r"\mathbf{F}_g = -m\,\mathbf{g}",
+            {r"\mathbf{F}_g": pc.apple},
+        )
+        b2 = bullet_row(
+            "Poussée d'archimède",
+            r"\mathbf{F}_b = V_w\,\rho_w\,\mathbf{g}",
+            {r"\mathbf{F}_b": pc.uclaGold},
+        )
+        b3 = bullet_row(
+            "Force de résistance à l'air",
+            r"\mathbf{F}_a = -\tfrac{1}{2}\,C_d^a\,\rho_a\,A_i^{\perp}\,\|\mathbf{v}^a_{i,\mathrm{rel}}\|\,\mathbf{v}^a_{i,\mathrm{rel}}",
+            {r"\mathbf{F}_a": pc.jellyBean},
+        )
+        b4 = bullet_row(
+            "Force de résistance à l'eau",
+            r"\mathbf{F}_w = -\tfrac{1}{2}\,C_d^w\,\rho_w\,A_i^{\perp}\,\|\mathbf{v}^w_{i,\mathrm{rel}}\|\,\mathbf{v}^w_{i,\mathrm{rel}}",
+            {r"\mathbf{F}_w": pc.heliotropeMagenta},
+        )
+
+        bullets = VGroup(b1, b2, b3, b4).arrange(DOWN, buff=0.18, aligned_edge=LEFT)
+        bullets.next_to(l3, DOWN, buff=0.25, aligned_edge=LEFT)
+        bullets.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - bullets.get_left()[0]))
+
+        # Width clamp if needed
+        max_left_w = area_w * 0.95
+        if bullets.width > max_left_w:
+            s = max_left_w / bullets.width
+            bullets.scale(s, about_edge=LEFT)
+            bullets.next_to(l3, DOWN, buff=0.25, aligned_edge=LEFT)
+            bullets.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - bullets.get_left()[0]))
+
+        self.add(bullets)
+
+        # Wait for user before switching scene
+        self.next_slide()
+
+        # ========= Clear everything except the top bar =========
+        to_keep = {bar}
+        self.remove(*[m for m in self.mobjects if m not in to_keep])
+
+        # ========= Water surface (animated 0.1 cos(0.7x + t)) =========
+        t_tracker = ValueTracker(0.0)
+        x_min = x_left + 0.5
+        x_max = x_right - 0.5
+        amp = 0.10
+        k = 0.7
+        y0 = 0.0
+
+        def make_water():
+            xs = np.linspace(x_min, x_max, 600)
+            ys = y0 + amp * np.cos(k * xs + t_tracker.get_value())
+            pts = np.column_stack([xs, ys, np.zeros_like(xs)])
+            m = VMobject(stroke_color=pc.blueGreen, stroke_width=6)
+            m.set_points_smoothly([*map(lambda p: np.array(p), pts)])
+            m.set_z_index(1)
+            return m
+
+        water = always_redraw(make_water)
+        self.add(water)
+        self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=3.0)
+
+        # ========= Boat polygon (foreground) =========
+        boat_local = [
+            [-1.0, -0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [2.0, 1.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.0, 1.5, 0.0],
+            [-0.5, 1.0, 0.0],
+            [-2.0, -1.0, 0.0],
+        ]
+        boat = Polygon(
+            *[np.array(p) for p in boat_local],
+            fill_color=pc.uclaGold,
+            fill_opacity=1.0,
+            stroke_color=BLACK,
+            stroke_width=3,
+        )
+        boat.scale(0.9)
+        boat.move_to([0.3, y0 + 0.35, 0.0])
+        boat.set_z_index(10)
+        self.add(boat)
+        self.add_foreground_mobject(boat)
+
+        # Keep water animating a bit with the boat
+        self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=3.0)
+
+        # Wait for user
+        self.next_slide()
+
+        # ========= Force arrows (foreground), colored as requested =========
+        keel = boat.get_bottom()
+        deck = boat.get_top()
+
+        # Gravity (down)
+        g_arrow = Arrow(
+            start=[deck[0], deck[1] + 0.6, 0],
+            end=[deck[0], deck[1] - 0.4, 0],
+            color=pc.apple,
+            stroke_width=6,
+            tip_length=0.18,
+        ).set_z_index(15)
+        g_lbl = MathTex(r"\mathbf{F}_g", color=pc.apple, font_size=self.BODY_FONT_SIZE)\
+            .next_to(g_arrow, UP, buff=0.10).set_z_index(15)
+
+        # Buoyancy (up)
+        b_arrow = Arrow(
+            start=[keel[0], keel[1] - 0.6, 0],
+            end=[keel[0], keel[1] + 0.45, 0],
+            color=pc.uclaGold,
+            stroke_width=6,
+            tip_length=0.18,
+        ).set_z_index(15)
+        b_lbl = MathTex(r"\mathbf{F}_b", color=pc.uclaGold, font_size=self.BODY_FONT_SIZE)\
+            .next_to(b_arrow, DOWN, buff=0.10).set_z_index(15)
+
+        # Air drag (left)
+        a_arrow = Arrow(
+            start=[deck[0] + 1.2, deck[1] + 0.15, 0],
+            end=[deck[0] - 0.3, deck[1] + 0.15, 0],
+            color=pc.jellyBean,
+            stroke_width=6,
+            tip_length=0.18,
+        ).set_z_index(15)
+        a_lbl = MathTex(r"\mathbf{F}_a", color=pc.jellyBean, font_size=self.BODY_FONT_SIZE)\
+            .next_to(a_arrow, UP, buff=0.10).set_z_index(15)
+
+        # Water drag (right)
+        w_arrow = Arrow(
+            start=[keel[0] - 1.0, keel[1] - 0.15, 0],
+            end=[keel[0] + 0.6, keel[1] - 0.15, 0],
+            color=pc.heliotropeMagenta,
+            stroke_width=6,
+            tip_length=0.18,
+        ).set_z_index(15)
+        w_lbl = MathTex(r"\mathbf{F}_w", color=pc.heliotropeMagenta, font_size=self.BODY_FONT_SIZE)\
+            .next_to(w_arrow, DOWN, buff=0.10).set_z_index(15)
+
+        self.add_foreground_mobjects(
+            g_arrow, b_arrow, a_arrow, w_arrow, g_lbl, b_lbl, a_lbl, w_lbl
+        )
+        self.play(
+            LaggedStart(
+                FadeIn(g_arrow), FadeIn(g_lbl),
+                FadeIn(b_arrow), FadeIn(b_lbl),
+                FadeIn(a_arrow), FadeIn(a_lbl),
+                FadeIn(w_arrow), FadeIn(w_lbl),
+                lag_ratio=0.15, run_time=1.2
+            )
+        )
+
+        # --- End slide ---
         self.pause()
         self.clear()
         self.next_slide()
