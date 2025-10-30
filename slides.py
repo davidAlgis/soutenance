@@ -1457,26 +1457,20 @@ class Presentation(Slide):
 
     def slide_11(self):
         """
-        Slide 11: Methode de Tessendorf.
-        Goal: illustrate that Tessendorf waves are a superposition of Airy waves.
-
-        Steps:
-        - Top bar + subtitle line.
-        - Row 1: single Airy wave h_A(x,t) = 0.7 cos(1.5 x + omega t) with curve.
-        - Row 2: single "Tessendorf" wave (currently one component) h_T(x,t) = 3 cos(1.5 x + omega t).
-        - Wait, then show another single Airy example in row 1: h_A(x,t) = 0.8 cos(0.9 x + omega t).
-        - Wait, then duplicate the FIRST row 1 formula (0.7 cos...) and fly it toward row 2
-          while updating row 2 formula to the sum of the two first components.
-        - Wait, remove row 1, scale and center row 2.
-        - Add more components with random A_i, k_i to row 2 and update the sum formula
-          to h_T(x,t) = sum_{i=0}^N A_i cos(k_i x - omega t) with N the number of components.
+        Methode de Tessendorf : superposition de vagues d'Airy avec UNE courbe par rangee.
+        - Rangee 1 : une SEULE courbe h_A; on modifie ses parametres (A1, k1).
+        - Rangee 2 : une SEULE courbe h_T qui represente la somme; on ajoute des
+          composantes, mais l'affichage reste UNE courbe.
+        - Pour eviter les erreurs de concatenation/reverse sous Windows (PyAV),
+          la phase d'ajout progressif est animee via un ValueTracker unique
+          (n_comp) dans UN SEUL self.play.
         """
-        # --- Top bar -----------------------------------------------------------
+        # --- Barre de titre ---
         bar = self._top_bar("Méthode de Tessendorf")
         self.add(bar)
         self.add_foreground_mobject(bar)
 
-        # --- Usable area -------------------------------------------------------
+        # --- Zone utile ---
         bar_rect = bar.submobjects[0]
         y_top = bar_rect.get_bottom()[1] - 0.15
         x_left = -config.frame_width / 2 + 0.6
@@ -1485,182 +1479,201 @@ class Presentation(Slide):
         area_w = x_right - x_left
         area_h = y_top - y_bottom
 
-        # --- Subtitle under the bar -------------------------------------------
+        # --- Sous-titre ---
         self.start_body()
         subtitle = Text(
             '"Généralisation" des vagues d\'Airy',
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
-        subtitle.next_to(
-            self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
-        )
-        # align text with bar left padding
-        dx_sub = (
-            bar_rect.get_left()[0] + self.DEFAULT_PAD
-        ) - subtitle.get_left()[0]
+        subtitle.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        dx_sub = (bar_rect.get_left()[0] + self.DEFAULT_PAD) - subtitle.get_left()[0]
         subtitle.shift(RIGHT * dx_sub)
         self.add(subtitle)
 
-        # --- Layout for two rows ----------------------------------------------
+        # --- Disposition (2 lignes, sans axes visibles) ---
         row_gap = 0.55
-        axes_w = min(area_w * 0.55, 8.8)
-        axes_h = min((area_h - 1.6) * 0.35, 2.2)
+        plot_w = min(area_w * 0.55, 8.8)
+        plot_h = min((area_h - 1.6) * 0.35, 2.2)
 
-        row1_y = y_top - 0.95 - axes_h / 2.0
-        row2_y = row1_y - axes_h - row_gap
+        row1_y = y_top - 0.95 - plot_h / 2.0
+        row2_y = row1_y - plot_h - row_gap
+        plot_x = x_left + 0.9 + plot_w / 2.0
 
-        # Left x for axes; formulas will be placed to the right
-        axes_x = x_left + 0.9 + axes_w / 2.0
+        # Helper: echantillonne f(x) sur [-2pi, 2pi] et dessine une courbe lisse
+        def make_function_curve(center, width, height, func):
+            x_min, x_max = -2.0 * np.pi, 2.0 * np.pi
+            n = 300
+            X = np.linspace(x_min, x_max, n)
+            sx = width / (x_max - x_min)
+            y_vis = 4.0
+            sy = (height / 2.0) / y_vis
 
-        # --- Helper to build a small axes + plot ------------------------------
-        def make_axes(center_y: float) -> Axes:
-            ax = Axes(
-                x_range=[-2 * PI, 2 * PI, PI],
-                y_range=[-3.5, 3.5, 1],
-                x_length=axes_w,
-                y_length=axes_h,
-                axis_config={"color": GRAY, "stroke_width": 2},
-                tips=False,
+            path = VMobject()
+            pts = []
+            for x in X:
+                y = float(func(x))
+                px = (x - x_min) * sx - width / 2.0
+                py = np.clip(y, -y_vis, y_vis) * sy
+                pts.append([center[0] + px, center[1] + py, 0.0])
+            path.set_points_smoothly(pts)
+            path.set_stroke(color=pc.blueGreen, width=4)
+            return path
+
+        # ===================== Rangee 1 : une SEULE vague d'Airy =====================
+        A1 = ValueTracker(0.7)
+        k1 = ValueTracker(1.5)
+
+        def airy_y(x):
+            # Vue statique pour l'illustration (omega * t omis)
+            return A1.get_value() * np.cos(k1.get_value() * x)
+
+        curve1 = always_redraw(
+            lambda: make_function_curve(
+                center=np.array([plot_x, row1_y, 0.0]),
+                width=plot_w,
+                height=plot_h,
+                func=airy_y,
             )
-            ax.move_to([axes_x, center_y, 0.0])
-            return ax
+        )
 
-        def airy_plot(
-            ax: Axes,
-            A: float,
-            k: float,
-            phase: float = 0.0,
-            color=pc.oxfordBlue,
-        ):
-            return ax.plot(
-                lambda x: A * np.cos(k * x + phase),
-                x_range=[-2 * PI, 2 * PI],
-                stroke_width=4,
-                color=color if hasattr(pc, "oxfordBlue") else BLACK,
-            )
-
-        # --- Row 1: first Airy example ----------------------------------------
-        ax1 = make_axes(row1_y)
-        A1, k1 = 0.7, 1.5
-        curve1 = airy_plot(ax1, A1, k1)
-        f1 = MathTex(
+        f1_initial = MathTex(
             r"h_A(x,t) = 0.7\cos\!\left(1.5\,x + \omega t\right)",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE + 2,
         )
-        f1.next_to(ax1, RIGHT, buff=0.35, aligned_edge=UP)
+        f1_initial.next_to(curve1, RIGHT, buff=0.35, aligned_edge=UP)
 
-        self.add(ax1, curve1, f1)
+        self.add(curve1, f1_initial)
 
-        # --- Row 2: initial "Tessendorf" as a single component -----------------
-        ax2 = make_axes(row2_y)
-        AT0, kT0 = 3.0, 1.5
-        curve2 = airy_plot(ax2, AT0, kT0, color=pc.tiffanyBlue)
+        # ===================== Rangee 2 : une SEULE courbe somme =====================
+        components = [(3.0, 1.5)]  # (A, k) initial
+
+        def sum_y_up_to(m, x):
+            # Somme des m premieres composantes de 'components'
+            s = 0.0
+            m_int = int(max(0, min(m, len(components))))
+            for i in range(m_int):
+                A, k = components[i]
+                s += A * np.cos(k * x)
+            return s
+
+        # Tracker du nombre de composantes prises en compte (entier via floor)
+        n_comp = ValueTracker(len(components))  # commence avec les composantes de depart
+
+        curve_sum = always_redraw(
+            lambda: make_function_curve(
+                center=np.array([plot_x, row2_y, 0.0]),
+                width=plot_w,
+                height=plot_h,
+                func=lambda x: sum_y_up_to(int(np.floor(n_comp.get_value())), x),
+            )
+        )
+
         f2 = MathTex(
             r"h_T(x,t) = 3\cos\!\left(1.5\,x + \omega t\right)",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE + 2,
         )
-        f2.next_to(ax2, RIGHT, buff=0.35, aligned_edge=UP)
+        f2.next_to(curve_sum, RIGHT, buff=0.35, aligned_edge=UP)
 
-        self.add(ax2, curve2, f2)
+        self.add(curve_sum, f2)
 
-        # Wait ---------------------------------------------------------------
+        # ---------------------------------------------------------------------------
         self.next_slide()
 
-        # --- Row 1: show another single Airy example --------------------------
-        curve1_b = airy_plot(ax1, 0.8, 0.9, color=pc.apple)
-        f1_b = MathTex(
+        # Rangee 1 : on TRANSFORME la meme courbe vers (A1=0.8, k1=0.9) + MAJ formule
+        f1_new = MathTex(
             r"h_A(x,t) = 0.8\cos\!\left(0.9\,x + \omega t\right)",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE + 2,
         )
-        f1_b.next_to(ax1, RIGHT, buff=0.35, aligned_edge=UP)
+        f1_new.next_to(curve1, RIGHT, buff=0.35, aligned_edge=UP)
 
         self.play(
-            ReplacementTransform(curve1.copy(), curve1_b),
-            ReplacementTransform(f1.copy(), f1_b),
-            run_time=0.6,
+            A1.animate.set_value(0.8),
+            k1.animate.set_value(0.9),
+            ReplacementTransform(f1_initial, f1_new),
+            run_time=0.7,
         )
 
-        # Wait ---------------------------------------------------------------
+        # ---------------------------------------------------------------------------
         self.next_slide()
 
-        # --- Fly the FIRST row-1 formula (0.7...) toward row-2 and sum --------
-        ghost = f1.copy()
-        self.add(ghost)  # ensure on scene
-        self.play(
-            ghost.animate.move_to(f2.get_center()).set_opacity(0.15),
-            run_time=0.6,
-        )
-        # Update row-2 formula to explicit sum of the two first components
+        # Symboliser l'addition: fantome de l'ancienne formule de la rangee 1
+        ghost = f1_initial.copy().set_opacity(0.85)
+        ghost.move_to(f1_new.get_center())
+        self.add(ghost)
+
+        self.play(ghost.animate.move_to(f2.get_center()).set_opacity(0.15), run_time=0.6)
+
+        # MAJ formule de la rangee 2 en somme explicite
         f2_sum = MathTex(
             r"h_T(x,t) = 0.7\cos\!\left(1.5\,x + \omega t\right)"
             r" + 3\cos\!\left(1.5\,x + \omega t\right)",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE + 2,
         )
-        f2_sum.next_to(ax2, RIGHT, buff=0.35, aligned_edge=UP)
-        self.play(
-            ReplacementTransform(f2, f2_sum), FadeOut(ghost), run_time=0.6
-        )
+        f2_sum.next_to(curve_sum, RIGHT, buff=0.35, aligned_edge=UP)
 
-        # Wait ---------------------------------------------------------------
+        # Ajouter la composante (0.7, 1.5) et aligner n_comp avec la nouvelle taille
+        components.append((0.7, 1.5))
+        n_comp.set_value(len(components))
+
+        self.play(ReplacementTransform(f2, f2_sum), FadeOut(ghost), run_time=0.6)
+
+        # ---------------------------------------------------------------------------
         self.next_slide()
 
-        # --- Remove row 1 and scale/center row 2 ------------------------------
-        self.play(
-            FadeOut(VGroup(ax1, curve1, f1, curve1_b, f1_b)), run_time=0.4
-        )
+        # Retirer la rangee 1 puis agrandir/recentrer la rangee 2
+        self.play(FadeOut(VGroup(curve1, f1_new)), run_time=0.4)
 
-        row2_group = VGroup(ax2, curve2, f2_sum)
-        # Center vertically a bit higher than middle
+        row2_group = VGroup(curve_sum, f2_sum)
         target_center_y = (y_top + y_bottom) * 0.5 + 0.2
         self.play(
-            row2_group.animate.scale(1.15).move_to(
-                [0.0, target_center_y, 0.0]
-            ),
+            row2_group.animate.scale(1.15).move_to([0.0, target_center_y, 0.0]),
             run_time=0.5,
         )
 
-        # --- Add more components progressively on row 2 -----------------------
-        # Keep a running group of curves.
-        components = [curve2]  # already on ax2
-        N = 1  # number of components currently in the sum
+        # Remplacer la somme explicite par le sigma, pilote par n_comp (toujours UNE seule Tex via always_redraw)
+        sigma_label = always_redraw(
+            lambda: MathTex(
+                rf"h_T(x,t) = \sum_{{i=0}}^{{{max(0, int(np.floor(n_comp.get_value())) - 1)}}} "
+                r"A_i\cos\!\left(k_i x - \omega t\right)",
+                color=BLACK,
+                font_size=self.BODY_FONT_SIZE + 6,
+            ).next_to(curve_sum, RIGHT, buff=0.35, aligned_edge=UP)
+        )
+        self.play(ReplacementTransform(f2_sum, sigma_label), run_time=0.5)
 
-        # Helper to rebuild sigma formula with current N
-        def make_sigma_formula(n_comp: int) -> MathTex:
-            expr = rf"h_T(x,t) = \sum_{{i=0}}^{{{n_comp}}} A_i\cos\!\left(k_i x - \omega t\right)"
-            m = MathTex(expr, color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
-            m.next_to(ax2, RIGHT, buff=0.35, aligned_edge=UP)
-            return m
-
-        # Replace explicit sum by sigma with current N
-        sigma_f = make_sigma_formula(N)
-        self.play(ReplacementTransform(f2_sum, sigma_f), run_time=0.5)
-
-        # Add a few random components; each fades in from the right
+        # --- Phase d'ajout progressif en UN SEUL clip ---
+        # Precompute des composantes a ajouter
         rng = np.random.default_rng(42)
-        add_count = 4  # number of extra components to add
+        extra = []
+        add_count = 1000
         for _ in range(add_count):
-            A_rand = float(rng.uniform(0.3, 1.2))
-            k_rand = float(rng.uniform(0.6, 2.0))
-            new_curve = airy_plot(ax2, A_rand, k_rand, color=pc.bittersweet)
-            # start off-screen to the right and slide in
-            new_curve.shift(RIGHT * 1.2)
-            self.add(new_curve)
-            self.play(new_curve.animate.shift(LEFT * 1.2), run_time=0.4)
-            components.append(new_curve)
-            N += 1
-            new_sigma = make_sigma_formula(N)
-            self.play(ReplacementTransform(sigma_f, new_sigma), run_time=0.35)
-            sigma_f = new_sigma
+            A_rand = float(rng.uniform(0.01, 0.1))
+            k_rand = float(rng.uniform(0.1, 30.0))
+            extra.append((A_rand, k_rand))
+        # Ajout logique (pas d'animation ici), puis n_comp anime affichera progressivement
+        components.extend(extra)
 
-        # End slide -------------------------------------------------------------
+        # Eviter le reverse sur cette slide pour plus de robustesse sur Windows
+        self.skip_reversing = True
+
+        # n_comp passe du nombre actuel au total final, ce qui fait evoluer
+        # AFFICHE uniquement la courbe et le sigma par always_redraw, en un seul clip.
+        self.play(
+            n_comp.animate.set_value(len(components)),
+            rate_func=linear,
+            run_time=5.0,
+        )
+
+        # --- Fin de la slide ---
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_12(self):
         """
