@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "11,14"
+SLIDES_SELECTION = "15"
 
 
 class Presentation(Slide):
@@ -2198,9 +2198,226 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_15(self):
-        self._show_text(
-            "Pourquoi le couplage fluide/solide ne fonctionne pas avec Tessendorf et comment on va gérer ça"
+        """
+        Couplage avec des solides.
+        Etapes:
+          1) Affiche une surface d'eau animée: 0.1*cos(0.7*x + t) (courbe unique, centrée).
+          2) Fait tomber un bateau (polygone) qui traverse l'eau et sort par le bas.
+          3) Le bateau retombe mais s'arrete sur la surface et oscille comme s'il flottait.
+          4) Le bateau retombe une 3e fois, flotte; la surface devient 0.1*cos(0.7*x + t) + w(x,t).
+             w(x,t) est pris depuis wave_equation_1d.simulate_wave_1d_dirichlet si disponible,
+             sinon on utilise un fallback analytique simple.
+        Notes:
+          - Le bateau passe au premier plan pour masquer la courbe si superposition.
+          - Aucune remise a zero globale: chaque apparition du bateau recree un nouveau polygone.
+        """
+        # --- Barre de titre ---
+        bar = self._top_bar("Couplage avec des solides")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Zone utile ---
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        area_w = x_right - x_left
+        area_h = y_top - y_bottom
+        y_center = (y_top + y_bottom) * 0.5
+
+        # --- Sous-titre ---
+        self.start_body()
+        subtitle = Text(
+            "La méthode de Tessendorf ne permet pas le couplage avec des solides",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
         )
+        subtitle.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        dx_sub = (bar_rect.get_left()[0] + self.DEFAULT_PAD) - subtitle.get_left()[0]
+        subtitle.shift(RIGHT * dx_sub)
+        self.add(subtitle)
+
+        # --- Parametrage de la "zone de trace" de la surface (sans axes) ---
+        plot_w = min(area_w * 0.88, 12.0)
+        plot_h = min(area_h * 0.42, 3.2)
+        plot_center = np.array([0.0, y_center, 0.0])
+        x_min, x_max = -2.0 * np.pi, 2.0 * np.pi
+        x_span = x_max - x_min
+        sample_n = 400
+        y_vis = 1.0                      # demi-hauteur de reference pour normaliser
+        sx = plot_w / x_span
+        sy = (plot_h / 2.0) / y_vis
+
+        # --- Trackers temporels / etats ---
+        t = ValueTracker(0.0)
+        include_w = ValueTracker(0.0)    # 0.0 => sans w, 1.0 => avec w
+
+        # --- Charger w(x,t) si possible; sinon fallback analytique ---
+        #     On essaie d'eviter tout crash si le module n'existe pas.
+        w_data = {"H": None, "x": None, "t": None, "T": None}
+
+        def try_prepare_wave_solution():
+            try:
+                from wave_equation_1d import simulate_wave_1d_dirichlet  # type: ignore
+                H, x_arr, t_arr = simulate_wave_1d_dirichlet(
+                    L=2.0, c=1.0, W=0.6, A=0.25, sigma=0.12, nx=801, T=8.0, dt=0.005, t0=0.0
+                )
+                w_data["H"] = H
+                w_data["x"] = x_arr
+                w_data["t"] = t_arr
+                w_data["T"] = float(t_arr[-1] - t_arr[0]) if len(t_arr) > 1 else 1.0
+            except Exception:
+                w_data["H"] = None
+
+        try_prepare_wave_solution()
+
+        def w_fallback(x_val: float, t_val: float) -> float:
+            # Petite onde analytique de remplacement
+            return 0.08 * np.cos(2.0 * x_val - 1.2 * t_val)
+
+        def w_from_data(x_val: float, t_val: float) -> float:
+            # Echantillonne dans H(x,t) en se basant sur t modulo la duree et interp x.
+            H = w_data["H"]
+            x_arr = w_data["x"]
+            t_arr = w_data["t"]
+            Ttot = w_data["T"]
+            if H is None or x_arr is None or t_arr is None or Ttot is None or Ttot <= 0:
+                return w_fallback(x_val, t_val)
+            # Trouver l'index temporel correspondant
+            t0 = t_arr[0]
+            tau = (t_val - t0) % Ttot + t0
+            it = int(np.clip(np.searchsorted(t_arr, tau), 1, len(t_arr) - 1))
+            # Interp lineaire temporelle
+            t1, t2 = t_arr[it - 1], t_arr[it]
+            a = 0.0 if t2 == t1 else (tau - t1) / (t2 - t1)
+            h1 = np.interp(x_val, x_arr, H[it - 1])
+            h2 = np.interp(x_val, x_arr, H[it])
+            return float((1.0 - a) * h1 + a * h2)
+
+        # --- Construction de la courbe d'eau: y(x) = 0.1*cos(0.7x + t) + include_w*w(x,t) ---
+        def water_y(x_val: float) -> float:
+            base = 0.1 * np.cos(0.7 * x_val + t.get_value())
+            wig  = include_w.get_value() * w_from_data(x_val, t.get_value())
+            return base + wig
+
+        def make_water_curve():
+            X = np.linspace(x_min, x_max, sample_n)
+            pts = []
+            for xv in X:
+                yv = np.clip(water_y(xv), -y_vis, y_vis)
+                px = (xv - x_min) * sx - plot_w / 2.0
+                py = yv * sy
+                pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+            path = VMobject()
+            path.set_points_smoothly(pts)
+            path.set_stroke(color=pc.blueGreen, width=4)
+            return path
+
+        water_curve = always_redraw(make_water_curve)
+        self.add(water_curve)
+
+        # Anime doucement la houle en faisant evoluer t
+        self.play(t.animate.increment_value(2.0 * np.pi), rate_func=linear, run_time=4.0)
+
+        # --------------------------------------------------------------------------
+        self.next_slide()
+
+        # --- Bateau: definition, creation et foreground ---
+        boat_shape = [
+            [-1.0,  0.0, 0.0],
+            [ 1.0,  0.0, 0.0],
+            [ 2.0,  1.0, 0.0],
+            [ 0.5,  1.0, 0.0],
+            [ 0.0,  1.5, 0.0],
+            [-0.5,  1.0, 0.0],
+            [-2.0,  1.0, 0.0],
+        ]
+
+        def create_boat(y_offset: float) -> Polygon:
+            poly = Polygon(*boat_shape, color=pc.uclaGold, stroke_width=4)
+            poly.set_fill(pc.uclaGold, opacity=1.0)
+            poly.move_to([0.0, y_offset, 0.0])
+            self.add_foreground_mobject(poly)
+            return poly
+
+        # 1ere chute: le bateau traverse l'eau et sort par le bas
+        start_y = y_center + 2.2
+        boat = create_boat(start_y)
+        self.play(boat.animate.move_to([0.0, y_bottom - 1.5, 0.0]), run_time=1.0)
+
+        # --------------------------------------------------------------------------
+        self.next_slide()
+
+        # 2e chute: s'arrete sur l'eau et oscille (flotte)
+        boat2 = create_boat(start_y)
+
+        # Position cible: sur la surface a x=0, au temps courant
+        def water_y_at_x0() -> float:
+            return water_y(0.0)
+
+        target_y = lambda: water_y_at_x0()
+        self.play(boat2.animate.move_to([0.0, target_y(), 0.0]), run_time=0.8)
+
+        # Oscillation douce autour de la surface (suivi de la houle + petite oscillation propre)
+        amp = 0.18
+        omega_b = 1.6
+        t_local = ValueTracker(0.0)
+
+        def boat_float_updater(mob: Mobject):
+            y_surf = water_y_at_x0()
+            y_osc = amp * np.sin(omega_b * t_local.get_value())
+            mob.move_to([0.0, y_surf + y_osc, 0.0])
+
+        boat2.add_updater(boat_float_updater)
+
+        # Fait evoluer t (houle) et t_local (oscillation propre) simultanement
+        self.play(
+            AnimationGroup(
+                t.animate.increment_value(2.0 * np.pi),
+                t_local.animate.increment_value(2.0 * np.pi),
+                lag_ratio=0.0,
+            ),
+            rate_func=linear,
+            run_time=4.0,
+        )
+        boat2.remove_updater(boat_float_updater)
+
+        # --------------------------------------------------------------------------
+        self.next_slide()
+
+        # 3e chute: flotte ET ajoute w(x,t) a la surface
+        boat3 = create_boat(start_y)
+
+        # Rebond sur la surface
+        self.play(boat3.animate.move_to([0.0, water_y_at_x0(), 0.0]), run_time=0.8)
+
+        # Activer la composante w(x,t)
+        include_w.set_value(1.0)
+
+        # Oscillation avec w actif
+        t_local2 = ValueTracker(0.0)
+
+        def boat_float_updater2(mob: Mobject):
+            y_surf = water_y_at_x0()
+            y_osc = amp * np.sin(omega_b * t_local2.get_value())
+            mob.move_to([0.0, y_surf + y_osc, 0.0])
+
+        boat3.add_updater(boat_float_updater2)
+
+        # Anime la houle et l'oscillation locale
+        self.play(
+            AnimationGroup(
+                t.animate.increment_value(2.0 * np.pi),
+                t_local2.animate.increment_value(2.0 * np.pi),
+                lag_ratio=0.0,
+            ),
+            rate_func=linear,
+            run_time=4.0,
+        )
+        boat3.remove_updater(boat_float_updater2)
+
+        # --- Fin de la slide ---
         self.pause()
         self.clear()
         self.next_slide()
