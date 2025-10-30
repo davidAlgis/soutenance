@@ -1982,7 +1982,156 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_14(self):
-        self._show_text("Vitesse de l'océan")
+        """
+        Vitesse de l'océan
+        - Two body lines (plain text then LaTeX with v-tilde)
+        - Bold axes on the right: x to the right, y downward (positive-only parts)
+        - On y=0 (top level) draw a cos(x) wave
+        - After user input: draw 5 dotted horizontal levels with increasing spacing,
+          label each as v(x,t,y_level) at the left of the x-segment
+        - After user input: add a thinner dotted line midway between the last two
+          levels, animate passing dots on it, and place "Interpolation Exp" above
+        """
+        # --- Top bar -----------------------------------------------------------
+        bar = self._top_bar("Vitesse de l'océan")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Usable area below the bar ----------------------------------------
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+
+        area_w = x_right - x_left
+        area_h = y_top - y_bottom
+        anchor_x = x_left + self.DEFAULT_PAD
+
+        # --- Body text ---------------------------------------------------------
+        self.start_body()
+        fs = self.BODY_FONT_SIZE  # keep consistent with other slides
+
+        line1 = Text(
+            "La vitesse de l'eau en tout points de l'espace est calculée avec le même principe",
+            color=BLACK,
+            font_size=fs,
+        )
+        line1.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
+
+        line2 = Tex(
+            r"de transformation d'espace de Fourier à espace réel : "
+            r"$\tilde{v}(k,t,y)=E(k,y)\,\phi(k,t)$",
+            color=BLACK,
+            font_size=fs,
+        )
+        line2.next_to(line1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
+
+        self.add(line1, line2)
+
+        # --- Axes area (right side) -------------------------------------------
+        # Place axes on the right half of the slide
+        axis_x_len = min(area_w * 0.45, 7.5)
+        axis_y_len = min(area_h * 0.70, 5.8)
+
+        origin = np.array([x_right - axis_x_len - 0.6, y_top - 0.25, 0.0])
+        x_end = origin + RIGHT * axis_x_len
+        y_end = origin + DOWN * axis_y_len
+
+        x_axis = Arrow(
+            start=origin, end=x_end, buff=0.0, stroke_width=8, color=BLACK, tip_length=0.18
+        )
+        y_axis = Arrow(
+            start=origin, end=y_end, buff=0.0, stroke_width=8, color=BLACK, tip_length=0.18
+        )
+        lbl_x = Text("x", color=BLACK, font_size=fs).next_to(x_axis, UP, buff=0.05)
+        lbl_y = Text("y", color=BLACK, font_size=fs).next_to(y_axis, RIGHT, buff=0.05)
+
+        self.add(x_axis, y_axis, lbl_x, lbl_y)
+
+        # --- Cosine at y=0 (top level) ----------------------------------------
+        y0 = origin[1]  # y = 0 level
+        # Small-amplitude cosine drawn along the positive x
+        amp = min(0.35, axis_y_len * 0.08)
+        cycles = 3.5
+        omega = 2 * PI * cycles / axis_x_len
+
+        wave = ParametricFunction(
+            lambda s: np.array(
+                [origin[0] + s, y0 + amp * np.cos(omega * s), 0.0], dtype=float
+            ),
+            t_range=[0, axis_x_len],
+            color=pc.blueGreen,
+            stroke_width=6,
+            use_smoothing=True,
+        )
+        self.add(wave)
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Five dotted horizontal levels with increasing spacing -------------
+        # Fractions of axis_y_len (increasing gaps)
+        fracs = [0.00, 0.18, 0.40, 0.68, 0.98]
+        y_levels = [origin[1] + f * axis_y_len for f in fracs]
+
+        dotted_lines = []
+        level_labels = []
+        level_tex = [r"0", r"10", r"50", r"y_{\nu}", r"H"]  # as in your example figure
+
+        for i, yv in enumerate(y_levels):
+            dl = DashedLine(
+                start=np.array([origin[0], yv, 0.0]),
+                end=np.array([x_end[0], yv, 0.0]),
+                dash_length=0.08,
+                dashed_ratio=0.35,
+                color=BLACK,
+                stroke_width=4,
+            )
+            dotted_lines.append(dl)
+
+            lab = MathTex(
+                rf"v(x,t,{level_tex[i]})", color=BLACK, font_size=self.BODY_FONT_SIZE
+            )
+            # place just to the right of the vertical axis, aligned with the line
+            lab.next_to(np.array([origin[0], yv, 0.0]), RIGHT, buff=0.20)
+            level_labels.append(lab)
+
+        self.play(
+            LaggedStart(
+                *[Create(dl, run_time=0.30) for dl in dotted_lines],
+                *[FadeIn(lab, run_time=0.20) for lab in level_labels],
+                lag_ratio=0.12,
+            )
+        )
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Interpolation line between the last two levels --------------------
+        y_interp = 0.5 * (y_levels[-2] + y_levels[-1])
+
+        interp_line = DashedLine(
+            start=np.array([origin[0], y_interp, 0.0]),
+            end=np.array([x_end[0], y_interp, 0.0]),
+            dash_length=0.05,      # thinner, denser dots
+            dashed_ratio=0.28,
+            color=BLACK,
+            stroke_width=3,
+        )
+
+        interp_caption = Text(
+            "Interpolation Exp", color=BLACK, font_size=self.BODY_FONT_SIZE - 2
+        ).next_to(interp_line, UP, buff=0.15)
+
+        self.add(interp_line, interp_caption)
+
+        # Highlight effect: moving dots along the interpolation line
+        self.play(ShowPassingDots(interp_line, run_time=1.8, rate_func=linear))
+
+        # --- End slide ---------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
