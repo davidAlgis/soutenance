@@ -1458,12 +1458,10 @@ class Presentation(Slide):
     def slide_11(self):
         """
         Methode de Tessendorf : superposition de vagues d'Airy avec UNE courbe par rangee.
-        - Rangee 1 : une SEULE courbe h_A; on modifie ses parametres (A1, k1).
-        - Rangee 2 : une SEULE courbe h_T qui represente la somme; on ajoute des
-          composantes, mais l'affichage reste UNE courbe.
-        - Pour eviter les erreurs de concatenation/reverse sous Windows (PyAV),
-          la phase d'ajout progressif est animee via un ValueTracker unique
-          (n_comp) dans UN SEUL self.play.
+        Correctifs demandes :
+          1) La somme explicite sur 2 lignes pour rester dans les bornes.
+          2) Le recentrage ne doit plus "revenir" en bas : on anime un anchor + un scale.
+          3) Colorer N (le nombre de vagues sommees) en pc.uclaGold.
         """
         # --- Barre de titre ---
         bar = self._top_bar("Méthode de Tessendorf")
@@ -1547,10 +1545,16 @@ class Presentation(Slide):
         self.add(curve1, f1_initial)
 
         # ===================== Rangee 2 : une SEULE courbe somme =====================
+        # Anchor + scale trackers pour eviter le "retour" de position avec always_redraw.
+        row2_anchor = Dot(
+            [plot_x, row2_y, 0.0], radius=0.001, fill_opacity=0.0, stroke_opacity=0.0
+        )
+        row2_scale = ValueTracker(1.0)
+        self.add(row2_anchor)
+
         components = [(3.0, 1.5)]  # (A, k) initial
 
         def sum_y_up_to(m, x):
-            # Somme des m premieres composantes de 'components'
             s = 0.0
             m_int = int(max(0, min(m, len(components))))
             for i in range(m_int):
@@ -1558,14 +1562,13 @@ class Presentation(Slide):
                 s += A * np.cos(k * x)
             return s
 
-        # Tracker du nombre de composantes prises en compte (entier via floor)
-        n_comp = ValueTracker(len(components))  # commence avec les composantes de depart
+        n_comp = ValueTracker(len(components))  # nombre de composantes prises en compte
 
         curve_sum = always_redraw(
             lambda: make_function_curve(
-                center=np.array([plot_x, row2_y, 0.0]),
-                width=plot_w,
-                height=plot_h,
+                center=row2_anchor.get_center(),
+                width=plot_w * row2_scale.get_value(),
+                height=plot_h * row2_scale.get_value(),
                 func=lambda x: sum_y_up_to(int(np.floor(n_comp.get_value())), x),
             )
         )
@@ -1582,7 +1585,7 @@ class Presentation(Slide):
         # ---------------------------------------------------------------------------
         self.next_slide()
 
-        # Rangee 1 : on TRANSFORME la meme courbe vers (A1=0.8, k1=0.9) + MAJ formule
+        # Rangee 1 : transformer la meme courbe vers (A1=0.8, k1=0.9) + MAJ formule
         f1_new = MathTex(
             r"h_A(x,t) = 0.8\cos\!\left(0.9\,x + \omega t\right)",
             color=BLACK,
@@ -1607,10 +1610,10 @@ class Presentation(Slide):
 
         self.play(ghost.animate.move_to(f2.get_center()).set_opacity(0.15), run_time=0.6)
 
-        # MAJ formule de la rangee 2 en somme explicite
+        # MAJ formule de la rangee 2 en somme explicite SUR 2 LIGNES pour rester dans les bornes
         f2_sum = MathTex(
             r"h_T(x,t) = 0.7\cos\!\left(1.5\,x + \omega t\right)"
-            r" + 3\cos\!\left(1.5\,x + \omega t\right)",
+            r" \\ + 3\cos\!\left(1.5\,x + \omega t\right)",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE + 2,
         )
@@ -1625,55 +1628,58 @@ class Presentation(Slide):
         # ---------------------------------------------------------------------------
         self.next_slide()
 
-        # Retirer la rangee 1 puis agrandir/recentrer la rangee 2
+        # Retirer la rangee 1; agrandir + recentrer la rangee 2 EN ANIMANT L'ANCHOR ET L'ECHELLE
         self.play(FadeOut(VGroup(curve1, f1_new)), run_time=0.4)
 
-        row2_group = VGroup(curve_sum, f2_sum)
         target_center_y = (y_top + y_bottom) * 0.5 + 0.2
         self.play(
-            row2_group.animate.scale(1.15).move_to([0.0, target_center_y, 0.0]),
+            AnimationGroup(
+                row2_anchor.animate.move_to([0.0, target_center_y, 0.0]),
+                row2_scale.animate.set_value(1.15),
+                lag_ratio=0.0,
+            ),
             run_time=0.5,
         )
 
-        # Remplacer la somme explicite par le sigma, pilote par n_comp (toujours UNE seule Tex via always_redraw)
-        sigma_label = always_redraw(
-            lambda: MathTex(
-                rf"h_T(x,t) = \sum_{{i=0}}^{{{max(0, int(np.floor(n_comp.get_value())) - 1)}}} "
-                r"A_i\cos\!\left(k_i x - \omega t\right)",
+        # Remplacer la somme explicite par le sigma, pilote par n_comp, et COLORER N en pc.uclaGold
+        def make_sigma_label():
+            N_val = max(0, int(np.floor(n_comp.get_value())) - 1)
+            N_str = f"{N_val}"
+            return MathTex(
+                rf"h_T(x,t) = \sum_{{i=0}}^{{{N_str}}} A_i\cos\!\left(k_i x - \omega t\right)",
                 color=BLACK,
                 font_size=self.BODY_FONT_SIZE + 6,
+                tex_to_color_map={N_str: pc.uclaGold},
             ).next_to(curve_sum, RIGHT, buff=0.35, aligned_edge=UP)
-        )
+
+        sigma_label = always_redraw(lambda: make_sigma_label())
+
         self.play(ReplacementTransform(f2_sum, sigma_label), run_time=0.5)
 
-        # --- Phase d'ajout progressif en UN SEUL clip ---
-        # Precompute des composantes a ajouter
+        # --- Phase d'ajout progressif en UN SEUL clip (evite soucis de mux/reverse Windows) ---
         rng = np.random.default_rng(42)
         extra = []
-        add_count = 1000
+        add_count = 20
         for _ in range(add_count):
             A_rand = float(rng.uniform(0.01, 0.1))
             k_rand = float(rng.uniform(0.1, 30.0))
             extra.append((A_rand, k_rand))
-        # Ajout logique (pas d'animation ici), puis n_comp anime affichera progressivement
         components.extend(extra)
 
-        # Eviter le reverse sur cette slide pour plus de robustesse sur Windows
+        # Evite le reverse pour cette slide
         self.skip_reversing = True
 
-        # n_comp passe du nombre actuel au total final, ce qui fait evoluer
-        # AFFICHE uniquement la courbe et le sigma par always_redraw, en un seul clip.
+        # Anime n_comp pour faire evoluer courbe + sigma (N colore)
         self.play(
             n_comp.animate.set_value(len(components)),
             rate_func=linear,
-            run_time=5.0,
+            run_time=3.0,
         )
 
         # --- Fin de la slide ---
         self.pause()
         self.clear()
         self.next_slide()
-
 
     def slide_12(self):
         """
