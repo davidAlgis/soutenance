@@ -1558,7 +1558,7 @@ class Presentation(Slide):
         self.next_slide()
 
         # --- Labels on the left: U_10, F, theta --------------------------------
-        left_x = shape.get_left()[0] - 0.8
+        left_x = shape.get_left()[0] - 1.0
         y_span = shape.height
         y_top_lbl = cy + y_span * 0.30
         y_mid_lbl = cy + y_span * 0.00
@@ -1585,7 +1585,7 @@ class Presentation(Slide):
         # --- Flow into the shape, disappear, and show A_i on the right ----------
         # Target just inside the left edge of the bow-tie.
         target_x_inside = (
-            left_tri.get_vertices()[1][0] - 0.05
+            left_tri.get_vertices()[0][0] - 0.4
         )  # near the center tip
         flow_targets = [
             np.array([target_x_inside, y_top_lbl, 0.0]),
@@ -1607,7 +1607,7 @@ class Presentation(Slide):
         ai = MathTex(r"A_i", color=BLACK, font_size=self.BODY_FONT_SIZE + 10)
         ai.move_to([ai_x, cy, 0.0])
         self.play(FadeIn(ai, run_time=0.3))
-        self.play(ai.animate.shift(RIGHT * 0.4), run_time=0.4)
+        self.play(ai.animate.shift(RIGHT * 1.0), run_time=0.4)
 
         # End slide
         self.pause()
