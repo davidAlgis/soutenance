@@ -2002,22 +2002,18 @@ class Presentation(Slide):
         x_left = -config.frame_width / 2 + 0.6
         x_right = config.frame_width / 2 - 0.6
         y_bottom = -config.frame_height / 2 + 0.6
-        area_w = x_right - x_left
         anchor_x = x_left + self.DEFAULT_PAD
 
         # ===================== Body text ====================================
         self.start_body()
+        fs = self.BODY_FONT_SIZE + 3  # unified font size for both lines
 
-        fs = self.BODY_FONT_SIZE + 2  # both lines same (and bigger) size
-
-        line1 = Text(
-            "La vitesse de l'eau en tout points de l'espace est calculée avec le même principe",
+        line1 = Tex(
+            r"La vitesse de l'eau en tout points de l'espace est calculée avec le même principe",
             color=BLACK,
             font_size=fs,
         )
-        line1.next_to(
-            self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
-        )
+        line1.next_to(self._current_bar, DOWN, aligned_edge=LEFT)
         dx = anchor_x - line1.get_left()[0]
         line1.shift(RIGHT * dx)
         self.add(line1)
@@ -2028,78 +2024,107 @@ class Presentation(Slide):
             color=BLACK,
             font_size=fs,
         )
-        line2.next_to(line1, DOWN, buff=0.22, aligned_edge=LEFT)
+        line2.next_to(line1, DOWN, aligned_edge=LEFT)
         dx2 = anchor_x - line2.get_left()[0]
         line2.shift(RIGHT * dx2)
         self.add(line2)
 
-        # ===================== Axes =========================================
-        # Vertical downward axis
+        # ===================== Axis & Layout =================================
+        # Tweakables to nudge the axes where you want
+        AXIS_RIGHT_SHIFT = 0.60   # move vertical axis further to the right
+        AXIS_DOWN_SHIFT  = 0.30   # move the whole axes block slightly downward
+
+        # Left-side axes spanning from just under sentences down to bottom,
+        # then apply right/down shifts.
+        axis_left_x = x_left + 0.9 + AXIS_RIGHT_SHIFT
+        axis_top_y = (line2.get_bottom()[1] - 0.30) - AXIS_DOWN_SHIFT
+        axis_bottom_y = y_bottom + 0.35
+        x_end = x_right - 0.6
+
+        # Clamp to bounds (just in case tweaks push out of frame)
+        axis_left_x = min(axis_left_x, x_right - 1.8)
+        axis_top_y = min(axis_top_y, y_top - 0.2)
+        axis_bottom_y = max(axis_bottom_y, y_bottom + 0.2)
+
+        # Vertical axis: only downward from origin (no positive part)
         y_axis = Arrow(
-            start=[0, y_top - 0.3, 0],
-            end=[0, y_bottom + 0.4, 0],
+            start=[axis_left_x, axis_top_y, 0],
+            end=[axis_left_x, axis_bottom_y, 0],
             buff=0,
             stroke_width=6,
             color=BLACK,
         )
 
-        # Horizontal axis (rightward) placed at y=0
+        # Horizontal axis: rightward from the same origin y
         x_axis = Arrow(
-            start=[0, 0, 0],
-            end=[x_right - 1.0, 0, 0],
+            start=[axis_left_x, axis_top_y, 0],
+            end=[x_end,       axis_top_y, 0],
             buff=0,
             stroke_width=6,
             color=BLACK,
         )
 
-        self.add(y_axis, x_axis)
+        axis_group = VGroup(x_axis, y_axis)
+        self.add(axis_group)
 
-        # Draw cos(x) wave on the top level
-        wave = FunctionGraph(
-            lambda x: 0.3 * np.sin(x),
-            x_range=[0, x_right - 1.0, 0.05],
+        # Wave along the horizontal axis level
+        wave = ParametricFunction(
+            lambda t: np.array([
+                axis_left_x + t,
+                axis_top_y - 0.30 * np.sin(1.4 * t),
+                0.0,
+            ]),
+            t_range=[0, max(0.0, x_end - axis_left_x)],
             color=pc.blueGreen,
             stroke_width=6,
         )
-        wave.shift(DOWN * 0.1)  # small visual alignment tweak
         self.add(wave)
 
         # ===================== After first reveal ===========================
         self.next_slide()
 
         # ===================== Depth Levels =================================
-        depths = [0, 10, 50, 90, 140]
-
-        # Map depths to y-positions (increasingly spaced, downward)
-        base_y = 0.0
-        step = (y_bottom + 0.3 - base_y) / 4.0  # negative, so it goes down
-        positions = [base_y + i * step for i in range(len(depths))]
+        depths = [0, 30, 80, 140]  # four lines
+        y_vals = np.linspace(axis_top_y, axis_bottom_y, len(depths))
 
         dotted_lines = []
-        label_tex = []
+        labels = []
 
-        for yval, d in zip(positions, depths):
+        # Fixed gap from the axis to the label's RIGHT edge
+        LABEL_GAP = 0.28
+        MIN_LEFT = x_left + 0.15
+
+        for yv, d in zip(y_vals, depths):
+            # dotted line from axis to right
             ln = DashedLine(
-                start=[0, yval, 0],
-                end=[x_right - 1.0, yval, 0],
-                dash_length=0.2,
+                start=[axis_left_x, yv, 0],
+                end=[x_end,       yv, 0],
+                dash_length=0.20,
                 color=BLACK,
             )
             dotted_lines.append(ln)
 
-            t = MathTex(
+            # label placed so its RIGHT edge is LABEL_GAP left of the axis
+            label = MathTex(
                 rf"v(x, t, {d})",
                 font_size=self.BODY_FONT_SIZE,
                 color=BLACK,
             )
-            t.next_to(ln, LEFT, buff=0.25)
-            label_tex.append(t)
+            label.set_y(yv)
+            right_target_x = axis_left_x - LABEL_GAP
+            current_right_x = label.get_right()[0]
+            label.shift(RIGHT * (right_target_x - current_right_x))
+
+            # clamp if label would go off-slide on the left
+            if label.get_left()[0] < MIN_LEFT:
+                label.shift(RIGHT * (MIN_LEFT - label.get_left()[0]))
+
+            labels.append(label)
 
         self.play(
             LaggedStart(
-                *[FadeIn(m) for m in dotted_lines],
-                *[FadeIn(t) for t in label_tex],
-                lag_ratio=0.15,
+                *[FadeIn(m) for m in (dotted_lines + labels)],
+                lag_ratio=0.08,
             )
         )
 
@@ -2107,47 +2132,24 @@ class Presentation(Slide):
         self.next_slide()
 
         # ===================== Interpolation line ============================
-        # between y=50 and y=90 (last two lines of the five)
-        mid_y = 0.5 * (positions[2] + positions[3])
-
-        # Visual dashed line (can be used for display only)
+        mid_y = 0.5 * (y_vals[1] + y_vals[2])
         interp_line = DashedLine(
-            start=[0, mid_y, 0],
-            end=[x_right - 1.0, mid_y, 0],
+            start=[axis_left_x, mid_y, 0],
+            end=[x_end,       mid_y, 0],
             dash_length=0.08,
             color=BLACK,
         )
-
-        # Hidden solid path for animations (always has points)
-        interp_path = Line(
-            start=[0, mid_y, 0],
-            end=[x_right - 1.0, mid_y, 0],
-            stroke_opacity=0.0,
-        )
-
         interp_caption = Text(
             "Interpolation Exp",
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
-        )
-        interp_caption.next_to(interp_line, UP, buff=0.20)
+        ).next_to(interp_line, UP, buff=0.32)
 
-        self.add(interp_line, interp_path, interp_caption)
+        self.add(interp_line, interp_caption)
 
-        # === Highlight animation (dots moving along hidden solid path) ======
-        dots = [Dot(radius=0.06, color=pc.blueGreen) for _ in range(3)]
-        for d in dots:
-            d.move_to(interp_path.point_from_proportion(0.0))
-            self.add(d)
-
-        self.play(
-            LaggedStart(
-                *[MoveAlongPath(d, interp_path) for d in dots],
-                lag_ratio=0.25,
-                run_time=1.8,
-                rate_func=linear,
-            )
-        )
+        # Highlight the line itself (no endpoint movement)
+        self.play(interp_line.animate.set_stroke(color=pc.blueGreen, width=8), run_time=0.8)
+        self.play(interp_line.animate.set_stroke(color=BLACK, width=6), run_time=0.8)
 
         # ===================== End slide ====================================
         self.pause()
