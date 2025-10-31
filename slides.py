@@ -2993,21 +2993,21 @@ class Presentation(Slide):
     def slide_19(self):
         """
         Slide 19: Result of combining the three methods.
-        Steps:
-          - Top bar and three ellipses (same layout as slide 9).
-          - Solid curved arrows: Surface -> Fluide-vers-solide, then Fluide-vers-solide -> Solide-vers-fluide,
-            then Solide-vers-fluide -> Surface (each after self.next_slide()).
-          - Dotted curved arrows: S->F -> F->S, S->F -> Surface, F->S -> Surface (each after self.next_slide()).
-          - Clear (keep bar), show summary table; wait; clear.
-          - Show demo image; wait; clear.
-          - Final body line and bullet list.
+        Implements solid and dotted curved arrows with corrected placement:
+        (1) Surface -> Fluide-vers-solide (ok),
+        (2) Fluide-vers-solide -> Solide-vers-fluide now ends on RIGHT side of S->F,
+        (3) Solide-vers-fluide -> Surface (ok),
+        (4) DOTTED S->F -> F->S now inner and higher,
+        (5) DOTTED S->F -> Surface inner and shifted to the right,
+        (6) DOTTED F->S -> Surface inner and shifted to the left.
+        Then: summary table, demo image, and final bullets.
         """
         # --- Top bar -----------------------------------------------------------
-        bar = self._top_bar("R\\'esultat de la combinaison des trois m\\'ethodes")
+        bar = self._top_bar("Résultat de la combinaison des trois méthodes")
         self.add(bar)
         self.add_foreground_mobject(bar)
 
-        # --- Ellipses (same layout spirit as slide 9) --------------------------
+        # --- Ellipses (same spirit as slide 9) --------------------------------
         ell_w = 3.6
         ell_h = 2.8
 
@@ -3033,7 +3033,7 @@ class Presentation(Slide):
         # --- Arrow builders ----------------------------------------------------
         def _solid_curved_arrow(start_pt: np.ndarray, end_pt: np.ndarray, angle: float) -> CurvedArrow:
             """
-            Build a solid curved arrow between two points with a signed curvature angle.
+            Solid curved arrow between two points with a signed curvature angle.
             Positive angle is counter-clockwise, negative is clockwise.
             """
             return CurvedArrow(
@@ -3047,8 +3047,8 @@ class Presentation(Slide):
 
         def _dotted_curved_arrow(start_pt: np.ndarray, end_pt: np.ndarray, angle: float) -> VGroup:
             """
-            Build a dotted curved arrow using a dashed arc plus a small triangular tip
-            aligned to the tangent at the end. Compatible with Manim 0.19 (no dash_length).
+            Dotted curved arrow for Manim 0.19: dashed arc + triangular tip aligned
+            to the end tangent. Uses num_dashes/dashed_ratio (no dash_length).
             """
             arc = ArcBetweenPoints(start_pt, end_pt, angle=angle, color=BLACK, stroke_width=6)
             dashed = DashedVMobject(arc, num_dashes=60, dashed_ratio=0.5)
@@ -3070,7 +3070,8 @@ class Presentation(Slide):
         def _top_of(m: Mobject, dx: float = 0.0, dy: float = 0.0) -> np.ndarray:
             p = m.get_top().copy(); p[0] += dx; p[1] += dy; return p
 
-        # --- Solid curved arrows (3 steps) -------------------------------------
+        # ================= SOLID arrows =================
+        # (1) Surface -> F->S (unchanged, correct)
         self.next_slide()
         a1 = _solid_curved_arrow(
             start_pt=_right_of(e_surface, dx=0.10, dy=-0.10),
@@ -3079,14 +3080,16 @@ class Presentation(Slide):
         )
         self.play(Create(a1, run_time=0.6))
 
+        # (2) F->S -> S->F : origin ok, now end on RIGHT side of S->F
         self.next_slide()
         a2 = _solid_curved_arrow(
             start_pt=_left_of(e_f2s, dx=-0.10, dy=0.05),
-            end_pt=_left_of(e_s2f, dx=0.30, dy=0.05),
-            angle=-1.2,
+            end_pt=_right_of(e_s2f, dx=0.25, dy=0.05),  # moved to right side
+            angle=-1.0,  # under-arc clockwise
         )
         self.play(Create(a2, run_time=0.6))
 
+        # (3) S->F -> Surface (unchanged, correct)
         self.next_slide()
         a3 = _solid_curved_arrow(
             start_pt=_top_of(e_s2f, dx=0.10, dy=0.10),
@@ -3095,28 +3098,31 @@ class Presentation(Slide):
         )
         self.play(Create(a3, run_time=0.6))
 
-        # --- Dotted curved arrows (3 steps) ------------------------------------
+        # ================= DOTTED arrows =================
+        # (4) S->F -> F->S : inner arc, higher
         self.next_slide()
         d1 = _dotted_curved_arrow(
-            start_pt=_right_of(e_s2f, dx=0.05, dy=0.00),
-            end_pt=_left_of(e_f2s, dx=-0.05, dy=0.00),
-            angle=+1.1,
+            start_pt=_top_of(e_s2f, dx=0.10, dy=0.25),      # higher start
+            end_pt=_top_of(e_f2s, dx=-0.10, dy=0.25),       # higher end
+            angle=+1.6,                                     # inner bulge
         )
         self.play(FadeIn(d1, run_time=0.6))
 
+        # (5) S->F -> Surface : inner, shifted right at both ends
         self.next_slide()
         d2 = _dotted_curved_arrow(
-            start_pt=_top_of(e_s2f, dx=0.08, dy=0.10),
-            end_pt=_left_of(e_surface, dx=-0.08, dy=-0.10),
-            angle=+1.0,
+            start_pt=_right_of(e_s2f, dx=0.30, dy=0.10),    # more to the right
+            end_pt=_right_of(e_surface, dx=0.30, dy=-0.05), # more to the right
+            angle=+1.0,                                     # inner-ish arc
         )
         self.play(FadeIn(d2, run_time=0.6))
 
+        # (6) F->S -> Surface : inner, shifted left
         self.next_slide()
         d3 = _dotted_curved_arrow(
-            start_pt=_top_of(e_f2s, dx=-0.08, dy=0.10),
-            end_pt=_right_of(e_surface, dx=0.08, dy=-0.10),
-            angle=+1.0,
+            start_pt=_left_of(e_f2s, dx=-0.30, dy=0.10),    # more to the left
+            end_pt=_left_of(e_surface, dx=-0.30, dy=-0.05), # more to the left
+            angle=+1.2,                                     # inner-ish arc
         )
         self.play(FadeIn(d3, run_time=0.6))
 
@@ -3133,10 +3139,10 @@ class Presentation(Slide):
             Tex(r"\emph{dix solides}"),
         ]
         body = [
-            [Tex("M\\'ethode de Tessendorf"), Tex("Hauteur"), Tex("0.4"), Tex("0.4")],
+            [Tex("Méthode de Tessendorf"), Tex("Hauteur"), Tex("0.4"), Tex("0.4")],
             ["", Tex("Vitesse"), Tex("1.1"), Tex("1.1")],
             ["", Tex("Total"), Tex("1.5"), Tex("1.5")],
-            [Tex("Fluide-vers-Solide"), Tex("G\\'eom\\'etrie"), Tex("1.1"), Tex("4.6")],
+            [Tex("Fluide-vers-Solide"), Tex("Géométrie"), Tex("1.1"), Tex("4.6")],
             [Tex("Interaction"), Tex("Forces"), Tex("0.4"), Tex("3.6")],
             ["", Tex("Total"), Tex("1.5"), Tex("8.2")],
             [Tex("Solide-vers-Fluide"), Tex("MDF"), Tex("0.1"), Tex("0.8")],
@@ -3187,15 +3193,15 @@ class Presentation(Slide):
 
         # --- Final bullets ------------------------------------------------------
         self.start_body()
-        line = Tex("N\\'eanmoins :", font_size=self.BODY_FONT_SIZE, color=BLACK)
+        line = Tex("Néanmoins :", font_size=self.BODY_FONT_SIZE, color=BLACK)
         line.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
         dx = (-config.frame_width / 2 + 0.6 + self.DEFAULT_PAD) - line.get_left()[0]
         line.shift(RIGHT * dx)
         self.add(line)
 
         bullet_items = [
-            r"La m\\'ethode de Tessendorf repose sur de tr\\`es nombreuses approximations",
-            r"Les m\\'ethodes de couplage se basent sur des mod\\'eles ph\\'enom\\'enologiques",
+            r"La méthode de Tessendorf repose sur de très nombreuses approximations",
+            r"Les méthodes de couplage se basent sur des modéles phénoménologiques",
         ]
         rows = []
         for s in bullet_items:
