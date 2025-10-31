@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "16"
+SLIDES_SELECTION = "16,17"
 
 
 class Presentation(Slide):
@@ -2445,9 +2445,9 @@ class Presentation(Slide):
         y_bottom = -config.frame_height / 2 + 0.6
         area_w = x_right - x_left
 
-        # ========= Intro (3 lines) — use Tex everywhere =========
+        # ========= Intro (3 lines) — Tex only =========
         self.start_body()
-        local_top_buff = 0.38  # push down to clear the bar
+        local_top_buff = 0.38
 
         l1 = Tex(
             r"L'action du fluide sur le solide est approximée comme",
@@ -2473,55 +2473,28 @@ class Presentation(Slide):
         l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
         l3.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l3.get_left()[0]))
 
-        intro_group = VGroup(l1, l2, l3)
-        self.play(FadeIn(intro_group, run_time=0.35))
+        self.play(FadeIn(VGroup(l1, l2, l3), run_time=0.35))
 
-        # Wait for user
-        self.next_slide()
-
-        # ========= Clear everything except the top bar =========
-        to_keep = {bar}
-        self.remove(*[m for m in self.mobjects if m not in to_keep])
-
-        # ========= Title line above the two columns =========
-        title_forces = Tex(
-            r"Quatre forces sont appliquées sur chaque triangle :",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE,
-        )
-        title_forces.next_to(self._current_bar, DOWN, buff=0.32, aligned_edge=LEFT)
-        title_forces.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - title_forces.get_left()[0]))
-        self.add(title_forces)
-
-        # ========= Two-column forces layout (Tex/MathTex only) =========
+        # ========= Two-column forces block placed UNDER l3 =========
         col_gap = 1.2
         col_width = (area_w - col_gap) / 2.0
-        left_x = x_left + self.DEFAULT_PAD + col_width * 0.5
-        right_x = left_x + col_width + col_gap
-        top_y = title_forces.get_bottom()[1] - 0.35
 
         def entry(number_str, title_word, title_color, formula_tex, color_map):
-            # Heading (colored keyword like in your picture)
             head = Tex(
                 rf"{number_str}\ \textbf{{{title_word}}}:",
                 color=BLACK,
                 font_size=self.BODY_FONT_SIZE,
             )
             head.set_color_by_tex(title_word, title_color)
-
-            # Formula (color only the F_* symbol)
             formula = MathTex(
                 formula_tex,
                 color=BLACK,
                 font_size=self.BODY_FONT_SIZE + 2,
                 tex_to_color_map=color_map,
             )
+            return VGroup(head, formula).arrange(DOWN, buff=0.16, aligned_edge=LEFT)
 
-            g = VGroup(head, formula).arrange(DOWN, buff=0.16, aligned_edge=LEFT)
-            return g
-
-        # Left column: (1) Gravité, (2) Poussée d'Archimède)
-        g_left = VGroup(
+        left_col = VGroup(
             entry(
                 "1.",
                 "Gravité",
@@ -2538,10 +2511,7 @@ class Presentation(Slide):
             ),
         ).arrange(DOWN, buff=0.50, aligned_edge=LEFT)
 
-        g_left.move_to([left_x - g_left.width / 2.0, top_y - g_left.height / 2.0, 0])
-
-        # Right column: (3) Traînée eau, (4) Traînée air)
-        g_right = VGroup(
+        right_col = VGroup(
             entry(
                 "3.",
                 "Traînée eau",
@@ -2558,35 +2528,48 @@ class Presentation(Slide):
             ),
         ).arrange(DOWN, buff=0.50, aligned_edge=LEFT)
 
-        g_right.move_to([right_x - g_right.width / 2.0, top_y - g_right.height / 2.0, 0])
+        # Initial placement: under l3
+        # Compute target top-left for the block: a small gap below l3
+        gap_below_intro = 0.32
+        forces_top_y = l3.get_bottom()[1] - gap_below_intro
 
-        # Clamp width if needed
-        for col in (g_left, g_right):
+        # Clamp columns to width
+        for col in (left_col, right_col):
             if col.width > col_width:
-                s = col_width / col.width
-                col.scale(s, about_edge=LEFT)
+                col.scale(col_width / col.width, about_edge=LEFT)
 
-        self.add(g_left, g_right)
+        # X positions
+        left_x_center = x_left + self.DEFAULT_PAD + col_width * 0.5
+        right_x_center = left_x_center + col_width + col_gap
 
-        # Explanatory line under the columns
-        explain = Tex(
-            r"Où $\mathbf{v}^{w/a}_{i,\mathrm{rel}}$ est la vitesse du triangle $i$ "
-            r"relative à la vitesse du fluide $\hat{\mathbf{v}}(x_i,t,y_i)$.",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE - 2,
-        )
-        # Place centered under the lower of the two columns
-        lower_y = min(g_left.get_bottom()[1], g_right.get_bottom()[1])
-        explain.move_to([0, lower_y - 0.45, 0])
-        self.add(explain)
+        # Move columns so their tops align to forces_top_y
+        left_col.move_to([left_x_center - left_col.width / 2.0,
+                          forces_top_y - left_col.height / 2.0, 0])
+        right_col.move_to([right_x_center - right_col.width / 2.0,
+                           forces_top_y - right_col.height / 2.0, 0])
 
-        # ========= Draw animated water + boat (do NOT clear) =========
+        forces_group = VGroup(left_col, right_col)
+        self.play(FadeIn(forces_group, run_time=0.35))
+
+        # Wait for user, then remove intro and move forces upward
+        self.next_slide()
+        self.remove(l1, l2, l3)
+
+        # Target new top just under the bar
+        new_top_y = y_top - 0.15
+        current_top = max(left_col.get_top()[1], right_col.get_top()[1])
+        dy = new_top_y - current_top
+        self.play(forces_group.animate.shift(UP * dy), run_time=0.4)
+
+        # ========= Animated water + boat (keep forces visible) =========
         t_tracker = ValueTracker(0.0)
         x_min = x_left + 0.5
         x_max = x_right - 0.5
         amp = 0.10
         k = 0.7
-        y0 = -2.1  # lower so it doesn't overlap the text
+        # Place water well below the forces block
+        lowest_forces_y = min(left_col.get_bottom()[1], right_col.get_bottom()[1])
+        y0 = lowest_forces_y - 1.4
 
         def make_water():
             xs = np.linspace(x_min, x_max, 600)
@@ -2624,7 +2607,6 @@ class Presentation(Slide):
         self.add(boat)
         self.add_foreground_mobject(boat)
 
-        # A bit more motion on the wave once the boat is there
         self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=2.6)
 
         # --- End slide ---
