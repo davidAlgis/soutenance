@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "15"
+SLIDES_SELECTION = "16"
 
 
 class Presentation(Slide):
@@ -2445,94 +2445,148 @@ class Presentation(Slide):
         y_bottom = -config.frame_height / 2 + 0.6
         area_w = x_right - x_left
 
-        # ========= Body text (3 lines) =========
+        # ========= Intro (3 lines) — use Tex everywhere =========
         self.start_body()
-        l1 = Text(
-            "L'action du fluide sur le solide est approximée comme ",
+        local_top_buff = 0.38  # push down to clear the bar
+
+        l1 = Tex(
+            r"L'action du fluide sur le solide est approximée comme",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
-        l1.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        l1.next_to(self._current_bar, DOWN, buff=local_top_buff, aligned_edge=LEFT)
         l1.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l1.get_left()[0]))
-        self.add(l1)
 
-        l2 = Text(
-            "des forces appliquées sur le maillage du solide.",
+        l2 = Tex(
+            r"des forces appliquées sur le maillage du solide.",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
         l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
         l2.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l2.get_left()[0]))
-        self.add(l2)
 
-        l3 = Text("Découpage en 4 forces :", color=BLACK, font_size=self.BODY_FONT_SIZE)
+        l3 = Tex(
+            r"Découpage en 4 forces :",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
         l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
         l3.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l3.get_left()[0]))
-        self.add(l3)
 
-        # ========= Bullet list (Text + MathTex) =========
-        def bullet_row(prefix_text: str, math_expr: str, color_map: dict) -> VGroup:
-            dot = Dot(radius=0.06, color=pc.blueGreen)
-            head = Text(prefix_text + " ", color=BLACK, font_size=self.BODY_FONT_SIZE)
-            # math part (safe for coloring)
-            eq = MathTex(
-                math_expr,
-                color=BLACK,
-                font_size=self.BODY_FONT_SIZE,
-                tex_to_color_map=color_map,
-            )
-            line = VGroup(head, eq).arrange(RIGHT, buff=0.12, aligned_edge=DOWN)
-            return VGroup(dot, line).arrange(RIGHT, buff=0.25, aligned_edge=DOWN)
+        intro_group = VGroup(l1, l2, l3)
+        self.play(FadeIn(intro_group, run_time=0.35))
 
-        b1 = bullet_row(
-            "Force de gravité",
-            r"\mathbf{F}_g = -m\,\mathbf{g}",
-            {r"\mathbf{F}_g": pc.apple},
-        )
-        b2 = bullet_row(
-            "Poussée d'archimède",
-            r"\mathbf{F}_b = V_w\,\rho_w\,\mathbf{g}",
-            {r"\mathbf{F}_b": pc.uclaGold},
-        )
-        b3 = bullet_row(
-            "Force de résistance à l'air",
-            r"\mathbf{F}_a = -\tfrac{1}{2}\,C_d^a\,\rho_a\,A_i^{\perp}\,\|\mathbf{v}^a_{i,\mathrm{rel}}\|\,\mathbf{v}^a_{i,\mathrm{rel}}",
-            {r"\mathbf{F}_a": pc.jellyBean},
-        )
-        b4 = bullet_row(
-            "Force de résistance à l'eau",
-            r"\mathbf{F}_w = -\tfrac{1}{2}\,C_d^w\,\rho_w\,A_i^{\perp}\,\|\mathbf{v}^w_{i,\mathrm{rel}}\|\,\mathbf{v}^w_{i,\mathrm{rel}}",
-            {r"\mathbf{F}_w": pc.heliotropeMagenta},
-        )
-
-        bullets = VGroup(b1, b2, b3, b4).arrange(DOWN, buff=0.18, aligned_edge=LEFT)
-        bullets.next_to(l3, DOWN, buff=0.25, aligned_edge=LEFT)
-        bullets.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - bullets.get_left()[0]))
-
-        # Width clamp if needed
-        max_left_w = area_w * 0.95
-        if bullets.width > max_left_w:
-            s = max_left_w / bullets.width
-            bullets.scale(s, about_edge=LEFT)
-            bullets.next_to(l3, DOWN, buff=0.25, aligned_edge=LEFT)
-            bullets.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - bullets.get_left()[0]))
-
-        self.add(bullets)
-
-        # Wait for user before switching scene
+        # Wait for user
         self.next_slide()
 
         # ========= Clear everything except the top bar =========
         to_keep = {bar}
         self.remove(*[m for m in self.mobjects if m not in to_keep])
 
-        # ========= Water surface (animated 0.1 cos(0.7x + t)) =========
+        # ========= Title line above the two columns =========
+        title_forces = Tex(
+            r"Quatre forces sont appliquées sur chaque triangle :",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        title_forces.next_to(self._current_bar, DOWN, buff=0.32, aligned_edge=LEFT)
+        title_forces.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - title_forces.get_left()[0]))
+        self.add(title_forces)
+
+        # ========= Two-column forces layout (Tex/MathTex only) =========
+        col_gap = 1.2
+        col_width = (area_w - col_gap) / 2.0
+        left_x = x_left + self.DEFAULT_PAD + col_width * 0.5
+        right_x = left_x + col_width + col_gap
+        top_y = title_forces.get_bottom()[1] - 0.35
+
+        def entry(number_str, title_word, title_color, formula_tex, color_map):
+            # Heading (colored keyword like in your picture)
+            head = Tex(
+                rf"{number_str}\ \textbf{{{title_word}}}:",
+                color=BLACK,
+                font_size=self.BODY_FONT_SIZE,
+            )
+            head.set_color_by_tex(title_word, title_color)
+
+            # Formula (color only the F_* symbol)
+            formula = MathTex(
+                formula_tex,
+                color=BLACK,
+                font_size=self.BODY_FONT_SIZE + 2,
+                tex_to_color_map=color_map,
+            )
+
+            g = VGroup(head, formula).arrange(DOWN, buff=0.16, aligned_edge=LEFT)
+            return g
+
+        # Left column: (1) Gravité, (2) Poussée d'Archimède)
+        g_left = VGroup(
+            entry(
+                "1.",
+                "Gravité",
+                pc.apple,
+                r"\mathbf{F}_g = -\,m\,\mathbf{g}",
+                {r"\mathbf{F}_g": pc.apple},
+            ),
+            entry(
+                "2.",
+                "Poussée d'Archimède",
+                pc.uclaGold,
+                r"\mathbf{F}_b = V_w\,\rho_w\,\mathbf{g}",
+                {r"\mathbf{F}_b": pc.uclaGold},
+            ),
+        ).arrange(DOWN, buff=0.50, aligned_edge=LEFT)
+
+        g_left.move_to([left_x - g_left.width / 2.0, top_y - g_left.height / 2.0, 0])
+
+        # Right column: (3) Traînée eau, (4) Traînée air)
+        g_right = VGroup(
+            entry(
+                "3.",
+                "Traînée eau",
+                pc.heliotropeMagenta,
+                r"\mathbf{F}_w = -\tfrac{1}{2}\,C_d^w\,\rho_w\,A_i^{\perp}\,\|\mathbf{v}^{w}_{i,\mathrm{rel}}\|\,\mathbf{v}^{w}_{i,\mathrm{rel}}",
+                {r"\mathbf{F}_w": pc.heliotropeMagenta},
+            ),
+            entry(
+                "4.",
+                "Traînée air",
+                pc.jellyBean,
+                r"\mathbf{F}_a = -\tfrac{1}{2}\,C_d^a\,\rho_a\,A_i^{\perp}\,\|\mathbf{v}^{a}_{i,\mathrm{rel}}\|\,\mathbf{v}^{a}_{i,\mathrm{rel}}",
+                {r"\mathbf{F}_a": pc.jellyBean},
+            ),
+        ).arrange(DOWN, buff=0.50, aligned_edge=LEFT)
+
+        g_right.move_to([right_x - g_right.width / 2.0, top_y - g_right.height / 2.0, 0])
+
+        # Clamp width if needed
+        for col in (g_left, g_right):
+            if col.width > col_width:
+                s = col_width / col.width
+                col.scale(s, about_edge=LEFT)
+
+        self.add(g_left, g_right)
+
+        # Explanatory line under the columns
+        explain = Tex(
+            r"Où $\mathbf{v}^{w/a}_{i,\mathrm{rel}}$ est la vitesse du triangle $i$ "
+            r"relative à la vitesse du fluide $\hat{\mathbf{v}}(x_i,t,y_i)$.",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE - 2,
+        )
+        # Place centered under the lower of the two columns
+        lower_y = min(g_left.get_bottom()[1], g_right.get_bottom()[1])
+        explain.move_to([0, lower_y - 0.45, 0])
+        self.add(explain)
+
+        # ========= Draw animated water + boat (do NOT clear) =========
         t_tracker = ValueTracker(0.0)
         x_min = x_left + 0.5
         x_max = x_right - 0.5
         amp = 0.10
         k = 0.7
-        y0 = 0.0
+        y0 = -2.1  # lower so it doesn't overlap the text
 
         def make_water():
             xs = np.linspace(x_min, x_max, 600)
@@ -2545,16 +2599,16 @@ class Presentation(Slide):
 
         water = always_redraw(make_water)
         self.add(water)
-        self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=3.0)
+        self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=2.6)
 
-        # ========= Boat polygon (foreground) =========
+        # Boat polygon (foreground)
         boat_local = [
-            [-1.0, -0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [2.0, 1.0, 0.0],
-            [0.5, 1.0, 0.0],
-            [0.0, 1.5, 0.0],
-            [-0.5, 1.0, 0.0],
+            [-1.0,  0.0, 0.0],
+            [ 1.0,  0.0, 0.0],
+            [ 2.0,  1.0, 0.0],
+            [ 0.5,  1.0, 0.0],
+            [ 0.0,  1.5, 0.0],
+            [-0.5,  1.0, 0.0],
             [-2.0, -1.0, 0.0],
         ]
         boat = Polygon(
@@ -2570,77 +2624,14 @@ class Presentation(Slide):
         self.add(boat)
         self.add_foreground_mobject(boat)
 
-        # Keep water animating a bit with the boat
-        self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=3.0)
-
-        # Wait for user
-        self.next_slide()
-
-        # ========= Force arrows (foreground), colored as requested =========
-        keel = boat.get_bottom()
-        deck = boat.get_top()
-
-        # Gravity (down)
-        g_arrow = Arrow(
-            start=[deck[0], deck[1] + 0.6, 0],
-            end=[deck[0], deck[1] - 0.4, 0],
-            color=pc.apple,
-            stroke_width=6,
-            tip_length=0.18,
-        ).set_z_index(15)
-        g_lbl = MathTex(r"\mathbf{F}_g", color=pc.apple, font_size=self.BODY_FONT_SIZE)\
-            .next_to(g_arrow, UP, buff=0.10).set_z_index(15)
-
-        # Buoyancy (up)
-        b_arrow = Arrow(
-            start=[keel[0], keel[1] - 0.6, 0],
-            end=[keel[0], keel[1] + 0.45, 0],
-            color=pc.uclaGold,
-            stroke_width=6,
-            tip_length=0.18,
-        ).set_z_index(15)
-        b_lbl = MathTex(r"\mathbf{F}_b", color=pc.uclaGold, font_size=self.BODY_FONT_SIZE)\
-            .next_to(b_arrow, DOWN, buff=0.10).set_z_index(15)
-
-        # Air drag (left)
-        a_arrow = Arrow(
-            start=[deck[0] + 1.2, deck[1] + 0.15, 0],
-            end=[deck[0] - 0.3, deck[1] + 0.15, 0],
-            color=pc.jellyBean,
-            stroke_width=6,
-            tip_length=0.18,
-        ).set_z_index(15)
-        a_lbl = MathTex(r"\mathbf{F}_a", color=pc.jellyBean, font_size=self.BODY_FONT_SIZE)\
-            .next_to(a_arrow, UP, buff=0.10).set_z_index(15)
-
-        # Water drag (right)
-        w_arrow = Arrow(
-            start=[keel[0] - 1.0, keel[1] - 0.15, 0],
-            end=[keel[0] + 0.6, keel[1] - 0.15, 0],
-            color=pc.heliotropeMagenta,
-            stroke_width=6,
-            tip_length=0.18,
-        ).set_z_index(15)
-        w_lbl = MathTex(r"\mathbf{F}_w", color=pc.heliotropeMagenta, font_size=self.BODY_FONT_SIZE)\
-            .next_to(w_arrow, DOWN, buff=0.10).set_z_index(15)
-
-        self.add_foreground_mobjects(
-            g_arrow, b_arrow, a_arrow, w_arrow, g_lbl, b_lbl, a_lbl, w_lbl
-        )
-        self.play(
-            LaggedStart(
-                FadeIn(g_arrow), FadeIn(g_lbl),
-                FadeIn(b_arrow), FadeIn(b_lbl),
-                FadeIn(a_arrow), FadeIn(a_lbl),
-                FadeIn(w_arrow), FadeIn(w_lbl),
-                lag_ratio=0.15, run_time=1.2
-            )
-        )
+        # A bit more motion on the wave once the boat is there
+        self.play(t_tracker.animate.increment_value(2 * PI), rate_func=linear, run_time=2.6)
 
         # --- End slide ---
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_17(self):
         self._show_text(
