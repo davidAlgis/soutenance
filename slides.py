@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "16,17"
+SLIDES_SELECTION = "16,18,19"
 
 
 class Presentation(Slide):
@@ -2863,14 +2863,351 @@ class Presentation(Slide):
         self.next_slide()
 
 
+
     def slide_18(self):
-        self._show_text("Calcul du masque")
+        """
+        Slide 18: Comment calculer l'entrée de la méthode ?
+        - Top bar with title.
+        - Three body lines (Tex; includes h(x,t)).
+        - Wait for user.
+        - Three-column gallery, each revealed step-by-step:
+            1) Figures/Mask3D_theoric_view.jpeg + "Vue théorique"
+            2) Figures/MaskHeightMap.jpeg       + "Vue du dessus dans le stockage"
+            3) Figures/Mask3D-contrast.jpeg     + "Vue avec une mer plate"
+        """
+        # --- Top bar -----------------------------------------------------------
+        bar = self._top_bar("Comment calculer l'entrée de la méthode ?")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Usable area below the bar ----------------------------------------
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        area_w = x_right - x_left
+        area_h = y_top - y_bottom
+        anchor_x = x_left + self.DEFAULT_PAD
+
+        # --- Body text (Tex, left-aligned to anchor) --------------------------
+        self.start_body()
+
+        line1 = Tex(
+            r"Lorsqu'un navire avance : une vague haute \`a l'avant et une vague basse \`a l'arri\`ere",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        line1.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
+
+        line2 = Tex(
+            r"En utilisant l'intersection entre la surface de l'eau $h(x,t)$ et le solide",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        line2.next_to(line1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
+
+        line3 = Tex(
+            r"nous d\`efinissons le \emph{``masque du navire''} qui met \`a jour l'onde \`a chaque pas de temps :",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        line3.next_to(line2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        line3.shift(RIGHT * (anchor_x - line3.get_left()[0]))
+
+        self.add(line1, line2, line3)
+
+        # --- Wait for user before images --------------------------------------
+        self.next_slide()
+
+        # --- Columns layout ----------------------------------------------------
+        content_top_y = line3.get_bottom()[1] - 0.35
+        content_bottom_y = y_bottom + 0.2
+        content_h = max(1.6, content_top_y - content_bottom_y)
+        content_center_y = (content_top_y + content_bottom_y) * 0.5
+
+        col_gap = area_w * 0.06
+        col_w = (area_w - 2 * col_gap) / 3.0
+
+        cx1 = x_left + col_w * 0.5
+        cx2 = cx1 + col_w + col_gap
+        cx3 = cx2 + col_w + col_gap
+
+        caption_h = 0.35
+        max_side_w = col_w * 0.92
+        max_side_h = content_h * 0.92 - caption_h
+        side_max = max(1.2, min(max_side_w, max_side_h))
+
+        def place_image_with_caption(img_path: str, center_x: float, caption_tex: str) -> Group:
+            """
+            Create an ImageMobject scaled to fit within a square of side 'side_max',
+            centered at (center_x, content_center_y), with a Tex caption below.
+            Uses Group since ImageMobject is a Mobject (not VMobject).
+            """
+            img = ImageMobject(img_path)
+            scale = min(side_max / img.width, side_max / img.height, 1.0)
+            img.scale(scale)
+            img.move_to([center_x, content_center_y + 0.10, 0.0])
+
+            cap = Tex(caption_tex, color=BLACK, font_size=self.BODY_FONT_SIZE)
+            cap.next_to(img, DOWN, buff=0.18)
+            return Group(img, cap)
+
+        # --- Column 1 ----------------------------------------------------------
+        col1 = place_image_with_caption(
+            "Figures/Mask3D_theoric_view.jpeg",
+            cx1,
+            r"Vue th\'eorique",
+        )
+        self.play(FadeIn(col1, run_time=0.4))
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Column 2 ----------------------------------------------------------
+        col2 = place_image_with_caption(
+            "Figures/MaskHeightMap.jpeg",
+            cx2,
+            r"Vue du dessus dans le stockage",
+        )
+        self.play(FadeIn(col2, run_time=0.4))
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Column 3 ----------------------------------------------------------
+        col3 = place_image_with_caption(
+            "Figures/Mask3D-contrast.jpeg",
+            cx3,
+            r"Vue avec une mer plate",
+        )
+        self.play(FadeIn(col3, run_time=0.4))
+
+        # --- End slide ---------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
 
     def slide_19(self):
-        self._show_text("Résultat de la combinaison des trois méthodes")
+        """
+        Slide 19: Result of combining the three methods.
+        Steps:
+          - Top bar and three ellipses (same layout as slide 9).
+          - Solid curved arrows: Surface -> Fluide-vers-solide, then Fluide-vers-solide -> Solide-vers-fluide,
+            then Solide-vers-fluide -> Surface (each after self.next_slide()).
+          - Dotted curved arrows: S->F -> F->S, S->F -> Surface, F->S -> Surface (each after self.next_slide()).
+          - Clear (keep bar), show summary table; wait; clear.
+          - Show demo image; wait; clear.
+          - Final body line and bullet list.
+        """
+        # --- Top bar -----------------------------------------------------------
+        bar = self._top_bar("R\\'esultat de la combinaison des trois m\\'ethodes")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Ellipses (same layout spirit as slide 9) --------------------------
+        ell_w = 3.6
+        ell_h = 2.8
+
+        e_surface = Ellipse(width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7)
+        t_surface = Tex("Simulation de surface", font_size=self.BODY_FONT_SIZE, color=BLACK)
+        t_surface.move_to(e_surface.get_center())
+        g_surface = VGroup(e_surface, t_surface).move_to([0.0, 1.3, 0.0])
+
+        e_f2s = Ellipse(width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7)
+        t_f2s = Tex("Fluide vers solide", font_size=self.BODY_FONT_SIZE, color=BLACK)
+        t_f2s.move_to(e_f2s.get_center())
+        g_f2s = VGroup(e_f2s, t_f2s).move_to([3.6, -1.7, 0.0])
+
+        e_s2f = Ellipse(width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7)
+        t_s2f = Tex("Solide vers fluide", font_size=self.BODY_FONT_SIZE, color=BLACK)
+        t_s2f.move_to(e_s2f.get_center())
+        g_s2f = VGroup(e_s2f, t_s2f).move_to([-3.6, -1.7, 0.0])
+
+        self.play(FadeIn(g_surface, run_time=0.4))
+        self.play(FadeIn(g_f2s, run_time=0.4))
+        self.play(FadeIn(g_s2f, run_time=0.4))
+
+        # --- Arrow builders ----------------------------------------------------
+        def _solid_curved_arrow(start_pt: np.ndarray, end_pt: np.ndarray, angle: float) -> CurvedArrow:
+            """
+            Build a solid curved arrow between two points with a signed curvature angle.
+            Positive angle is counter-clockwise, negative is clockwise.
+            """
+            return CurvedArrow(
+                start_point=start_pt,
+                end_point=end_pt,
+                angle=angle,
+                color=BLACK,
+                stroke_width=6,
+                tip_length=0.16,
+            )
+
+        def _dotted_curved_arrow(start_pt: np.ndarray, end_pt: np.ndarray, angle: float) -> VGroup:
+            """
+            Build a dotted curved arrow using a dashed arc plus a small triangular tip
+            aligned to the tangent at the end. Compatible with Manim 0.19 (no dash_length).
+            """
+            arc = ArcBetweenPoints(start_pt, end_pt, angle=angle, color=BLACK, stroke_width=6)
+            dashed = DashedVMobject(arc, num_dashes=60, dashed_ratio=0.5)
+            pts = arc.get_points()
+            p_end = pts[-1]
+            p_prev = pts[-2]
+            v = p_end - p_prev
+            theta = np.arctan2(v[1], v[0])
+            tip = Triangle().scale(0.10).set_fill(BLACK, opacity=1.0).set_stroke(opacity=0.0)
+            tip.move_to(p_end).rotate(theta)
+            return VGroup(dashed, tip)
+
+        def _right_of(m: Mobject, dx: float = 0.0, dy: float = 0.0) -> np.ndarray:
+            p = m.get_right().copy(); p[0] += dx; p[1] += dy; return p
+
+        def _left_of(m: Mobject, dx: float = 0.0, dy: float = 0.0) -> np.ndarray:
+            p = m.get_left().copy(); p[0] += dx; p[1] += dy; return p
+
+        def _top_of(m: Mobject, dx: float = 0.0, dy: float = 0.0) -> np.ndarray:
+            p = m.get_top().copy(); p[0] += dx; p[1] += dy; return p
+
+        # --- Solid curved arrows (3 steps) -------------------------------------
+        self.next_slide()
+        a1 = _solid_curved_arrow(
+            start_pt=_right_of(e_surface, dx=0.10, dy=-0.10),
+            end_pt=_top_of(e_f2s, dx=-0.10, dy=0.10),
+            angle=-1.0,
+        )
+        self.play(Create(a1, run_time=0.6))
+
+        self.next_slide()
+        a2 = _solid_curved_arrow(
+            start_pt=_left_of(e_f2s, dx=-0.10, dy=0.05),
+            end_pt=_left_of(e_s2f, dx=0.30, dy=0.05),
+            angle=-1.2,
+        )
+        self.play(Create(a2, run_time=0.6))
+
+        self.next_slide()
+        a3 = _solid_curved_arrow(
+            start_pt=_top_of(e_s2f, dx=0.10, dy=0.10),
+            end_pt=_left_of(e_surface, dx=-0.10, dy=-0.10),
+            angle=-1.0,
+        )
+        self.play(Create(a3, run_time=0.6))
+
+        # --- Dotted curved arrows (3 steps) ------------------------------------
+        self.next_slide()
+        d1 = _dotted_curved_arrow(
+            start_pt=_right_of(e_s2f, dx=0.05, dy=0.00),
+            end_pt=_left_of(e_f2s, dx=-0.05, dy=0.00),
+            angle=+1.1,
+        )
+        self.play(FadeIn(d1, run_time=0.6))
+
+        self.next_slide()
+        d2 = _dotted_curved_arrow(
+            start_pt=_top_of(e_s2f, dx=0.08, dy=0.10),
+            end_pt=_left_of(e_surface, dx=-0.08, dy=-0.10),
+            angle=+1.0,
+        )
+        self.play(FadeIn(d2, run_time=0.6))
+
+        self.next_slide()
+        d3 = _dotted_curved_arrow(
+            start_pt=_top_of(e_f2s, dx=-0.08, dy=0.10),
+            end_pt=_right_of(e_surface, dx=0.08, dy=-0.10),
+            angle=+1.0,
+        )
+        self.play(FadeIn(d3, run_time=0.6))
+
+        # --- Clear all except the bar -----------------------------------------
+        self.next_slide()
+        to_keep = {bar}
+        self.remove(*[m for m in self.mobjects if m not in to_keep])
+
+        # --- Summary table ------------------------------------------------------
+        headers = [
+            Tex(""),
+            Tex(""),
+            Tex(r"\emph{un solide}"),
+            Tex(r"\emph{dix solides}"),
+        ]
+        body = [
+            [Tex("M\\'ethode de Tessendorf"), Tex("Hauteur"), Tex("0.4"), Tex("0.4")],
+            ["", Tex("Vitesse"), Tex("1.1"), Tex("1.1")],
+            ["", Tex("Total"), Tex("1.5"), Tex("1.5")],
+            [Tex("Fluide-vers-Solide"), Tex("G\\'eom\\'etrie"), Tex("1.1"), Tex("4.6")],
+            [Tex("Interaction"), Tex("Forces"), Tex("0.4"), Tex("3.6")],
+            ["", Tex("Total"), Tex("1.5"), Tex("8.2")],
+            [Tex("Solide-vers-Fluide"), Tex("MDF"), Tex("0.1"), Tex("0.8")],
+            [Tex("Interaction"), Tex("Masque"), Tex("0.2"), Tex("1.6")],
+            ["", Tex("Total"), Tex("0.3"), Tex("2.4")],
+            [Tex(r"\textbf{Total}"), Tex(""), Tex(r"\textbf{3.4 ms}"), Tex(r"\textbf{12.2 ms}")],
+        ]
+        def _to_tex_cell(c): return c if isinstance(c, Mobject) else Tex(str(c))
+        table_data = [[_to_tex_cell(c) for c in row] for row in body]
+
+        tbl = Table(
+            table_data,
+            col_labels=headers,
+            include_outer_lines=True,
+            line_config={"stroke_width": 2},
+            h_buff=0.7,
+            v_buff=0.35,
+            element_to_mobject=lambda x: x,
+        )
+        for line in tbl.get_horizontal_lines() + tbl.get_vertical_lines():
+            line.set_stroke(width=2)
+        last_row = len(body)
+        for c in range(1, 5):
+            tbl.get_cell((last_row, c)).set_fill(pc.blueGreen, opacity=0.15)
+
+        max_w = config.frame_width * 0.92
+        max_h = (config.frame_height * 0.92) - bar.height
+        if tbl.width > max_w:
+            tbl.scale_to_fit_width(max_w)
+        if tbl.height > max_h:
+            tbl.scale_to_fit_height(max_h)
+        tbl.move_to([0.0, -0.1, 0.0])
+        self.play(FadeIn(tbl, run_time=0.6))
+
+        self.next_slide()
+        self.remove(*[m for m in self.mobjects if m not in to_keep])
+
+        # --- Demo image ---------------------------------------------------------
+        img = ImageMobject("Figures/demo_arc_blanc.jpeg")
+        s = min((config.frame_width * 0.92) / img.width,
+                ((config.frame_height * 0.92) - bar.height - 0.2) / img.height,
+                1.0)
+        img.scale(s).move_to([0.0, -0.1, 0.0])
+        self.play(FadeIn(img, run_time=0.6))
+
+        self.next_slide()
+        self.remove(*[m for m in self.mobjects if m not in to_keep])
+
+        # --- Final bullets ------------------------------------------------------
+        self.start_body()
+        line = Tex("N\\'eanmoins :", font_size=self.BODY_FONT_SIZE, color=BLACK)
+        line.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        dx = (-config.frame_width / 2 + 0.6 + self.DEFAULT_PAD) - line.get_left()[0]
+        line.shift(RIGHT * dx)
+        self.add(line)
+
+        bullet_items = [
+            r"La m\\'ethode de Tessendorf repose sur de tr\\`es nombreuses approximations",
+            r"Les m\\'ethodes de couplage se basent sur des mod\\'eles ph\\'enom\\'enologiques",
+        ]
+        rows = []
+        for s in bullet_items:
+            dot = Dot(radius=0.06, color=pc.blueGreen)
+            txt = Tex(s, font_size=self.BODY_FONT_SIZE, color=BLACK)
+            rows.append(VGroup(dot, txt).arrange(RIGHT, buff=0.25, aligned_edge=DOWN))
+        bullets = VGroup(*rows).arrange(DOWN, buff=0.20, aligned_edge=LEFT)
+        bullets.next_to(line, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        dx2 = (-config.frame_width / 2 + 0.6 + self.DEFAULT_PAD) - bullets.get_left()[0]
+        bullets.shift(RIGHT * dx2)
+        self.play(FadeIn(bullets, run_time=0.5))
+
         self.pause()
         self.clear()
         self.next_slide()
