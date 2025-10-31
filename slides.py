@@ -2616,12 +2616,169 @@ class Presentation(Slide):
 
 
     def slide_17(self):
-        self._show_text(
-            "Solide->Fluide présentation du principe des vagues d'interactions"
+        """
+        Action du solide sur le fluide.
+        Affiche des lignes de corps (en Tex), une EDP 2D en equation*, puis
+        le schema aux differences finies, et enfin la variante avec le facteur d^n.
+        Les textes et formules sont ancrés à gauche sous la barre et ne dérivent pas.
+        """
+        # --- Barre de titre -------------------------------------------------------
+        bar = self._top_bar("Action du solide sur le fluide")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Zone utile -----------------------------------------------------------
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        area_w = x_right - x_left
+
+        # Ancre gauche stable pour les textes/formules
+        anchor_x = x_left + self.DEFAULT_PAD
+
+        # Utilitaire: verrouiller left et y (pour éviter tout drift)
+        def _lock_left_y(mob: Mobject, y_value: float) -> Mobject:
+            dx = anchor_x - mob.get_left()[0]
+            mob.shift(RIGHT * dx)
+            mob.set_y(y_value)
+            return mob
+
+        # --- Corps du texte (Tex au lieu de Text) --------------------------------
+        self.start_body()
+
+        line1 = Tex(
+            "L'action du solide sur le fluide est approximée comme",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
         )
+        line1_y = y_top - 0.40
+        _lock_left_y(line1, line1_y)
+        self.add(line1)
+
+        line2 = Tex(
+            "une simple « onde ». Pour la déterminer on résout l'équation d'onde 2D :",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
+        )
+        line2.next_to(line1, DOWN, buff=0.18, aligned_edge=LEFT)
+        _lock_left_y(line2, line2.get_y())
+        self.add(line2)
+
+        # Attente utilisateur ------------------------------------------------------
+        self.next_slide()
+
+        # --- EDP 2D (equation* + cases)  [USE Tex, not MathTex] ------------------
+        eq_pde = Tex(
+            r"""
+            \begin{equation*}
+            \begin{cases}
+                \Delta h(\mathbf{x},t)-\dfrac{1}{c^{2}}\dfrac{\partial^{2} h(\mathbf{x},t)}{\partial t^{2}}=0
+                \quad \text{for} \quad \mathbf{x}\in Z\\[6pt]
+                h(\mathbf{x},t)=0 \quad \text{for} \quad \mathbf{x}\in\partial Z
+            \end{cases}
+            \end{equation*}
+            """,
+            font_size=self.BODY_FONT_SIZE + 4,
+            color=BLACK,
+        )
+        eq_pde.next_to(line2, DOWN, buff=0.28, aligned_edge=LEFT)
+        _lock_left_y(eq_pde, eq_pde.get_y())
+        eq_pde.scale(min(1.0, (area_w * 0.92) / max(eq_pde.width, 1e-6)))
+        self.add(eq_pde)
+
+        line3 = Tex(
+            r"Où $Z$ est un domaine carré centré autour du solide.",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
+        )
+        line3.next_to(eq_pde, DOWN, buff=0.22, aligned_edge=LEFT)
+        _lock_left_y(line3, line3.get_y())
+        self.add(line3)
+
+        line4 = Tex(
+            r"On utilise la méthode des différences finies pour la résoudre.",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
+        )
+        line4.next_to(line3, DOWN, buff=0.14, aligned_edge=LEFT)
+        _lock_left_y(line4, line4.get_y())
+        self.add(line4)
+
+        line5 = Tex(
+            r"Avec $\mathbf{x}=(i\cdot dx,\,j\cdot dx)$ et $t=dt\cdot n$, $Z$",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
+        )
+        line6 = Tex(
+            r"est discrétisé autour du solide :",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
+        )
+        line5.next_to(line4, DOWN, buff=0.14, aligned_edge=LEFT)
+        _lock_left_y(line5, line5.get_y())
+        line6.next_to(line5, RIGHT, buff=0.10)
+        if line5.get_right()[0] + line6.width > x_right:
+            line6.next_to(line5, DOWN, buff=0.08, aligned_edge=LEFT)
+        _lock_left_y(line6, line6.get_y())
+        self.add(line5, line6)
+
+        # --- Schéma DF initial  [USE Tex, not MathTex] ---------------------------
+        eq_fd = Tex(
+            r"""
+            \begin{equation*}
+            \begin{cases}
+                h_{i,j}^{n+1} = a\left(h_{i+1,j}^n+h_{i-1,j}^n+h_{i,j+1}^n+h_{i,j-1}^n-4h_{i,j}^n\right)
+                + 2h_{i,j}^n - h_{i,j}^{n-1} \quad \text{for} \quad \mathbf{x}\in Z \\[6pt]
+                h_{i,j}^n = 0 \quad \text{for} \quad \mathbf{x}\in\partial Z
+            \end{cases}
+            \end{equation*}
+            """,
+            font_size=self.BODY_FONT_SIZE + 2,
+            color=BLACK,
+        )
+        eq_fd.next_to(line6, DOWN, buff=0.24, aligned_edge=LEFT)
+        _lock_left_y(eq_fd, eq_fd.get_y())
+        eq_fd.scale(min(1.0, (area_w * 0.92) / max(eq_fd.width, 1e-6)))
+        self.add(eq_fd)
+
+        line_a = Tex(
+            r"où $a=\dfrac{c^{2}dt^{2}}{dx^{2}}$",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
+        )
+        line_a.next_to(eq_fd, DOWN, buff=0.18, aligned_edge=LEFT)
+        _lock_left_y(line_a, line_a.get_y())
+        self.add(line_a)
+
+        # Attente utilisateur ------------------------------------------------------
+        self.next_slide()
+
+        # --- Variante amortie: facteur d^n  [USE Tex, not MathTex] ---------------
+        eq_fd_damped = Tex(
+            r"""
+            \begin{equation*}
+            \begin{cases}
+                h_{i,j}^{n+1} = d^{n}a\left(h_{i+1,j}^n+h_{i-1,j}^n+h_{i,j+1}^n+h_{i,j-1}^n-4h_{i,j}^n\right)
+                + 2h_{i,j}^n - h_{i,j}^{n-1} \quad \text{for} \quad \mathbf{x}\in Z \\[6pt]
+                h_{i,j}^n = 0 \quad \text{for} \quad \mathbf{x}\in\partial Z
+            \end{cases}
+            \end{equation*}
+            """,
+            font_size=self.BODY_FONT_SIZE + 2,
+            color=BLACK,
+        )
+        eq_fd_damped.move_to(eq_fd)
+        eq_fd_damped.scale(min(1.0, (area_w * 0.92) / max(eq_fd_damped.width, 1e-6)))
+
+        self.play(ReplacementTransform(eq_fd, eq_fd_damped), run_time=0.6)
+
+        # Fin de la slide ----------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_18(self):
         self._show_text("Calcul du masque")
