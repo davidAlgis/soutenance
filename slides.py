@@ -2615,12 +2615,14 @@ class Presentation(Slide):
         self.next_slide()
 
 
+
     def slide_17(self):
         """
         Action du solide sur le fluide.
-        Affiche des lignes de corps (en Tex), une EDP 2D en equation*, puis
-        le schema aux differences finies, et enfin la variante avec le facteur d^n.
-        Les textes et formules sont ancrés à gauche sous la barre et ne dérivent pas.
+        Texte d'intro, EDP 2D (equation* + cases), schéma DF,
+        puis variante amortie avec d^n. Mise en page ancrée à gauche,
+        espacements renforcés et largeur des équations limitée pour éviter
+        tout chevauchement.
         """
         # --- Barre de titre -------------------------------------------------------
         bar = self._top_bar("Action du solide sur le fluide")
@@ -2634,18 +2636,21 @@ class Presentation(Slide):
         x_right = config.frame_width / 2 - 0.6
         y_bottom = -config.frame_height / 2 + 0.6
         area_w = x_right - x_left
+        anchor_x = x_left + self.DEFAULT_PAD  # ancre gauche stable
 
-        # Ancre gauche stable pour les textes/formules
-        anchor_x = x_left + self.DEFAULT_PAD
-
-        # Utilitaire: verrouiller left et y (pour éviter tout drift)
+        # Utilitaires --------------------------------------------------------------
         def _lock_left_y(mob: Mobject, y_value: float) -> Mobject:
             dx = anchor_x - mob.get_left()[0]
             mob.shift(RIGHT * dx)
             mob.set_y(y_value)
             return mob
 
-        # --- Corps du texte (Tex au lieu de Text) --------------------------------
+        def _shrink_to_width_if_needed(mob: Mobject, max_w: float) -> None:
+            # Ne réduit que si l'objet dépasse la largeur cible
+            if mob.width > max_w:
+                mob.scale_to_fit_width(max_w)
+
+        # --- Corps de texte (Tex) -------------------------------------------------
         self.start_body()
 
         line1 = Tex(
@@ -2653,7 +2658,7 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
-        line1_y = y_top - 0.40
+        line1_y = y_top - 0.42
         _lock_left_y(line1, line1_y)
         self.add(line1)
 
@@ -2662,14 +2667,14 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
-        line2.next_to(line1, DOWN, buff=0.18, aligned_edge=LEFT)
+        line2.next_to(line1, DOWN, buff=0.22, aligned_edge=LEFT)
         _lock_left_y(line2, line2.get_y())
         self.add(line2)
 
         # Attente utilisateur ------------------------------------------------------
         self.next_slide()
 
-        # --- EDP 2D (equation* + cases)  [USE Tex, not MathTex] ------------------
+        # --- EDP 2D (equation* + cases) ------------------------------------------
         eq_pde = Tex(
             r"""
             \begin{equation*}
@@ -2683,9 +2688,9 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE + 4,
             color=BLACK,
         )
-        eq_pde.next_to(line2, DOWN, buff=0.28, aligned_edge=LEFT)
+        eq_pde.next_to(line2, DOWN, buff=0.32, aligned_edge=LEFT)
         _lock_left_y(eq_pde, eq_pde.get_y())
-        eq_pde.scale(min(1.0, (area_w * 0.92) / max(eq_pde.width, 1e-6)))
+        _shrink_to_width_if_needed(eq_pde, area_w * 0.90)
         self.add(eq_pde)
 
         line3 = Tex(
@@ -2693,7 +2698,7 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
-        line3.next_to(eq_pde, DOWN, buff=0.22, aligned_edge=LEFT)
+        line3.next_to(eq_pde, DOWN, buff=0.26, aligned_edge=LEFT)
         _lock_left_y(line3, line3.get_y())
         self.add(line3)
 
@@ -2702,29 +2707,31 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
-        line4.next_to(line3, DOWN, buff=0.14, aligned_edge=LEFT)
+        line4.next_to(line3, DOWN, buff=0.18, aligned_edge=LEFT)
         _lock_left_y(line4, line4.get_y())
         self.add(line4)
 
+        # Forcer la 2e phrase ("est discrétisé...") à passer LIGNE SUIVANTE
         line5 = Tex(
             r"Avec $\mathbf{x}=(i\cdot dx,\,j\cdot dx)$ et $t=dt\cdot n$, $Z$",
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
+        line5.next_to(line4, DOWN, buff=0.16, aligned_edge=LEFT)
+        _lock_left_y(line5, line5.get_y())
+        self.add(line5)
+
         line6 = Tex(
             r"est discrétisé autour du solide :",
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
-        line5.next_to(line4, DOWN, buff=0.14, aligned_edge=LEFT)
-        _lock_left_y(line5, line5.get_y())
-        line6.next_to(line5, RIGHT, buff=0.10)
-        if line5.get_right()[0] + line6.width > x_right:
-            line6.next_to(line5, DOWN, buff=0.08, aligned_edge=LEFT)
+        # Important: toujours SOUS line5 (plus de placement à droite)
+        line6.next_to(line5, DOWN, buff=0.08, aligned_edge=LEFT)
         _lock_left_y(line6, line6.get_y())
-        self.add(line5, line6)
+        self.add(line6)
 
-        # --- Schéma DF initial  [USE Tex, not MathTex] ---------------------------
+        # --- Schéma DF initial ----------------------------------------------------
         eq_fd = Tex(
             r"""
             \begin{equation*}
@@ -2738,9 +2745,9 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE + 2,
             color=BLACK,
         )
-        eq_fd.next_to(line6, DOWN, buff=0.24, aligned_edge=LEFT)
+        eq_fd.next_to(line6, DOWN, buff=0.26, aligned_edge=LEFT)
         _lock_left_y(eq_fd, eq_fd.get_y())
-        eq_fd.scale(min(1.0, (area_w * 0.92) / max(eq_fd.width, 1e-6)))
+        _shrink_to_width_if_needed(eq_fd, area_w * 0.90)
         self.add(eq_fd)
 
         line_a = Tex(
@@ -2748,14 +2755,14 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE,
             color=BLACK,
         )
-        line_a.next_to(eq_fd, DOWN, buff=0.18, aligned_edge=LEFT)
+        line_a.next_to(eq_fd, DOWN, buff=0.22, aligned_edge=LEFT)
         _lock_left_y(line_a, line_a.get_y())
         self.add(line_a)
 
         # Attente utilisateur ------------------------------------------------------
         self.next_slide()
 
-        # --- Variante amortie: facteur d^n  [USE Tex, not MathTex] ---------------
+        # --- Variante amortie: facteur d^n ----------------------------------------
         eq_fd_damped = Tex(
             r"""
             \begin{equation*}
@@ -2769,8 +2776,9 @@ class Presentation(Slide):
             font_size=self.BODY_FONT_SIZE + 2,
             color=BLACK,
         )
+        # Positionner exactement où se trouve eq_fd, puis limiter la largeur
         eq_fd_damped.move_to(eq_fd)
-        eq_fd_damped.scale(min(1.0, (area_w * 0.92) / max(eq_fd_damped.width, 1e-6)))
+        _shrink_to_width_if_needed(eq_fd_damped, area_w * 0.90)
 
         self.play(ReplacementTransform(eq_fd, eq_fd_damped), run_time=0.6)
 
