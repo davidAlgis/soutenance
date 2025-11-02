@@ -18,7 +18,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "16,18,19"
+SLIDES_SELECTION = "19"
 
 
 class Presentation(Slide):
@@ -3045,13 +3045,13 @@ class Presentation(Slide):
                 tip_length=0.16,
             )
 
-        def _dotted_curved_arrow(start_pt: np.ndarray, end_pt: np.ndarray, angle: float) -> VGroup:
+        def _dotted_curved_arrow(start_pt: np.ndarray, end_pt: np.ndarray, angle: float, num_dashes = 60, dashed_ratio=0.5) -> VGroup:
             """
             Dotted curved arrow for Manim 0.19: dashed arc + triangular tip aligned
             to the end tangent. Uses num_dashes/dashed_ratio (no dash_length).
             """
             arc = ArcBetweenPoints(start_pt, end_pt, angle=angle, color=BLACK, stroke_width=6)
-            dashed = DashedVMobject(arc, num_dashes=60, dashed_ratio=0.5)
+            dashed = DashedVMobject(arc, num_dashes, dashed_ratio)
             pts = arc.get_points()
             p_end = pts[-1]
             p_prev = pts[-2]
@@ -3084,7 +3084,7 @@ class Presentation(Slide):
         self.next_slide()
         a2 = _solid_curved_arrow(
             start_pt=_left_of(e_f2s, dx=-0.10, dy=0.05),
-            end_pt=_right_of(e_s2f, dx=0.25, dy=0.05),  # moved to right side
+            end_pt=_right_of(e_s2f, dx=0.15, dy=0.05),  # moved to right side
             angle=-1.0,  # under-arc clockwise
         )
         self.play(Create(a2, run_time=0.6))
@@ -3102,27 +3102,29 @@ class Presentation(Slide):
         # (4) S->F -> F->S : inner arc, higher
         self.next_slide()
         d1 = _dotted_curved_arrow(
-            start_pt=_top_of(e_s2f, dx=0.10, dy=0.25),      # higher start
-            end_pt=_top_of(e_f2s, dx=-0.10, dy=0.25),       # higher end
-            angle=+1.6,                                     # inner bulge
+            start_pt=_right_of(e_s2f, dx=0.10, dy=0.4),      # higher start
+            end_pt=_left_of(e_f2s, dx=-0.10, dy=0.4),       # higher end
+            angle=-0.8,                                     # inner bulge
         )
         self.play(FadeIn(d1, run_time=0.6))
 
         # (5) S->F -> Surface : inner, shifted right at both ends
         self.next_slide()
         d2 = _dotted_curved_arrow(
-            start_pt=_right_of(e_s2f, dx=0.30, dy=0.10),    # more to the right
-            end_pt=_right_of(e_surface, dx=0.30, dy=-0.05), # more to the right
-            angle=+1.0,                                     # inner-ish arc
+            start_pt=_top_of(e_s2f, dx=1.4, dy=-0.35),    # more to the right
+            end_pt=_left_of(e_surface, dx=0.30, dy=-1.05), # more to the right
+            angle=+0.6, 
+            num_dashes=20,                                    
         )
         self.play(FadeIn(d2, run_time=0.6))
 
         # (6) F->S -> Surface : inner, shifted left
         self.next_slide()
         d3 = _dotted_curved_arrow(
-            start_pt=_left_of(e_f2s, dx=-0.30, dy=0.10),    # more to the left
-            end_pt=_left_of(e_surface, dx=-0.30, dy=-0.05), # more to the left
-            angle=+1.2,                                     # inner-ish arc
+            start_pt=_top_of(e_f2s, dx=-1.30, dy=-0.3),    # more to the left
+            end_pt=_right_of(e_surface, dx=-0.30, dy=-1.05), # more to the left
+            angle=-0.6,  
+            num_dashes=20,                                   
         )
         self.play(FadeIn(d3, run_time=0.6))
 
