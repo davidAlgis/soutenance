@@ -3133,39 +3133,43 @@ class Presentation(Slide):
         to_keep = {bar}
         self.remove(*[m for m in self.mobjects if m not in to_keep])
 
-        # --- Summary table ------------------------------------------------------
+        # --- Summary table (BLACK text, pass-through for Tex) -------------------
+        def _tx(s: str) -> Tex:
+            return Tex(s, color=BLACK)
+
         headers = [
-            Tex(""),
-            Tex(""),
-            Tex(r"\emph{un solide}"),
-            Tex(r"\emph{dix solides}"),
+            _tx(""),
+            _tx(""),
+            _tx(r"\emph{un solide}"),
+            _tx(r"\emph{dix solides}"),
         ]
         body = [
-            [Tex("Méthode de Tessendorf"), Tex("Hauteur"), Tex("0.4"), Tex("0.4")],
-            ["", Tex("Vitesse"), Tex("1.1"), Tex("1.1")],
-            ["", Tex("Total"), Tex("1.5"), Tex("1.5")],
-            [Tex("Fluide-vers-Solide"), Tex("Géométrie"), Tex("1.1"), Tex("4.6")],
-            [Tex("Interaction"), Tex("Forces"), Tex("0.4"), Tex("3.6")],
-            ["", Tex("Total"), Tex("1.5"), Tex("8.2")],
-            [Tex("Solide-vers-Fluide"), Tex("MDF"), Tex("0.1"), Tex("0.8")],
-            [Tex("Interaction"), Tex("Masque"), Tex("0.2"), Tex("1.6")],
-            ["", Tex("Total"), Tex("0.3"), Tex("2.4")],
-            [Tex(r"\textbf{Total}"), Tex(""), Tex(r"\textbf{3.4 ms}"), Tex(r"\textbf{12.2 ms}")],
+            [_tx("M\\'ethode de Tessendorf"), _tx("Hauteur"), _tx("0.4"), _tx("0.4")],
+            [_tx(""), _tx("Vitesse"), _tx("1.1"), _tx("1.1")],
+            [_tx(""), _tx("Total"), _tx("1.5"), _tx("1.5")],
+            [_tx("Fluide-vers-Solide"), _tx("G\\'eom\\'etrie"), _tx("1.1"), _tx("4.6")],
+            [_tx(""), _tx("Forces"), _tx("0.4"), _tx("3.6")],
+            [_tx(""), _tx("Total"), _tx("1.5"), _tx("8.2")],
+            [_tx("Solide-vers-Fluide"), _tx("MDF"), _tx("0.1"), _tx("0.8")],
+            [_tx(""), _tx("Masque"), _tx("0.2"), _tx("1.6")],
+            [_tx(""), _tx("Total"), _tx("0.3"), _tx("2.4")],
+            [_tx(r"\textbf{Total}"), _tx(""), _tx(r"\textbf{3.4 ms}"), _tx(r"\textbf{12.2 ms}")],
         ]
-        def _to_tex_cell(c): return c if isinstance(c, Mobject) else Tex(str(c))
-        table_data = [[_to_tex_cell(c) for c in row] for row in body]
 
         tbl = Table(
-            table_data,
+            body,
             col_labels=headers,
             include_outer_lines=True,
             line_config={"stroke_width": 2},
             h_buff=0.7,
             v_buff=0.35,
-            element_to_mobject=lambda x: x,
+            element_to_mobject=lambda x: x,   # <- crucial: keep Tex as-is
         )
+        tbl.set_color(BLACK)
+
         for line in tbl.get_horizontal_lines() + tbl.get_vertical_lines():
             line.set_stroke(width=2)
+
         last_row = len(body)
         for c in range(1, 5):
             tbl.get_cell((last_row, c)).set_fill(pc.blueGreen, opacity=0.15)
@@ -3177,8 +3181,8 @@ class Presentation(Slide):
         if tbl.height > max_h:
             tbl.scale_to_fit_height(max_h)
         tbl.move_to([0.0, -0.1, 0.0])
-        self.play(FadeIn(tbl, run_time=0.6))
 
+        self.play(FadeIn(tbl, run_time=0.6))
         self.next_slide()
         self.remove(*[m for m in self.mobjects if m not in to_keep])
 
