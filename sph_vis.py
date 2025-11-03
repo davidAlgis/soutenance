@@ -1,116 +1,89 @@
-# sph_vis.py
-from typing import Optional, Tuple
-
 import numpy as np
-from manim import *
+import palette_colors as pc
+from manim import Dot, ValueTracker, VGroup
+from manim.utils.rate_functions import linear
 from sph_importer import import_sph_states
 
 
-def play_sph_particles_from_csv(
-    scene: Scene,
-    csv_path: str,
-    *,
-    only_fluids: bool = True,
-    projection: str = "xy",
-    scale: float = 1.0,
-    center: np.ndarray = np.array([0.0, 0.0, 0.0]),
-    view_origin: Optional[Tuple[float, float]] = None,
-    view_size: Optional[Tuple[float, float]] = None,
-    particle_radius: float = 0.02,
-    particle_color=WHITE,
-    particle_opacity: float = 1.0,
-    particle_stride: int = 1,
-    frame_range: Optional[Tuple[int, int]] = None,
-    frame_step: int = 1,
-    run_time_per_frame: float = 0.05,
-    fade_in_time: float = 0.25,
-):
-    """
-    Fast SPH animation using a single PointCloud.
-    After first frame is drawn, waits for scene.next_slide().
-    """
-
+def show_sph_simulation(scene, csv_path: str, show_only_fluid: bool = False):
     frames = import_sph_states(csv_path)
     if not frames:
-        scene.add(Tex("Aucune donnée SPH", color=RED))
-        scene.wait(0.5)
-        return None
+        print(f"[SPH] No frames found in {csv_path}")
+        return
 
-    # frame selection
-    ids = list(range(len(frames)))
-    if frame_range is not None:
-        a, b = frame_range
-        a = max(0, a)
-        b = min(len(frames) - 1, b)
-        ids = list(range(a, b + 1))
-    ids = ids[:: max(1, frame_step)]
-    if not ids:
-        return None
+    # Map index -> position for each frame
+    frame_maps = []
+    for frame in frames:
+        frame_map = {
+            idx: pos[:2]
+            for idx, pos in zip(frame.types.nonzero()[0], frame.pos)
+        }
+        frame_maps.append(frame_map)
 
-    # ------------------------------------------------------------------
-    # Projection helper
-    # ------------------------------------------------------------------
-    def _project(p3: np.ndarray) -> np.ndarray:
-        if projection == "xy":
-            arr = p3[:, [0, 1]]
-        elif projection == "yz":
-            arr = p3[:, [1, 2]]
-        else:
-            arr = p3[:, [0, 2]]
+    # --- Gather valid particle indices ---
+    # Use frame[0] for filtering fluid particles (type == 0)
+    frame0 = frames[0]
+    valid_ids = [
+        i
+        for i in range(frame0.n)
+        if (not show_only_fluid or frame0.types[i] == 0)
+    ]
+    # Use CSV 'index' field to ensure identity
+    indices0 = [i for i in range(frame0.n)]
+    ids0 = [
+        i
+        for i, t in enumerate(frame0.types)
+        if (not show_only_fluid or t == 0)
+    ]
 
-        # crop
-        if view_origin is not None and view_size is not None:
-            ox, oy = view_origin
-            sx, sy = view_size
-            m = (
-                (arr[:, 0] >= ox)
-                & (arr[:, 0] <= ox + sx)
-                & (arr[:, 1] >= oy)
-                & (arr[:, 1] <= oy + sy)
-            )
-            arr = arr[m]
+    # Extract index field for each frame
+    all_ids_per_frame = [set(range(frame.n)) for frame in frames]
 
-        if particle_stride > 1:
-            arr = arr[::particle_stride]
+    # Keep only indices present in all frames
+    common_ids = set(ids0).intersection(*all_ids_per_frame)
+    if not common_ids:
+        print("[SPH] No common fluid particles across all frames.")
+        return
 
-        arr = arr * scale
-        z = np.zeros((arr.shape[0], 1), dtype=np.float32)
-        pts = np.hstack([arr, z]) + center
-        return pts.astype(np.float32, copy=False)
+    common_ids = sorted(common_ids)
 
-    def _pts(i: int) -> np.ndarray:
-        fr = frames[i]
-        p = fr.pos
-        if only_fluids:
-            mask = (fr.types == 0) | (fr.mass_solid == 0.0)
-            p = p[mask]
-        if p.size == 0:
-            return np.zeros((0, 3), dtype=np.float32)
-        return _project(p)
+    # --- Compute bounding box for centering ---
+    all_positions = []
+    for frame in frames:
+        pos_map = {idx: pos[:2] for idx, pos in zip(range(frame.n), frame.pos)}
+        for idx in common_ids:
+            all_positions.append(pos_map[idx])
+    all_positions = np.array(all_positions)
+    mid_x, mid_y = np.mean(all_positions, axis=0)
 
-    # ------------------------------------------------------------------
-    # Build initial cloud
-    # ------------------------------------------------------------------
-    init = _pts(ids[0])
+    # --- Create Dots ---
+    dots = VGroup()
+    for idx in common_ids:
+        pos = frames[0].pos[idx][:2] - np.array([mid_x, mid_y])
+        color = pc.blueGreen if frames[0].types[idx] == 0 else pc.orange
+        dot = Dot([*pos, 0.0], radius=0.05, color=color)
+        dots.add(dot)
 
-    cloud = PointCloud(color=particle_color, opacity=particle_opacity)
-    cloud.points = init
-    scene.add(cloud)
-    scene.play(FadeIn(cloud), run_time=fade_in_time)
-
-    # Wait slide click
+    scene.add(dots)
     scene.next_slide()
 
-    # ------------------------------------------------------------------
-    # Animate
-    # ------------------------------------------------------------------
-    for fi in ids[1:]:
-        pN = _pts(fi)
-        cloud.points = pN
-        scene.play(
-            cloud.animate,  # triggers redraw
-            run_time=run_time_per_frame,
-            rate_func=linear,
-        )
+    # --- Animate using ValueTracker ---
+    tracker = ValueTracker(0)
 
-    return cloud
+    def update(group):
+        frame_idx = int(tracker.get_value())
+        if frame_idx >= len(frames):
+            frame_idx = len(frames) - 1
+        frame = frames[frame_idx]
+        for i, idx in enumerate(common_ids):
+            pos = frame.pos[idx][:2] - np.array([mid_x, mid_y])
+            group[i].move_to([*pos, 0.0])
+
+    dots.add_updater(update)
+    scene.play(
+        tracker.animate.set_value(len(frames) - 1),
+        run_time=5,
+        rate_func=linear,
+    )
+    dots.remove_updater(update)
+    scene.next_slide()

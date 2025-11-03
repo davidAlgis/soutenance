@@ -13,12 +13,13 @@ from manim_slides import Slide
 from manim_tikz import Tikz
 from utils import (make_bullet_list, make_pro_cons, parse_selection,
                    tikz_from_file)
+from sph_vis import show_sph_simulation
 
 config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "19,20"
+SLIDES_SELECTION = "21"
 
 
 class Presentation(Slide):
@@ -3367,19 +3368,38 @@ class Presentation(Slide):
 
         self.play(FadeIn(sph1, run_time=0.3), FadeIn(sph2, run_time=0.3))
 
-        # --- End slide ---------------------------------------------------------
+        # --- End slide
+        # ---------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
 
 
     def slide_21(self):
-        self._show_text(
-            "SPH pas à pas : fluides représenté comme des particules, forces de gravité"
+        # --- Top bar ---
+        bar = self._top_bar("SPH pas à pas")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Intro line (use LaTeX accent) ---
+        self.start_body()
+        intro = Tex(
+            r"SPH est une m{\'e}thode qui simule le fluide comme des particules :",
+            font_size=self.BODY_FONT_SIZE,
+            color=BLACK,
         )
+        intro.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        dx = (-config.frame_width / 2 + 0.6 + self.DEFAULT_PAD) - intro.get_left()[0]
+        intro.shift(RIGHT * dx)
+        self.play(FadeIn(intro, run_time=0.3))
+
+        # --- SPH animation (CSV) ---
+        show_sph_simulation(self, "states_sph/sph_gravity.csv", show_only_fluid=True)
+
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_22(self):
         self._show_text("SPH - Estimation en noyau pour la densité ")
