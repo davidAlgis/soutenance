@@ -3422,7 +3422,147 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_28(self):
-        self._show_text("Expliquer le concept de mémoire partagée")
+        """
+        Slide 28 : Mémoire partagée (shared memory concept)
+        - Top bar.
+        - One large top rectangle "Mémoire globale".
+        - Two 4x4 grids (left and right) below.
+        - Two arrows from global rectangle to each grid with label "Débit lent\\Stockage large".
+        - Wait for user.
+        - Two small rectangles above each grid "Mémoire partagée".
+        - Two arrows from those rectangles to the grids with label "Débit rapide\\Stockage léger".
+        """
+        # --- Top bar -----------------------------------------------------------
+        bar = self._top_bar("Mémoire partagée")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Usable area below the bar ----------------------------------------
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        area_w = x_right - x_left
+        area_h = y_top - y_bottom
+        mid_x = 0.0
+
+        # --- Helper: 4x4 grid --------------------------------------------------
+        def make_grid(center, w, h, stroke=6):
+            """
+            Create a 4x4 grid (outer rectangle + inner lines).
+            """
+            outer = Rectangle(width=w, height=h, color=BLACK, stroke_width=stroke)
+            outer.move_to(center)
+            lines = []
+            # verticals (3 inner)
+            for i in range(1, 4):
+                x = outer.get_left()[0] + i * (w / 4.0)
+                lines.append(Line([x, outer.get_bottom()[1], 0], [x, outer.get_top()[1], 0], color=BLACK, stroke_width=stroke))
+            # horizontals (3 inner)
+            for i in range(1, 4):
+                y = outer.get_bottom()[1] + i * (h / 4.0)
+                lines.append(Line([outer.get_left()[0], y, 0], [outer.get_right()[0], y, 0], color=BLACK, stroke_width=stroke))
+            return VGroup(outer, *lines)
+
+        # --- Top: large "Mémoire globale" rectangle ----------------------------
+        top_rect_w = area_w * 0.55
+        top_rect_h = area_h * 0.14
+        top_rect_y = y_top - top_rect_h * 0.5 - 0.10
+        global_rect = RoundedRectangle(
+            width=top_rect_w, height=top_rect_h, corner_radius=0.18,
+            stroke_color=BLACK, stroke_width=6, fill_opacity=0.0
+        ).move_to([mid_x, top_rect_y, 0.0])
+
+        global_label = Tex(
+            r"M\'emoire globale", color=BLACK, font_size=self.BODY_FONT_SIZE + 6
+        ).move_to(global_rect.get_center())
+
+        self.add(global_rect, global_label)
+
+        # --- Grids: left and right --------------------------------------------
+        grid_w = min(5.2, area_w * 0.34)
+        grid_h = min(3.8, area_h * 0.30)
+        grids_y = y_bottom + grid_h * 0.5 + 0.60
+        gap_lr = area_w * 0.10
+        left_center = np.array([mid_x - (grid_w + gap_lr) * 0.6, grids_y, 0.0])
+        right_center = np.array([mid_x + (grid_w + gap_lr) * 0.6, grids_y, 0.0])
+
+        grid_left = make_grid(left_center, grid_w, grid_h)
+        grid_right = make_grid(right_center, grid_w, grid_h)
+        self.add(grid_left, grid_right)
+
+        # --- Arrows from global to grids (slow/large) --------------------------
+        arrow_y_up = global_rect.get_bottom()[1] - 0.05
+        arrow_left = Arrow(
+            start=[left_center[0], arrow_y_up, 0.0],
+            end=[left_center[0], grid_left[0].get_top()[1] + 0.25, 0.0],
+            stroke_width=6, color=BLACK, buff=0.0
+        )
+        arrow_right = Arrow(
+            start=[right_center[0], arrow_y_up, 0.0],
+            end=[right_center[0], grid_right[0].get_top()[1] + 0.25, 0.0],
+            stroke_width=6, color=BLACK, buff=0.0
+        )
+
+        lbl_slow_l = Tex(
+            r"D\'ebit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE
+        ).next_to(arrow_left, RIGHT, buff=0.18)
+        lbl_slow_r = Tex(
+            r"D\'ebit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE
+        ).next_to(arrow_right, LEFT, buff=0.18)
+
+        self.add(arrow_left, arrow_right, lbl_slow_l, lbl_slow_r)
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Small rectangles "Mémoire partagée" above each grid ----------------
+        small_w = grid_w * 0.55
+        small_h = grid_h * 0.28
+        pad_y = 0.30
+
+        shared_left = RoundedRectangle(
+            width=small_w, height=small_h, corner_radius=0.18,
+            stroke_color=BLACK, stroke_width=6, fill_opacity=0.0
+        ).move_to([left_center[0], grid_left[0].get_top()[1] + small_h * 0.5 + pad_y, 0.0])
+
+        shared_right = RoundedRectangle(
+            width=small_w, height=small_h, corner_radius=0.18,
+            stroke_color=BLACK, stroke_width=6, fill_opacity=0.0
+        ).move_to([right_center[0], grid_right[0].get_top()[1] + small_h * 0.5 + pad_y, 0.0])
+
+        txt_shared_l = Tex(
+            r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE
+        ).move_to(shared_left.get_center())
+        txt_shared_r = Tex(
+            r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE
+        ).move_to(shared_right.get_center())
+
+        self.add(shared_left, shared_right, txt_shared_l, txt_shared_r)
+
+        # --- Fast/small arrows from shared boxes to grids ----------------------
+        fast_arrow_l = Arrow(
+            start=[left_center[0], shared_left.get_bottom()[1] - 0.02, 0.0],
+            end=[left_center[0], grid_left[0].get_top()[1] + 0.02, 0.0],
+            stroke_width=6, color=BLACK, buff=0.0
+        )
+        fast_arrow_r = Arrow(
+            start=[right_center[0], shared_right.get_bottom()[1] - 0.02, 0.0],
+            end=[right_center[0], grid_right[0].get_top()[1] + 0.02, 0.0],
+            stroke_width=6, color=BLACK, buff=0.0
+        )
+
+        lbl_fast_l = Tex(
+            r"D\'ebit rapide\\Stockage l\'eger", color=BLACK, font_size=self.BODY_FONT_SIZE
+        ).next_to(fast_arrow_l, LEFT, buff=0.18)
+        lbl_fast_r = Tex(
+            r"D\'ebit rapide\\Stockage l\'eger", color=BLACK, font_size=self.BODY_FONT_SIZE
+        ).next_to(fast_arrow_r, RIGHT, buff=0.18)
+
+        self.add(fast_arrow_l, fast_arrow_r, lbl_fast_l, lbl_fast_r)
+
+        # --- End slide ---------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
