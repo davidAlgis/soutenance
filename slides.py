@@ -3381,7 +3381,7 @@ class Presentation(Slide):
         self.add(bar)
         self.add_foreground_mobject(bar)
 
-        # --- Intro line (use LaTeX accent) ---
+        # --- Intro line ---
         self.start_body()
         intro = Tex(
             r"SPH est une m{\'e}thode qui simule le fluide comme des particules :",
@@ -3393,13 +3393,17 @@ class Presentation(Slide):
         intro.shift(RIGHT * dx)
         self.play(FadeIn(intro, run_time=0.3))
 
-        # --- SPH animation (fluids only, no ROI/sorting) ---
+        # --- SPH animation (fluids only) with ROI crop ---
         show_sph_simulation(
             self,
             "states_sph/sph_gravity.csv",
             only_fluid=True,
             dot_radius=0.04,
-            run_time=None,  # use CSV physical duration or fallback to 5s
+            run_time=0.5,                 # use sim duration fallback
+            roi_origin=(-1.5, -3.0),       # <<< your requested ROI
+            roi_size=(3.0, 5.0),
+            clip_outside=True,             # hide particles outside ROI
+            center_on_roi=False,           # keep world coords; set True to center ROI on screen
         )
 
         self.pause()
