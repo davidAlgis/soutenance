@@ -3393,8 +3393,14 @@ class Presentation(Slide):
         intro.shift(RIGHT * dx)
         self.play(FadeIn(intro, run_time=0.3))
 
-        # --- SPH animation (CSV) ---
-        show_sph_simulation(self, "states_sph/sph_gravity.csv", show_only_fluid=True)
+        # --- SPH animation (fluids only, no ROI/sorting) ---
+        show_sph_simulation(
+            self,
+            "states_sph/sph_gravity.csv",
+            only_fluid=True,
+            dot_radius=0.04,
+            run_time=None,  # use CSV physical duration or fallback to 5s
+        )
 
         self.pause()
         self.clear()
