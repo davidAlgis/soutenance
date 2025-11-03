@@ -3423,21 +3423,19 @@ class Presentation(Slide):
 
     def slide_28(self):
         """
-        Slide 28 : Mémoire partagée (shared memory concept)
-        - Top bar.
-        - One large top rectangle "Mémoire globale".
-        - Two 4x4 grids (left and right) below.
-        - Two arrows from global rectangle to each grid with label "Débit lent\\Stockage large".
-        - Wait for user.
-        - Two small rectangles above each grid "Mémoire partagée".
-        - Two arrows from those rectangles to the grids with label "Débit rapide\\Stockage léger".
+        Slide 28 : Mémoire partagée (shared memory)
+        Fixes requested:
+          1) From "Mémoire globale" draw ONE vertical line down to mid-height,
+             then two horizontal arrows from that point to each grid.
+          2) Move the two "Mémoire partagée" rectangles so their centers are
+             vertically halfway between the top rectangle and the grids.
         """
         # --- Top bar -----------------------------------------------------------
         bar = self._top_bar("Mémoire partagée")
         self.add(bar)
         self.add_foreground_mobject(bar)
 
-        # --- Usable area below the bar ----------------------------------------
+        # --- Usable area -------------------------------------------------------
         bar_rect = bar.submobjects[0]
         y_top = bar_rect.get_bottom()[1] - 0.15
         x_left = -config.frame_width / 2 + 0.6
@@ -3447,19 +3445,13 @@ class Presentation(Slide):
         area_h = y_top - y_bottom
         mid_x = 0.0
 
-        # --- Helper: 4x4 grid --------------------------------------------------
+        # Helper: 4x4 grid
         def make_grid(center, w, h, stroke=6):
-            """
-            Create a 4x4 grid (outer rectangle + inner lines).
-            """
-            outer = Rectangle(width=w, height=h, color=BLACK, stroke_width=stroke)
-            outer.move_to(center)
+            outer = Rectangle(width=w, height=h, color=BLACK, stroke_width=stroke).move_to(center)
             lines = []
-            # verticals (3 inner)
             for i in range(1, 4):
                 x = outer.get_left()[0] + i * (w / 4.0)
                 lines.append(Line([x, outer.get_bottom()[1], 0], [x, outer.get_top()[1], 0], color=BLACK, stroke_width=stroke))
-            # horizontals (3 inner)
             for i in range(1, 4):
                 y = outer.get_bottom()[1] + i * (h / 4.0)
                 lines.append(Line([outer.get_left()[0], y, 0], [outer.get_right()[0], y, 0], color=BLACK, stroke_width=stroke))
@@ -3473,14 +3465,10 @@ class Presentation(Slide):
             width=top_rect_w, height=top_rect_h, corner_radius=0.18,
             stroke_color=BLACK, stroke_width=6, fill_opacity=0.0
         ).move_to([mid_x, top_rect_y, 0.0])
-
-        global_label = Tex(
-            r"M\'emoire globale", color=BLACK, font_size=self.BODY_FONT_SIZE + 6
-        ).move_to(global_rect.get_center())
-
+        global_label = Tex(r"M\'emoire globale", color=BLACK, font_size=self.BODY_FONT_SIZE + 6).move_to(global_rect.get_center())
         self.add(global_rect, global_label)
 
-        # --- Grids: left and right --------------------------------------------
+        # --- Grids (left and right) -------------------------------------------
         grid_w = min(5.2, area_w * 0.34)
         grid_h = min(3.8, area_h * 0.30)
         grids_y = y_bottom + grid_h * 0.5 + 0.60
@@ -3492,56 +3480,61 @@ class Presentation(Slide):
         grid_right = make_grid(right_center, grid_w, grid_h)
         self.add(grid_left, grid_right)
 
-        # --- Arrows from global to grids (slow/large) --------------------------
-        arrow_y_up = global_rect.get_bottom()[1] - 0.05
+        # --- Central vertical line + horizontal arrows (lent/large) ------------
+        # Vertical line from bottom of global_rect to mid-height between rect and grids
+        grid_top_y = grid_left[0].get_top()[1]
+        y_mid = 0.5 * (global_rect.get_bottom()[1] + grid_top_y)
+
+        central_line = Line(
+            [mid_x, global_rect.get_bottom()[1], 0.0],
+            [mid_x, grids_y, 0.0],
+            color=BLACK, stroke_width=6
+        )
+
+        # Horizontal arrows from the end of the vertical line to each grid center (x)
         arrow_left = Arrow(
-            start=[left_center[0], arrow_y_up, 0.0],
-            end=[left_center[0], grid_left[0].get_top()[1] + 0.25, 0.0],
-            stroke_width=6, color=BLACK, buff=0.0
+            start=[mid_x, grids_y, 0.0],
+            end=[left_center[0]+0.5*grid_w, grids_y, 0.0],
+            color=BLACK, stroke_width=6, buff=0.0
         )
         arrow_right = Arrow(
-            start=[right_center[0], arrow_y_up, 0.0],
-            end=[right_center[0], grid_right[0].get_top()[1] + 0.25, 0.0],
-            stroke_width=6, color=BLACK, buff=0.0
+            start=[mid_x, grids_y, 0.0],
+            end=[right_center[0]-0.5*grid_w, grids_y, 0.0],
+            color=BLACK, stroke_width=6, buff=0.0
         )
 
-        lbl_slow_l = Tex(
-            r"D\'ebit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).next_to(arrow_left, RIGHT, buff=0.18)
-        lbl_slow_r = Tex(
-            r"D\'ebit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).next_to(arrow_right, LEFT, buff=0.18)
+        lbl_slow_l = Tex(r"D\'ebit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE)\
+            .next_to(central_line, RIGHT, buff=0.12)
+        # lbl_slow_r = Tex(r"D\'ebit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE)\
+            # .next_to(central_line, LEFT, buff=0.12)
 
-        self.add(arrow_left, arrow_right, lbl_slow_l, lbl_slow_r)
+        self.add(central_line, arrow_left, arrow_right, lbl_slow_l)
 
         # --- Wait for user -----------------------------------------------------
         self.next_slide()
 
-        # --- Small rectangles "Mémoire partagée" above each grid ----------------
+        # --- "Mémoire partagée" rectangles centered vertically between top+grids
         small_w = grid_w * 0.55
         small_h = grid_h * 0.28
-        pad_y = 0.30
+
+        shared_y = y_mid  # centered vertically as requested
 
         shared_left = RoundedRectangle(
             width=small_w, height=small_h, corner_radius=0.18,
             stroke_color=BLACK, stroke_width=6, fill_opacity=0.0
-        ).move_to([left_center[0], grid_left[0].get_top()[1] + small_h * 0.5 + pad_y, 0.0])
+        ).move_to([left_center[0], shared_y, 0.0])
 
         shared_right = RoundedRectangle(
             width=small_w, height=small_h, corner_radius=0.18,
             stroke_color=BLACK, stroke_width=6, fill_opacity=0.0
-        ).move_to([right_center[0], grid_right[0].get_top()[1] + small_h * 0.5 + pad_y, 0.0])
+        ).move_to([right_center[0], shared_y, 0.0])
 
-        txt_shared_l = Tex(
-            r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).move_to(shared_left.get_center())
-        txt_shared_r = Tex(
-            r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).move_to(shared_right.get_center())
+        txt_shared_l = Tex(r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE).move_to(shared_left.get_center())
+        txt_shared_r = Tex(r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE).move_to(shared_right.get_center())
 
         self.add(shared_left, shared_right, txt_shared_l, txt_shared_r)
 
-        # --- Fast/small arrows from shared boxes to grids ----------------------
+        # --- Fast/small arrows from shared boxes down to grids -----------------
         fast_arrow_l = Arrow(
             start=[left_center[0], shared_left.get_bottom()[1] - 0.02, 0.0],
             end=[left_center[0], grid_left[0].get_top()[1] + 0.02, 0.0],
@@ -3553,12 +3546,10 @@ class Presentation(Slide):
             stroke_width=6, color=BLACK, buff=0.0
         )
 
-        lbl_fast_l = Tex(
-            r"D\'ebit rapide\\Stockage l\'eger", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).next_to(fast_arrow_l, LEFT, buff=0.18)
-        lbl_fast_r = Tex(
-            r"D\'ebit rapide\\Stockage l\'eger", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).next_to(fast_arrow_r, RIGHT, buff=0.18)
+        lbl_fast_l = Tex(r"D\'ebit rapide\\Stockage l\'eger", color=BLACK, font_size=self.BODY_FONT_SIZE)\
+            .next_to(fast_arrow_l, LEFT, buff=0.18)
+        lbl_fast_r = Tex(r"D\'ebit rapide\\Stockage l\'eger", color=BLACK, font_size=self.BODY_FONT_SIZE)\
+            .next_to(fast_arrow_r, RIGHT, buff=0.18)
 
         self.add(fast_arrow_l, fast_arrow_r, lbl_fast_l, lbl_fast_r)
 
@@ -3566,6 +3557,7 @@ class Presentation(Slide):
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_29(self):
         self._show_text("Expliquer la méthode x-pencil")
