@@ -19,31 +19,45 @@ def show_sph_simulation(
     # physical time control (SPH time)
     sim_seconds: float | None = None,  # duration to play in SPH seconds
     sim_start: float | None = None,  # start time (SPH seconds since 0)
-    manim_seconds: (
-        float | None
-    ) = None,  # visual duration in Manim seconds (overrides run_time)
+    manim_seconds: float | None = None,  # visual duration (overrides run_time)
     # ROI
     roi_origin: tuple[float, float] | None = None,  # (ox, oy)
     roi_size: tuple[float, float] | None = None,  # (sx, sy)
     clip_outside: bool = True,
-    center_on_roi: bool = False,
+    center_on_roi: bool = False,  # kept for backward compat (ignored if fitting below is used)
+    # NEW: layout mapping
+    fit_roi_to_width: (
+        float | None
+    ) = None,  # map ROI width to this many Manim units
+    fit_roi_to_height: (
+        float | None
+    ) = None,  # map ROI height to this many Manim units
+    target_center: tuple[float, float] = (
+        0.0,
+        0.0,
+    ),  # where ROI center should land
+    cover: bool = False,  # if both width & height given: False=contain (min), True=cover (max)
 ):
     """
     Animate SPH particles in 2D (X,Y) on a Manim Slide, fluids-only by default.
 
-    - No use of particle IDs; we take the filtered array each frame.
+    - No particle IDs; we use the filtered array each frame.
     - N dots = count in the start frame after ROI filtering.
     - On each frame, move dot j to the j-th filtered position; hide extras if fewer.
 
     Time control:
-      - sim_start: SPH start time (defaults to first frame time).
-      - sim_seconds: SPH duration to play (e.g., 0.5).
-      We compute the frame range [i_start..i_end] that covers [t0..t1]
-      and animate an index tracker from i_start to i_end (so the last frame is guaranteed).
+      We compute the frame range [i_start..i_end] that covers [t0..t1] and animate an
+      index tracker from i_start to i_end (guarantees we render the last frame).
 
-    ROI:
+    ROI clipping:
       If roi_origin & roi_size and clip_outside=True -> keep only points inside.
-      If center_on_roi=True -> subtract ROI center from coordinates.
+
+    Layout mapping:
+      If fit_roi_to_width/height are given (and ROI is provided), we compute a uniform scale
+      's' so that the ROI is mapped to the requested on-screen size. The ROI center is placed
+      at 'target_center'. If both width and height are provided, 'cover' decides min/max.
+      If no fitting is requested, we keep coordinates unscaled and optionally recentre if
+      center_on_roi=True.
     """
     frames = import_sph_states(csv_path)
     if not frames:
@@ -64,16 +78,13 @@ def show_sph_simulation(
         return
 
     # Convert to frame range [i_start .. i_end], inclusive
-    # i_start = first frame with time >= t0
     i_start = max(0, bisect.bisect_left(times, t0))
     if i_start >= len(frames):
         i_start = len(frames) - 1
-    # i_end = last frame with time <= t1  (epsilon to include exact matches)
     eps = 1e-9
     i_end = bisect.bisect_right(times, t1 + eps) - 1
     if i_end < i_start:
         i_end = i_start
-    # Sanity clamp
     i_start = max(0, min(i_start, len(frames) - 1))
     i_end = max(0, min(i_end, len(frames) - 1))
 
@@ -103,23 +114,67 @@ def show_sph_simulation(
         return
     n_dots = int(xy0.shape[0])
 
-    # Optional centering on ROI center
-    if center_on_roi and roi_origin is not None and roi_size is not None:
-        cx = roi_origin[0] + roi_size[0] * 0.5
-        cy = roi_origin[1] + roi_size[1] * 0.5
+    # --- Compute transform: (world -> screen)
+    # Translation to use as "world center" (cx, cy)
+    if roi_origin is not None and roi_size is not None:
+        ox, oy = roi_origin
+        sx, sy = roi_size
+        world_cx = ox + sx * 0.5
+        world_cy = oy + sy * 0.5
     else:
-        cx = 0.0
-        cy = 0.0
+        # Fallback: use start-frame centroid if no ROI
+        world_cx = float(np.mean(xy0[:, 0]))
+        world_cy = float(np.mean(xy0[:, 1]))
+
+    # Target center in screen
+    tx, ty = target_center
+
+    # Uniform scale factor
+    s = 1.0
+    if roi_origin is not None and roi_size is not None:
+        sw = (
+            (fit_roi_to_width / sx)
+            if (fit_roi_to_width is not None and sx != 0.0)
+            else None
+        )
+        sh = (
+            (fit_roi_to_height / sy)
+            if (fit_roi_to_height is not None and sy != 0.0)
+            else None
+        )
+        if sw is not None and sh is not None:
+            s = max(sw, sh) if cover else min(sw, sh)
+        elif sw is not None:
+            s = sw
+        elif sh is not None:
+            s = sh
+        else:
+            # no fitting requested: optionally recentre if legacy flag set
+            if center_on_roi:
+                s = 1.0
+    else:
+        # no ROI: keep s=1.0
+        pass
+
+    def world_to_screen(xy: np.ndarray) -> np.ndarray:
+        # shift to ROI/world center, scale, then translate to target center
+        if xy.size == 0:
+            return xy
+        xs = (xy[:, 0] - world_cx) * s + tx
+        ys = (xy[:, 1] - world_cy) * s + ty
+        return np.stack([xs, ys], axis=1)
 
     # Create dots at initial positions
     dots = VGroup()
+    xy0_screen = world_to_screen(xy0)
     for i in range(n_dots):
-        x, y = float(xy0[i, 0] - cx), float(xy0[i, 1] - cy)
+        x, y = float(xy0_screen[i, 0]), float(xy0_screen[i, 1])
         dots.add(Dot(point=[x, y, 0.0], radius=dot_radius, color=pc.blueGreen))
     for d in dots:
         d.set_opacity(1.0)
 
     scene.add(dots)
+    scene.wait(0.1)
     scene.next_slide()  # show initial state
 
     # Visual duration
@@ -128,11 +183,10 @@ def show_sph_simulation(
     elif run_time is not None:
         anim_duration = float(run_time)
     else:
-        # proportional to physical window (fallback to 5s)
         window_len = times[i_end] - times[i_start]
         anim_duration = window_len if window_len > 0.0 else 5.0
 
-    # Index-based tracker guarantees hitting last frame exactly
+    # Index-based tracker ensures we hit the last frame exactly
     idx_tracker = ValueTracker(float(i_start))
 
     def update(group: VGroup):
@@ -141,9 +195,13 @@ def show_sph_simulation(
         xy = filter_xy_for_frame(fi)
         m = int(xy.shape[0])
 
+        xy_screen = world_to_screen(xy)
+
         lim = min(n_dots, m)
         for j in range(lim):
-            group[j].move_to([float(xy[j, 0] - cx), float(xy[j, 1] - cy), 0.0])
+            group[j].move_to(
+                [float(xy_screen[j, 0]), float(xy_screen[j, 1]), 0.0]
+            )
             group[j].set_opacity(1.0)
         for j in range(lim, n_dots):
             group[j].set_opacity(0.0)

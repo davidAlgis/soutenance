@@ -3398,12 +3398,16 @@ class Presentation(Slide):
             self,
             "states_sph/sph_gravity.csv",
             only_fluid=True,
-            dot_radius=0.04,
-            manim_seconds=3.0,                
-            roi_origin=(-1.5, -3.0),       
-            roi_size=(3.0, 4.0),
-            clip_outside=True,             
-            center_on_roi=False,           
+            dot_radius=0.08,
+            manim_seconds=3.0,            # Manim playback duration
+            roi_origin=(-1.5, -3.0),
+            roi_size=(3.0, 5.0),
+            clip_outside=True,
+            # NEW mapping: fit ROI height to 7 units and center it slightly below mid
+            fit_roi_to_height=None,
+            fit_roi_to_width=11.0,        # or set both and choose cover=True/False
+            target_center=(0.0, -1.0),
+            cover=False,
         )
 
         self.pause()
