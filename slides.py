@@ -3400,16 +3400,15 @@ class Presentation(Slide):
             "states_sph/sph_gravity.csv",
             only_fluid=True,
             dot_radius=0.08,
-            manim_seconds=3.0,            # Manim playback duration
+            manim_seconds=3.0,            
             roi_origin=(-1.5, -3.0),
             roi_size=(3.0, 5.0),
             clip_outside=True,
-            # NEW mapping: fit ROI height to 7 units and center it slightly below mid
             fit_roi_to_height=None,
-            fit_roi_to_width=11.0,        # or set both and choose cover=True/False
+            fit_roi_to_width=11.0,        
             target_center=(0.0, -1.0),
             cover=False,
-            grow_time=1.0,   # set to 0 to disable
+            grow_time=1.0,   
             grow_lag=0.0,
         )
 
@@ -3446,19 +3445,24 @@ class Presentation(Slide):
         """
         Slide 26 : Recherche du plus proche voisin (RPPV)
 
-        CSV expected format (first 20 rows used):
+        CSV expected header:
             Particle,X,Y
             1,0.2075,0.7779
             2,0.7110,0.3041
             3,0.4963,0.4596
-        with positions normalized in [0,1]x[0,1].
+        Positions are in [0,1]x[0,1].
 
-        Animations:
-        - Grow particles
-        - Color transforms for selections
-        - Create dashed circle and arrows/lines
-        - Draw probe lines and grid lines progressively
-        - Transform complexity labels
+        Stages (with the requested animations in brackets):
+          - Grow particles [GrowFromCenter]
+          - Recolor target and others [color transform]
+          - Dashed circle of radius 20*r (r = visual particle radius) [Create]
+          - Double arrow and 'h' label, then remove 'h' [Write -> FadeOut]
+          - 5 probe lines, color points by distance, then remove each line [Create -> Uncreate]
+          - Color all by in/out + show O(20^2) -> O(N^2) -> remove
+          - Remove circle; set others back to black
+          - Draw 4x4 grid behind particles [Create each line]
+          - Recolor by in/out with opacity [color transform]
+          - Write O(1)
         """
         # --- Top bar -----------------------------------------------------------
         bar = self._top_bar("Recherche du plus proche voisin (RPPV)")
@@ -3479,7 +3483,7 @@ class Presentation(Slide):
         col_target = getattr(pc, "jellyBean", RED_D)
         col_far = getattr(pc, "fernGreen", GREEN_D)
 
-        # --- Load positions from CSV ------------------------------------------
+        # --- Load first 20 positions ------------------------------------------
         import csv
         pts = []
         try:
@@ -3487,20 +3491,17 @@ class Presentation(Slide):
                 reader = csv.DictReader(f)
                 for row in reader:
                     if "X" in row and "Y" in row:
-                        x = float(row["X"])
-                        y = float(row["Y"])
-                        pts.append((x, y))
+                        pts.append((float(row["X"]), float(row["Y"])))
                     if len(pts) >= 20:
                         break
         except Exception:
-            rng_fallback = np.random.default_rng(7)
+            rng = np.random.default_rng(7)
             for _ in range(20):
-                pts.append((float(rng_fallback.uniform()), float(rng_fallback.uniform())))
-
+                pts.append((float(rng.uniform()), float(rng.uniform())))
         if not pts:
             pts = [(0.5, 0.5)]
 
-        # --- Map [0,1]^2 to slide body ----------------------------------------
+        # --- Map [0,1]^2 into the slide body ----------------------------------
         pad_x = 0.6
         pad_y = 0.55
         tgt_left = x_left + pad_x
@@ -3515,46 +3516,39 @@ class Presentation(Slide):
 
         Pw = [to_world(p) for p in pts]
 
-        # Visual particle radius
+        # Visual radius
         r_vis = min(tgt_w, tgt_h) / 60.0
 
-        # --- Create particle dots ----------------------------------------------
-        particles = []
-        for (x, y, z) in Pw:
-            particles.append(Dot(point=[x, y, z], radius=r_vis, color=col_blue, fill_opacity=1.0))
-        particles_group = VGroup(*particles)
+        # --- Particles ---------------------------------------------------------
+        particles = [Dot(point=p, radius=r_vis, color=col_blue, fill_opacity=1.0) for p in Pw]
 
-        # [Grow animation] -------------------------------------------------------
+        # [Grow animation]
         self.play(LaggedStart(*[GrowFromCenter(p) for p in particles], lag_ratio=0.06, run_time=0.9))
-
-        # Step: just the points
         self.next_slide()
 
-        # --- Select target (3rd) and recolor others black ----------------------
-        target_idx = min(2, len(particles) - 1)  # third in file
-
-        # [transform the color] --------------------------------------------------
-        anims = []
+        # --- Target selection (third) and recolor others to black --------------
+        target_idx = min(2, len(particles) - 1)
+        recolors = []
         for i, p in enumerate(particles):
             if i == target_idx:
-                anims.append(p.animate.set_color(col_target).set_fill(col_target, opacity=1.0))
+                recolors.append(p.animate.set_color(col_target).set_fill(col_target, opacity=1.0))
             else:
-                anims.append(p.animate.set_color(BLACK).set_fill(BLACK, opacity=1.0))
-        self.play(*anims, run_time=0.6)
+                recolors.append(p.animate.set_color(BLACK).set_fill(BLACK, opacity=1.0))
+        self.play(*recolors, run_time=0.6)
         self.next_slide()
 
-        # --- Dotted circle and "h" arrow ---------------------------------------
+        # --- Dashed circle (radius = 20*r_vis) ---------------------------------
         center = particles[target_idx].get_center()
-        h_radius = 10.0 * r_vis
-
+        h_radius = 25.0 * r_vis
         circle = DashedVMobject(
             Circle(radius=h_radius, arc_center=center, color=BLACK, stroke_width=4),
-            num_dashes=60,
+            num_dashes=80,
             dashed_ratio=0.55,
         )
         # [animation of draw]
         self.play(Create(circle), run_time=0.5)
 
+        # Arrow for h
         h_arrow = DoubleArrow(
             start=center,
             end=center + np.array([0.0, h_radius, 0.0]),
@@ -3563,18 +3557,20 @@ class Presentation(Slide):
             tip_length=0.16,
             buff=0.0,
         )
-        # draw arrow
-        self.play(Create(h_arrow), run_time=0.4)
-
+        self.play(Create(h_arrow), run_time=0.35)
         h_text = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(h_arrow, RIGHT, buff=0.06)
-        self.play(Write(h_text), run_time=0.3)
+        self.play(Write(h_text), run_time=0.25)
+        self.next_slide()
 
-        # --- Five probe lines to random particles -------------------------------
+        # Remove only the label "h" (keep arrow)
+        self.play(FadeOut(h_text), run_time=0.2)
+
+        # --- Five probe lines to random particles ------------------------------
         rng = np.random.default_rng(42)
-        probe_pool = [i for i in range(len(particles)) if i != target_idx]
-        for _ in range(min(5, len(probe_pool))):
-            j = int(rng.choice(probe_pool))
-            probe_pool.remove(j)
+        pool = [i for i in range(len(particles)) if i != target_idx]
+        for _ in range(min(5, len(pool))):
+            j = int(rng.choice(pool))
+            pool.remove(j)
             pj = particles[j].get_center()
             L = Line(center, pj, color=GRAY, stroke_width=4)
             # [draw each line from its start to its end]
@@ -3584,11 +3580,12 @@ class Presentation(Slide):
                 self.play(particles[j].animate.set_color(col_blue).set_fill(col_blue, opacity=1.0), run_time=0.15)
             else:
                 self.play(particles[j].animate.set_color(col_far).set_fill(col_far, opacity=1.0), run_time=0.15)
+            # remove the line [reverse draw]
+            self.play(Uncreate(L), run_time=0.18)
 
         self.next_slide()
 
-        # --- Color all in/out + show O(20^2) then O(N^2) -----------------------
-        # [animation of transform color]
+        # --- Color all by in/out + show O(20^2) --------------------------------
         anims = []
         for i, p in enumerate(particles):
             if i == target_idx:
@@ -3609,46 +3606,45 @@ class Presentation(Slide):
         self.play(ReplacementTransform(t_20, t_n2), run_time=0.35)
         self.next_slide()
 
+        # Remove complexity label and the dotted circle
         self.play(FadeOut(t_n2), run_time=0.25)
+        self.play(FadeOut(circle), FadeOut(h_arrow), run_time=0.25)
 
-        # Back to black (target stays jellyBean)
+        # Back to black for non-target points
         anims = []
         for i, p in enumerate(particles):
             if i != target_idx:
                 anims.append(p.animate.set_color(BLACK).set_fill(BLACK, opacity=1.0))
-        self.play(*anims, run_time=0.5)
+        self.play(*anims, run_time=0.45)
         self.next_slide()
 
-        # --- Draw a 4x4 background grid behind particles -----------------------
+        # --- 4x4 grid in background (draw each line) ---------------------------
         grid_w = tgt_w
         grid_h = tgt_h
-        grid_rect = Rectangle(width=grid_w, height=grid_h, color=BLACK, stroke_width=6)
-        grid_rect.move_to([(tgt_left + tgt_right) * 0.5, (tgt_bottom + tgt_top) * 0.5, 0.0])
+        grid_center = np.array([(tgt_left + tgt_right) * 0.5, (tgt_bottom + tgt_top) * 0.5, 0.0])
 
-        grid_lines = []
-        vxs = [grid_rect.get_left()[0] + i * (grid_w / 4.0) for i in range(1, 4)]
-        vys = [grid_rect.get_bottom()[1] + i * (grid_h / 4.0) for i in range(1, 4)]
+        border = Rectangle(width=grid_w, height=grid_h, color=BLACK, stroke_width=6).move_to(grid_center)
+        border.set_z_index(-10)
+        self.add(border)  # add first, it will stay behind
+        self.play(Create(border), run_time=0.25)
 
-        grid_group = VGroup(grid_rect)
-        grid_group.set_z_index(-10)  # behind dots
-        self.add(grid_group)
+        vxs = [border.get_left()[0] + i * (grid_w / 4.0) for i in range(1, 4)]
+        vys = [border.get_bottom()[1] + i * (grid_h / 4.0) for i in range(1, 4)]
 
-        # draw border first
-        self.play(Create(grid_rect), run_time=0.25)
-
-        # [draw each line one after the other from start to end]
-        seq = []
-        for x in vxs:
-            seq.append(Create(Line([x, grid_rect.get_bottom()[1], 0], [x, grid_rect.get_top()[1], 0],
-                                   color=BLACK, stroke_width=6)))
-        for y in vys:
-            seq.append(Create(Line([grid_rect.get_left()[0], y, 0], [grid_rect.get_right()[0], y, 0],
-                                   color=BLACK, stroke_width=6)))
-        self.play(Succession(*seq, lag_ratio=0.0))
-
+        v_lines = [
+            Line([x, border.get_bottom()[1], 0], [x, border.get_top()[1], 0], color=BLACK, stroke_width=6).set_z_index(-9)
+            for x in vxs
+        ]
+        h_lines = [
+            Line([border.get_left()[0], y, 0], [border.get_right()[0], y, 0], color=BLACK, stroke_width=6).set_z_index(-9)
+            for y in vys
+        ]
+        self.play(Succession(*[Create(l) for l in v_lines], lag_ratio=0.0))
+        self.play(Succession(*[Create(l) for l in h_lines], lag_ratio=0.0))
         self.next_slide()
 
-        # --- Recolor by in/out with some transparency --------------------------
+        # --- Recolor by in/out again (with opacity) ----------------------------
+        # Recreate the notion of h-radius visually (no circle needed)
         anims = []
         for i, p in enumerate(particles):
             if i == target_idx:
@@ -3659,7 +3655,6 @@ class Presentation(Slide):
             else:
                 anims.append(p.animate.set_color(col_far).set_fill(col_far, opacity=0.65))
         self.play(LaggedStart(*anims, lag_ratio=0.04), run_time=0.7)
-
         self.next_slide()
 
         # --- Write O(1) --------------------------------------------------------
@@ -3667,7 +3662,7 @@ class Presentation(Slide):
         self.play(Write(t_o1), run_time=0.35)
         self.next_slide()
 
-        # --- End ----------------------------------------------------------------
+        # End
         self.pause()
         self.clear()
         self.next_slide()
