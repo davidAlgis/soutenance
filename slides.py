@@ -20,7 +20,7 @@ config.background_color = WHITE
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
 # SLIDES_SELECTION = "26"
-SLIDES_SELECTION = "21, 26"
+SLIDES_SELECTION = "26"
 
 
 class Presentation(Slide):
@@ -3503,10 +3503,12 @@ class Presentation(Slide):
         area_w = x_right - x_left
         area_h = y_top - y_bottom
 
-        # Colors
+        # Colors (palette fallback-safe)
         col_blue = getattr(pc, "blueGreen", BLUE_D)
         col_target = getattr(pc, "jellyBean", RED_D)
         col_far = getattr(pc, "fernGreen", GREEN_D)
+        col_fill_center = getattr(pc, "sunny", YELLOW)
+        col_fill_neighbors = getattr(pc, "cornflower", BLUE_C)
 
         # --- Load first 30 positions ------------------------------------------
         import csv
@@ -3541,14 +3543,16 @@ class Presentation(Slide):
 
         Pw = [to_world(p) for p in pts]
 
-        # Visual radius
+        # Visual radius for particle dots
         r_vis = min(tgt_w, tgt_h) / 60.0
 
         # --- Particles ---------------------------------------------------------
         particles = [Dot(point=p, radius=r_vis, color=col_blue, fill_opacity=1.0) for p in Pw]
 
         # [Grow animation]
-        self.play(LaggedStart(*[GrowFromCenter(p) for p in particles], lag_ratio=0.05, run_time=0.9))
+        self.play(
+            LaggedStart(*[GrowFromCenter(p) for p in particles], lag_ratio=0.05, run_time=0.9)
+        )
         self.next_slide()
 
         # --- Target selection (third) and recolor others to black --------------
@@ -3562,9 +3566,10 @@ class Presentation(Slide):
         self.play(*recolors, run_time=0.6)
         self.next_slide()
 
-        # --- Dashed circle (radius = 15*r_vis) ---------------------------------
+        # --- Dashed circle (radius = 15*r_vis) + arrow/label h -----------------
         center = particles[target_idx].get_center()
-        h_radius = 15.0 * r_vis
+        h_radius = 17.0 * r_vis
+
         circle = DashedVMobject(
             Circle(radius=h_radius, arc_center=center, color=BLACK, stroke_width=4),
             num_dashes=80,
@@ -3573,7 +3578,6 @@ class Presentation(Slide):
         # [animation of draw]
         self.play(Create(circle), run_time=0.5)
 
-        # Arrow for h (double-headed from center to circle radius)
         h_arrow = DoubleArrow(
             start=center,
             end=center + np.array([0.0, h_radius, 0.0]),
@@ -3593,7 +3597,7 @@ class Presentation(Slide):
         # --- Five probe lines to random particles ------------------------------
         rng = np.random.default_rng(42)
         pool = [i for i in range(len(particles)) if i != target_idx]
-        for _ in range(min(5, len(pool))):
+        for _ in range(min(10, len(pool))):
             j = int(rng.choice(pool))
             pool.remove(j)
             pj = particles[j].get_center()
@@ -3602,9 +3606,15 @@ class Presentation(Slide):
             self.play(Create(L), run_time=0.25)
             d = float(np.linalg.norm(pj - center))
             if d <= h_radius:
-                self.play(particles[j].animate.set_color(col_blue).set_fill(col_blue, opacity=1.0), run_time=0.15)
+                self.play(
+                    particles[j].animate.set_color(col_blue).set_fill(col_blue, opacity=1.0),
+                    run_time=0.15,
+                )
             else:
-                self.play(particles[j].animate.set_color(col_far).set_fill(col_far, opacity=1.0), run_time=0.15)
+                self.play(
+                    particles[j].animate.set_color(col_far).set_fill(col_far, opacity=1.0),
+                    run_time=0.15,
+                )
             # remove the line [reverse draw]
             self.play(Uncreate(L), run_time=0.18)
 
@@ -3644,7 +3654,6 @@ class Presentation(Slide):
         self.next_slide()
 
         # --- Grid with cell size = h (h = h_radius) in background --------------
-        # Border rectangle of the particle area
         grid_w = tgt_w
         grid_h = tgt_h
         grid_center = np.array([(tgt_left + tgt_right) * 0.5, (tgt_bottom + tgt_top) * 0.5, 0.0])
@@ -3654,29 +3663,71 @@ class Presentation(Slide):
         self.add(border)
         self.play(Create(border), run_time=0.25)
 
-        # Lines spaced by h_radius in world coordinates
         left_x = border.get_left()[0]
         right_x = border.get_right()[0]
         bottom_y = border.get_bottom()[1]
         top_y = border.get_top()[1]
 
-        # Vertical lines
+        # Build vertical / horizontal lines spaced by h_radius
         v_lines = []
         x = left_x + h_radius
         while x <= right_x - 1e-6:
-            v_lines.append(Line([x, bottom_y, 0], [x, top_y, 0], color=BLACK, stroke_width=6).set_z_index(-9))
+            l = Line([x, bottom_y, 0], [x, top_y, 0], color=BLACK, stroke_width=6).set_z_index(-9)
+            v_lines.append(l)
             x += h_radius
 
-        # Horizontal lines
         h_lines = []
         y = bottom_y + h_radius
         while y <= top_y - 1e-6:
-            h_lines.append(Line([left_x, y, 0], [right_x, y, 0], color=BLACK, stroke_width=6).set_z_index(-9))
+            l = Line([left_x, y, 0], [right_x, y, 0], color=BLACK, stroke_width=6).set_z_index(-9)
+            h_lines.append(l)
             y += h_radius
 
         # [draw each lines one after the other from its start to its end]
         self.play(Succession(*[Create(l) for l in v_lines], lag_ratio=0.0))
         self.play(Succession(*[Create(l) for l in h_lines], lag_ratio=0.0))
+        self.next_slide()
+
+        # --- NEW: Fill target cell and its 8 neighbors -------------------------
+        # Compute cell indices for target; origin at left_x / bottom_y
+        cx, cy, _ = center
+        i0 = int(np.floor((cx - left_x) / h_radius))
+        j0 = int(np.floor((cy - bottom_y) / h_radius))
+
+        def cell_rect(ii: int, jj: int, color, alpha: float) -> Rectangle | None:
+            x0 = left_x + ii * h_radius
+            y0 = bottom_y + jj * h_radius
+            # bounds check: ensure the cell lies inside the border
+            if x0 < left_x - 1e-6 or (x0 + h_radius) > right_x + 1e-6:
+                return None
+            if y0 < bottom_y - 1e-6 or (y0 + h_radius) > top_y + 1e-6:
+                return None
+            r = Rectangle(width=h_radius, height=h_radius, stroke_opacity=0.0)
+            r.set_fill(color, opacity=alpha)
+            r.move_to([x0 + 0.5 * h_radius, y0 + 0.5 * h_radius, 0.0])
+            r.set_z_index(-9.5)  # behind grid lines, above border
+            return r
+
+        fills = []
+
+        # Center cell
+        c = cell_rect(i0, j0, col_fill_center, 0.45)
+        if c is not None:
+            fills.append(c)
+
+        # 8-neighborhood
+        for di in (-1, 0, 1):
+            for dj in (-1, 0, 1):
+                if di == 0 and dj == 0:
+                    continue
+                rct = cell_rect(i0 + di, j0 + dj, col_fill_neighbors, 0.35)
+                if rct is not None:
+                    fills.append(rct)
+
+        if fills:
+            self.play(LaggedStart(*[FadeIn(r) for r in fills], lag_ratio=0.05, run_time=0.5))
+        # -----------------------------------------------------------------------
+
         self.next_slide()
 
         # --- Recolor by in/out again (with opacity) ----------------------------
@@ -3693,6 +3744,7 @@ class Presentation(Slide):
         self.next_slide()
 
         # --- Write O(1) --------------------------------------------------------
+        complex_pos = np.array([x_right - 2.4, (y_top + y_bottom) * 0.5 + 0.2, 0.0])
         t_o1 = MathTex(r"\mathcal{O}(1)", color=BLACK, font_size=self.BODY_FONT_SIZE + 10).move_to(complex_pos)
         self.play(Write(t_o1), run_time=0.35)
         self.next_slide()
