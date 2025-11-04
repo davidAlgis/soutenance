@@ -3436,16 +3436,262 @@ class Presentation(Slide):
         self.next_slide()
 
     def slide_26(self):
-        self._show_text(
-            "Optimisation avec la RPPV - explication rapide de la méthode en grille (sans parler de GPU)"
+        """
+        Slide 26 : Recherche du plus proche voisin (RPPV)
+
+        CSV expected format (first 20 rows used):
+            Particle,X,Y
+            1,0.2075,0.7779
+            2,0.7110,0.3041
+            3,0.4963,0.4596
+        with positions normalized in [0,1]x[0,1].
+        """
+        # --- Top bar -----------------------------------------------------------
+        bar = self._top_bar("Recherche du plus proche voisin (RPPV)")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # ---- Usable area below the bar ---------------------------------------
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        area_w = x_right - x_left
+        area_h = y_top - y_bottom
+
+        # Colors
+        col_blue = getattr(pc, "blueGreen", BLUE_D)
+        col_target = getattr(pc, "jellyBean", RED_D)
+        col_far = getattr(pc, "fernGreen", GREEN_D)
+
+        # --- Load positions from CSV ------------------------------------------
+        import csv
+        pts = []
+        try:
+            with open(
+                "states_sph/particles.csv", "r", newline="", encoding="utf-8"
+            ) as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if "X" in row and "Y" in row:
+                        x = float(row["X"])
+                        y = float(row["Y"])
+                        pts.append((x, y))
+                    if len(pts) >= 20:
+                        break
+        except Exception:
+            # Fallback: deterministic 20 points in [0,1]^2
+            rng = np.random.default_rng(7)
+            for _ in range(20):
+                pts.append((float(rng.uniform()), float(rng.uniform())))
+
+        if not pts:
+            pts = [(0.5, 0.5)]
+
+        # --- Map [0,1]^2 to slide body ----------------------------------------
+        pad_x = 0.6
+        pad_y = 0.55
+        tgt_left = x_left + pad_x
+        tgt_right = x_right - pad_x
+        tgt_bottom = y_bottom + pad_y
+        tgt_top = y_top - pad_y
+        tgt_w = max(0.1, tgt_right - tgt_left)
+        tgt_h = max(0.1, tgt_top - tgt_bottom)
+
+        def to_world(p01):
+            return np.array(
+                [
+                    tgt_left + p01[0] * tgt_w,
+                    tgt_bottom + p01[1] * tgt_h,
+                    0.0,
+                ]
+            )
+
+        Pw = [to_world(p) for p in pts]
+
+        # Visual particle radius
+        r_vis = min(tgt_w, tgt_h) / 60.0
+
+        # --- Create particle dots ----------------------------------------------
+        particles = []
+        for (x, y, z) in Pw:
+            particles.append(
+                Dot(
+                    point=[x, y, z],
+                    radius=r_vis,
+                    color=col_blue,
+                    fill_opacity=1.0,
+                )
+            )
+        particles_group = VGroup(*particles)
+        self.add(particles_group)
+
+        # Step: just the points
+        self.next_slide()
+
+        # --- Select target (3rd) and recolor others black ----------------------
+        target_idx = min(2, len(particles) - 1)  # third in file
+        for i, p in enumerate(particles):
+            if i == target_idx:
+                p.set_color(col_target)
+                p.set_fill(col_target, opacity=1.0)
+            else:
+                p.set_color(BLACK)
+                p.set_fill(BLACK, opacity=1.0)
+
+        self.next_slide()
+
+        # --- Dotted circle and "h" arrow ---------------------------------------
+        center = particles[target_idx].get_center()
+        h_radius = 20.0 * r_vis
+
+        circle = DashedVMobject(
+            Circle(
+                radius=h_radius, arc_center=center, color=BLACK, stroke_width=4
+            ),
+            num_dashes=60,
+            dashed_ratio=0.55,
         )
+        self.add(circle)
+
+        h_arrow = DoubleArrow(
+            start=center,
+            end=center + np.array([0.0, h_radius, 0.0]),
+            stroke_width=6,
+            color=BLACK,
+            tip_length=0.16,
+            buff=0.0,
+        )
+        h_text = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
+            h_arrow, RIGHT, buff=0.06
+        )
+        self.add(h_arrow, h_text)
+
+        # --- Five probe lines to random particles -------------------------------
+        rng = np.random.default_rng(42)
+        probe_pool = [i for i in range(len(particles)) if i != target_idx]
+        for _ in range(min(5, len(probe_pool))):
+            j = int(rng.choice(probe_pool))
+            probe_pool.remove(j)
+            pj = particles[j].get_center()
+            L = Line(center, pj, color=GRAY, stroke_width=4)
+            self.add(L)
+            d = float(np.linalg.norm(pj - center))
+            if d <= h_radius:
+                particles[j].set_color(col_blue).set_fill(col_blue, opacity=1.0)
+            else:
+                particles[j].set_color(col_far).set_fill(col_far, opacity=1.0)
+
+        self.next_slide()
+
+        # --- Color all in/out + show O(20^2) then O(N^2) -----------------------
+        for i, p in enumerate(particles):
+            if i == target_idx:
+                continue
+            d = float(np.linalg.norm(p.get_center() - center))
+            if d <= h_radius:
+                p.set_color(col_blue).set_fill(col_blue, opacity=1.0)
+            else:
+                p.set_color(col_far).set_fill(col_far, opacity=1.0)
+
+        complex_pos = np.array(
+            [x_right - 2.4, (y_top + y_bottom) * 0.5 + 0.2, 0.0]
+        )
+        t_20 = MathTex(
+            r"\mathcal{O}(20^{2})",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 10,
+        ).move_to(complex_pos)
+        self.add(t_20)
+        self.next_slide()
+
+        t_n2 = MathTex(
+            r"\mathcal{O}(N^{2})",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 10,
+        ).move_to(complex_pos)
+        self.play(ReplacementTransform(t_20, t_n2))
+        self.next_slide()
+
+        self.play(FadeOut(t_n2))
+        for i, p in enumerate(particles):
+            if i != target_idx:
+                p.set_color(BLACK).set_fill(BLACK, opacity=1.0)
+        self.next_slide()
+
+        # --- Draw a 4x4 background grid behind particles -----------------------
+        grid_w = tgt_w
+        grid_h = tgt_h
+        grid_rect = Rectangle(
+            width=grid_w, height=grid_h, color=BLACK, stroke_width=6
+        )
+        grid_rect.move_to(
+            [(tgt_left + tgt_right) * 0.5, (tgt_bottom + tgt_top) * 0.5, 0.0]
+        )
+
+        grid_lines = []
+        for i in range(1, 4):
+            # verticals
+            x = grid_rect.get_left()[0] + i * (grid_w / 4.0)
+            grid_lines.append(
+                Line(
+                    [x, grid_rect.get_bottom()[1], 0],
+                    [x, grid_rect.get_top()[1], 0],
+                    color=BLACK,
+                    stroke_width=6,
+                )
+            )
+            # horizontals
+            y = grid_rect.get_bottom()[1] + i * (grid_h / 4.0)
+            grid_lines.append(
+                Line(
+                    [grid_rect.get_left()[0], y, 0],
+                    [grid_rect.get_right()[0], y, 0],
+                    color=BLACK,
+                    stroke_width=6,
+                )
+            )
+
+        grid_group = VGroup(grid_rect, *grid_lines)
+        grid_group.set_z_index(-10)  # ensure it stays behind dots
+        self.add(grid_group)
+        self.next_slide()
+
+        # --- Recolor by in/out with some transparency --------------------------
+        for i, p in enumerate(particles):
+            if i == target_idx:
+                continue
+            d = float(np.linalg.norm(p.get_center() - center))
+            if d <= h_radius:
+                p.set_color(col_blue).set_fill(col_blue, opacity=0.85)
+            else:
+                p.set_color(col_far).set_fill(col_far, opacity=0.65)
+
+        self.next_slide()
+
+        # --- Show O(1) (re-create O(N^2) at same place then transform) ----------
+        t_n2_new = MathTex(
+            r"\mathcal{O}(N^{2})",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 10,
+        ).move_to(complex_pos)
+        self.add(t_n2_new)
+        t_o1 = MathTex(
+            r"\mathcal{O}(1)", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
+        ).move_to(complex_pos)
+        self.play(ReplacementTransform(t_n2_new, t_o1))
+        self.next_slide()
+
+        # --- End ----------------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
 
+
     def slide_27(self):
         self._show_text(
-            "Expliquer qu'on souhaite mieux utiliser les spécificités du GPU pour la RPPV"
+            "TODO REMOVE Expliquer qu'on souhaite mieux utiliser les spécificités du GPU pour la RPPV"
         )
         self.pause()
         self.clear()
