@@ -1,6 +1,6 @@
 {
-    "h": 0.2,
-    "distBetweenParticlesAtInit": 0.1,
+    "h": 0.26,
+    "distBetweenParticlesAtInit": 0.13,
     "stiffnessCoefficient": 3.0,
     "gridOrigin": [
         -1.0,
@@ -19,16 +19,16 @@
     ],
     "originBoxFluidParticles": [
         [
-            -0.5,
-            -0.5,
+            -0.8,
+            -0.45,
             0.0
         ]
     ],
     "sizeBoxFluidParticles": [
         [
-            1.0,
-            1.0,
-            0.27
+            1.6,
+            0.9,
+            0.25
         ]
     ],
     "nbrFluidBox": 1

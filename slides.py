@@ -3392,7 +3392,7 @@ class Presentation(Slide):
         dx = (-config.frame_width / 2 + 0.6 + self.DEFAULT_PAD) - intro.get_left()[0]
         intro.shift(RIGHT * dx)
         self.play(FadeIn(intro, run_time=0.3))
-
+        self.next_slide()
         # --- SPH animation (fluids only) with ROI crop ---
         show_sph_simulation(
             self,
@@ -3408,6 +3408,8 @@ class Presentation(Slide):
             fit_roi_to_width=11.0,        # or set both and choose cover=True/False
             target_center=(0.0, -1.0),
             cover=False,
+            grow_time=1.0,   # set to 0 to disable
+            grow_lag=0.0,
         )
 
         self.pause()
@@ -3438,7 +3440,7 @@ class Presentation(Slide):
         self.pause()
         self.clear()
         self.next_slide()
-
+        
     def slide_26(self):
         """
         Slide 26 : Recherche du plus proche voisin (RPPV)

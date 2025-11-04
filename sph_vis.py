@@ -4,7 +4,7 @@ import bisect
 
 import numpy as np
 import palette_colors as pc
-from manim import Dot, ValueTracker, VGroup
+from manim import Dot, GrowFromCenter, LaggedStart, ValueTracker, VGroup
 from manim.utils.rate_functions import linear
 from sph_importer import import_sph_states
 
@@ -25,7 +25,7 @@ def show_sph_simulation(
     roi_size: tuple[float, float] | None = None,  # (sx, sy)
     clip_outside: bool = True,
     center_on_roi: bool = False,  # kept for backward compat (ignored if fitting below is used)
-    # NEW: layout mapping
+    # layout mapping
     fit_roi_to_width: (
         float | None
     ) = None,  # map ROI width to this many Manim units
@@ -37,28 +37,10 @@ def show_sph_simulation(
         0.0,
     ),  # where ROI center should land
     cover: bool = False,  # if both width & height given: False=contain (min), True=cover (max)
+    # intro animation
+    grow_time: float = 0.35,  # seconds; set 0 to disable
+    grow_lag: float = 0.0,  # 0.0 = all dots grow together; >0 adds a ripple
 ):
-    """
-    Animate SPH particles in 2D (X,Y) on a Manim Slide, fluids-only by default.
-
-    - No particle IDs; we use the filtered array each frame.
-    - N dots = count in the start frame after ROI filtering.
-    - On each frame, move dot j to the j-th filtered position; hide extras if fewer.
-
-    Time control:
-      We compute the frame range [i_start..i_end] that covers [t0..t1] and animate an
-      index tracker from i_start to i_end (guarantees we render the last frame).
-
-    ROI clipping:
-      If roi_origin & roi_size and clip_outside=True -> keep only points inside.
-
-    Layout mapping:
-      If fit_roi_to_width/height are given (and ROI is provided), we compute a uniform scale
-      's' so that the ROI is mapped to the requested on-screen size. The ROI center is placed
-      at 'target_center'. If both width and height are provided, 'cover' decides min/max.
-      If no fitting is requested, we keep coordinates unscaled and optionally recentre if
-      center_on_roi=True.
-    """
     frames = import_sph_states(csv_path)
     if not frames:
         print(f"[SPH] No frames in {csv_path}")
@@ -115,21 +97,17 @@ def show_sph_simulation(
     n_dots = int(xy0.shape[0])
 
     # --- Compute transform: (world -> screen)
-    # Translation to use as "world center" (cx, cy)
     if roi_origin is not None and roi_size is not None:
         ox, oy = roi_origin
         sx, sy = roi_size
         world_cx = ox + sx * 0.5
         world_cy = oy + sy * 0.5
     else:
-        # Fallback: use start-frame centroid if no ROI
         world_cx = float(np.mean(xy0[:, 0]))
         world_cy = float(np.mean(xy0[:, 1]))
 
-    # Target center in screen
     tx, ty = target_center
 
-    # Uniform scale factor
     s = 1.0
     if roi_origin is not None and roi_size is not None:
         sw = (
@@ -149,15 +127,10 @@ def show_sph_simulation(
         elif sh is not None:
             s = sh
         else:
-            # no fitting requested: optionally recentre if legacy flag set
             if center_on_roi:
                 s = 1.0
-    else:
-        # no ROI: keep s=1.0
-        pass
 
     def world_to_screen(xy: np.ndarray) -> np.ndarray:
-        # shift to ROI/world center, scale, then translate to target center
         if xy.size == 0:
             return xy
         xs = (xy[:, 0] - world_cx) * s + tx
@@ -173,9 +146,19 @@ def show_sph_simulation(
     for d in dots:
         d.set_opacity(1.0)
 
+    # IMPORTANT: add dots to the scene BEFORE the grow effect,
+    # so the later CSV playback updater continues to act on the same objects.
+
+    if grow_time > 0.0:
+        scene.play(
+            LaggedStart(
+                *[GrowFromCenter(d) for d in dots],
+                lag_ratio=grow_lag,
+                run_time=grow_time,
+            )
+        )
+    scene.next_slide()  # wait for click before starting the CSV playback
     scene.add(dots)
-    scene.wait(0.1)
-    scene.next_slide()  # show initial state
 
     # Visual duration
     if manim_seconds is not None:
@@ -193,9 +176,8 @@ def show_sph_simulation(
         fi = int(round(idx_tracker.get_value()))
         fi = max(i_start, min(fi, i_end))
         xy = filter_xy_for_frame(fi)
-        m = int(xy.shape[0])
-
         xy_screen = world_to_screen(xy)
+        m = int(xy_screen.shape[0])
 
         lim = min(n_dots, m)
         for j in range(lim):
