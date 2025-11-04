@@ -3488,18 +3488,6 @@ class Presentation(Slide):
             2,0.7110,0.3041
             3,0.4963,0.4596
         Positions are in [0,1]x[0,1].
-
-        Stages (with the requested animations in brackets):
-          - Grow particles [GrowFromCenter]
-          - Recolor target and others [color transform]
-          - Dashed circle of radius 20*r (r = visual particle radius) [Create]
-          - Double arrow and 'h' label, then remove 'h' [Write -> FadeOut]
-          - 5 probe lines, color points by distance, then remove each line [Create -> Uncreate]
-          - Color all by in/out + show O(20^2) -> O(N^2) -> remove
-          - Remove circle; set others back to black
-          - Draw 4x4 grid behind particles [Create each line]
-          - Recolor by in/out with opacity [color transform]
-          - Write O(1)
         """
         # --- Top bar -----------------------------------------------------------
         bar = self._top_bar("Recherche du plus proche voisin (RPPV)")
@@ -3520,7 +3508,7 @@ class Presentation(Slide):
         col_target = getattr(pc, "jellyBean", RED_D)
         col_far = getattr(pc, "fernGreen", GREEN_D)
 
-        # --- Load first 20 positions ------------------------------------------
+        # --- Load first 30 positions ------------------------------------------
         import csv
         pts = []
         try:
@@ -3529,11 +3517,11 @@ class Presentation(Slide):
                 for row in reader:
                     if "X" in row and "Y" in row:
                         pts.append((float(row["X"]), float(row["Y"])))
-                    if len(pts) >= 20:
+                    if len(pts) >= 30:
                         break
         except Exception:
             rng = np.random.default_rng(7)
-            for _ in range(20):
+            for _ in range(30):
                 pts.append((float(rng.uniform()), float(rng.uniform())))
         if not pts:
             pts = [(0.5, 0.5)]
@@ -3560,7 +3548,7 @@ class Presentation(Slide):
         particles = [Dot(point=p, radius=r_vis, color=col_blue, fill_opacity=1.0) for p in Pw]
 
         # [Grow animation]
-        self.play(LaggedStart(*[GrowFromCenter(p) for p in particles], lag_ratio=0.06, run_time=0.9))
+        self.play(LaggedStart(*[GrowFromCenter(p) for p in particles], lag_ratio=0.05, run_time=0.9))
         self.next_slide()
 
         # --- Target selection (third) and recolor others to black --------------
@@ -3574,9 +3562,9 @@ class Presentation(Slide):
         self.play(*recolors, run_time=0.6)
         self.next_slide()
 
-        # --- Dashed circle (radius = 20*r_vis) ---------------------------------
+        # --- Dashed circle (radius = 15*r_vis) ---------------------------------
         center = particles[target_idx].get_center()
-        h_radius = 25.0 * r_vis
+        h_radius = 15.0 * r_vis
         circle = DashedVMobject(
             Circle(radius=h_radius, arc_center=center, color=BLACK, stroke_width=4),
             num_dashes=80,
@@ -3585,7 +3573,7 @@ class Presentation(Slide):
         # [animation of draw]
         self.play(Create(circle), run_time=0.5)
 
-        # Arrow for h
+        # Arrow for h (double-headed from center to circle radius)
         h_arrow = DoubleArrow(
             start=center,
             end=center + np.array([0.0, h_radius, 0.0]),
@@ -3622,7 +3610,7 @@ class Presentation(Slide):
 
         self.next_slide()
 
-        # --- Color all by in/out + show O(20^2) --------------------------------
+        # --- Color all by in/out + show O(30^2) --------------------------------
         anims = []
         for i, p in enumerate(particles):
             if i == target_idx:
@@ -3632,18 +3620,18 @@ class Presentation(Slide):
                 anims.append(p.animate.set_color(col_blue).set_fill(col_blue, opacity=1.0))
             else:
                 anims.append(p.animate.set_color(col_far).set_fill(col_far, opacity=1.0))
-        self.play(LaggedStart(*anims, lag_ratio=0.04), run_time=0.7)
+        self.play(LaggedStart(*anims, lag_ratio=0.03), run_time=0.7)
 
         complex_pos = np.array([x_right - 2.4, (y_top + y_bottom) * 0.5 + 0.2, 0.0])
-        t_20 = MathTex(r"\mathcal{O}(20^{2})", color=BLACK, font_size=self.BODY_FONT_SIZE + 10).move_to(complex_pos)
-        self.play(Write(t_20), run_time=0.35)
+        t_30 = MathTex(r"\mathcal{O}(30^{2})", color=BLACK, font_size=self.BODY_FONT_SIZE + 10).move_to(complex_pos)
+        self.play(Write(t_30), run_time=0.35)
         self.next_slide()
 
         t_n2 = MathTex(r"\mathcal{O}(N^{2})", color=BLACK, font_size=self.BODY_FONT_SIZE + 10).move_to(complex_pos)
-        self.play(ReplacementTransform(t_20, t_n2), run_time=0.35)
+        self.play(ReplacementTransform(t_30, t_n2), run_time=0.35)
         self.next_slide()
 
-        # Remove complexity label and the dotted circle
+        # Remove complexity label and the dotted circle + arrow
         self.play(FadeOut(t_n2), run_time=0.25)
         self.play(FadeOut(circle), FadeOut(h_arrow), run_time=0.25)
 
@@ -3655,33 +3643,43 @@ class Presentation(Slide):
         self.play(*anims, run_time=0.45)
         self.next_slide()
 
-        # --- 4x4 grid in background (draw each line) ---------------------------
+        # --- Grid with cell size = h (h = h_radius) in background --------------
+        # Border rectangle of the particle area
         grid_w = tgt_w
         grid_h = tgt_h
         grid_center = np.array([(tgt_left + tgt_right) * 0.5, (tgt_bottom + tgt_top) * 0.5, 0.0])
 
         border = Rectangle(width=grid_w, height=grid_h, color=BLACK, stroke_width=6).move_to(grid_center)
         border.set_z_index(-10)
-        self.add(border)  # add first, it will stay behind
+        self.add(border)
         self.play(Create(border), run_time=0.25)
 
-        vxs = [border.get_left()[0] + i * (grid_w / 4.0) for i in range(1, 4)]
-        vys = [border.get_bottom()[1] + i * (grid_h / 4.0) for i in range(1, 4)]
+        # Lines spaced by h_radius in world coordinates
+        left_x = border.get_left()[0]
+        right_x = border.get_right()[0]
+        bottom_y = border.get_bottom()[1]
+        top_y = border.get_top()[1]
 
-        v_lines = [
-            Line([x, border.get_bottom()[1], 0], [x, border.get_top()[1], 0], color=BLACK, stroke_width=6).set_z_index(-9)
-            for x in vxs
-        ]
-        h_lines = [
-            Line([border.get_left()[0], y, 0], [border.get_right()[0], y, 0], color=BLACK, stroke_width=6).set_z_index(-9)
-            for y in vys
-        ]
+        # Vertical lines
+        v_lines = []
+        x = left_x + h_radius
+        while x <= right_x - 1e-6:
+            v_lines.append(Line([x, bottom_y, 0], [x, top_y, 0], color=BLACK, stroke_width=6).set_z_index(-9))
+            x += h_radius
+
+        # Horizontal lines
+        h_lines = []
+        y = bottom_y + h_radius
+        while y <= top_y - 1e-6:
+            h_lines.append(Line([left_x, y, 0], [right_x, y, 0], color=BLACK, stroke_width=6).set_z_index(-9))
+            y += h_radius
+
+        # [draw each lines one after the other from its start to its end]
         self.play(Succession(*[Create(l) for l in v_lines], lag_ratio=0.0))
         self.play(Succession(*[Create(l) for l in h_lines], lag_ratio=0.0))
         self.next_slide()
 
         # --- Recolor by in/out again (with opacity) ----------------------------
-        # Recreate the notion of h-radius visually (no circle needed)
         anims = []
         for i, p in enumerate(particles):
             if i == target_idx:
@@ -3691,7 +3689,7 @@ class Presentation(Slide):
                 anims.append(p.animate.set_color(col_blue).set_fill(col_blue, opacity=0.85))
             else:
                 anims.append(p.animate.set_color(col_far).set_fill(col_far, opacity=0.65))
-        self.play(LaggedStart(*anims, lag_ratio=0.04), run_time=0.7)
+        self.play(LaggedStart(*anims, lag_ratio=0.03), run_time=0.7)
         self.next_slide()
 
         # --- Write O(1) --------------------------------------------------------
