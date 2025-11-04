@@ -1,5 +1,6 @@
-# sph_vis.py (only the function updated)
 from __future__ import annotations
+
+import bisect
 
 import numpy as np
 import palette_colors as pc
@@ -13,38 +14,76 @@ def show_sph_simulation(
     csv_path: str,
     only_fluid: bool = True,
     dot_radius: float = 0.04,
+    # visual duration (Manim time)
     run_time: float | None = None,
-    # --- NEW: ROI controls ---
+    # physical time control (SPH time)
+    sim_seconds: float | None = None,  # duration to play in SPH seconds
+    sim_start: float | None = None,  # start time (SPH seconds since 0)
+    manim_seconds: (
+        float | None
+    ) = None,  # visual duration in Manim seconds (overrides run_time)
+    # ROI
     roi_origin: tuple[float, float] | None = None,  # (ox, oy)
     roi_size: tuple[float, float] | None = None,  # (sx, sy)
-    clip_outside: bool = True,  # hide particles outside ROI
-    center_on_roi: bool = False,  # translate so ROI center is at (0,0)
+    clip_outside: bool = True,
+    center_on_roi: bool = False,
 ):
     """
-    Animate SPH particles in 2D (X,Y) on a Manim Slide.
+    Animate SPH particles in 2D (X,Y) on a Manim Slide, fluids-only by default.
 
-    - No use of particle indices.
-    - Per frame, take rows with type==0 if only_fluid else all rows.
-    - Create exactly N dots from frame 0 (after optional ROI filtering if clip_outside=True).
-    - On each frame, move dot j to j-th filtered position; hide extra dots when fewer points exist.
+    - No use of particle IDs; we take the filtered array each frame.
+    - N dots = count in the start frame after ROI filtering.
+    - On each frame, move dot j to the j-th filtered position; hide extras if fewer.
+
+    Time control:
+      - sim_start: SPH start time (defaults to first frame time).
+      - sim_seconds: SPH duration to play (e.g., 0.5).
+      We compute the frame range [i_start..i_end] that covers [t0..t1]
+      and animate an index tracker from i_start to i_end (so the last frame is guaranteed).
 
     ROI:
-      If roi_origin & roi_size provided and clip_outside=True -> only show points inside.
-      If center_on_roi=True, subtract ROI center (cx,cy) from displayed coordinates.
+      If roi_origin & roi_size and clip_outside=True -> keep only points inside.
+      If center_on_roi=True -> subtract ROI center from coordinates.
     """
     frames = import_sph_states(csv_path)
     if not frames:
         print(f"[SPH] No frames in {csv_path}")
         return
 
-    def filter_xy(frame):
-        """Return (M,2) positions filtered by type if only_fluid else all."""
+    times = [float(f.current_time) for f in frames]
+    t_first, t_last = times[0], times[-1]
+
+    # Determine physical window [t0, t1]
+    t0 = t_first if sim_start is None else max(t_first, float(sim_start))
+    if sim_seconds is None:
+        t1 = t_last
+    else:
+        t1 = min(t_last, t0 + float(sim_seconds))
+    if t1 <= t0:
+        print(f"[SPH] Empty time window: t0={t0}, t1={t1}")
+        return
+
+    # Convert to frame range [i_start .. i_end], inclusive
+    # i_start = first frame with time >= t0
+    i_start = max(0, bisect.bisect_left(times, t0))
+    if i_start >= len(frames):
+        i_start = len(frames) - 1
+    # i_end = last frame with time <= t1  (epsilon to include exact matches)
+    eps = 1e-9
+    i_end = bisect.bisect_right(times, t1 + eps) - 1
+    if i_end < i_start:
+        i_end = i_start
+    # Sanity clamp
+    i_start = max(0, min(i_start, len(frames) - 1))
+    i_end = max(0, min(i_end, len(frames) - 1))
+
+    def filter_xy_for_frame(fi: int) -> np.ndarray:
+        f = frames[fi]
         if only_fluid:
-            mask = frame.types == 0
-            xy = frame.pos[mask, :2]
+            mask = f.types == 0
+            xy = f.pos[mask, :2]
         else:
-            xy = frame.pos[:, :2]
-        # ROI clipping (keep only inside) if requested
+            xy = f.pos[:, :2]
         if roi_origin is not None and roi_size is not None and clip_outside:
             ox, oy = roi_origin
             sx, sy = roi_size
@@ -57,15 +96,14 @@ def show_sph_simulation(
             xy = xy[inside]
         return xy
 
-    # Initial filtered positions (this defines N)
-    xy0 = filter_xy(frames[0])
+    # Initial filtered positions from start frame define N
+    xy0 = filter_xy_for_frame(i_start)
     if xy0.size == 0:
-        print("[SPH] No particles selected in initial frame.")
+        print("[SPH] No particles selected in start frame after filtering.")
         return
-
     n_dots = int(xy0.shape[0])
 
-    # Optional translation so ROI is centered
+    # Optional centering on ROI center
     if center_on_roi and roi_origin is not None and roi_size is not None:
         cx = roi_origin[0] + roi_size[0] * 0.5
         cy = roi_origin[1] + roi_size[1] * 0.5
@@ -78,47 +116,44 @@ def show_sph_simulation(
     for i in range(n_dots):
         x, y = float(xy0[i, 0] - cx), float(xy0[i, 1] - cy)
         dots.add(Dot(point=[x, y, 0.0], radius=dot_radius, color=pc.blueGreen))
-
-    # Ensure visible at start
     for d in dots:
         d.set_opacity(1.0)
 
     scene.add(dots)
     scene.next_slide()  # show initial state
 
-    # Duration
-    sim_t0 = float(frames[0].current_time)
-    sim_t1 = float(frames[-1].current_time)
-    total_sim = sim_t1 - sim_t0
-    if run_time is None:
-        run_time = total_sim if total_sim > 0.0 else 5.0
+    # Visual duration
+    if manim_seconds is not None:
+        anim_duration = float(manim_seconds)
+    elif run_time is not None:
+        anim_duration = float(run_time)
+    else:
+        # proportional to physical window (fallback to 5s)
+        window_len = times[i_end] - times[i_start]
+        anim_duration = window_len if window_len > 0.0 else 5.0
 
-    tracker = ValueTracker(0.0)
+    # Index-based tracker guarantees hitting last frame exactly
+    idx_tracker = ValueTracker(float(i_start))
 
     def update(group: VGroup):
-        i_frame = int(tracker.get_value())
-        if i_frame >= len(frames):
-            i_frame = len(frames) - 1
-
-        xy = filter_xy(frames[i_frame])
+        fi = int(round(idx_tracker.get_value()))
+        fi = max(i_start, min(fi, i_end))
+        xy = filter_xy_for_frame(fi)
         m = int(xy.shape[0])
 
         lim = min(n_dots, m)
-        # move visible
         for j in range(lim):
             group[j].move_to([float(xy[j, 0] - cx), float(xy[j, 1] - cy), 0.0])
             group[j].set_opacity(1.0)
-        # hide extras if current frame has fewer points
         for j in range(lim, n_dots):
             group[j].set_opacity(0.0)
 
     dots.add_updater(update)
     scene.play(
-        tracker.animate.set_value(len(frames) - 1),
-        run_time=run_time,
+        idx_tracker.animate.set_value(float(i_end)),
+        run_time=anim_duration,
         rate_func=linear,
     )
     dots.remove_updater(update)
 
-    # Keep final state
     scene.next_slide()

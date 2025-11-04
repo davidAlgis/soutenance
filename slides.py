@@ -3399,11 +3399,11 @@ class Presentation(Slide):
             "states_sph/sph_gravity.csv",
             only_fluid=True,
             dot_radius=0.04,
-            run_time=0.5,                 # use sim duration fallback
-            roi_origin=(-1.5, -3.0),       # <<< your requested ROI
-            roi_size=(3.0, 5.0),
-            clip_outside=True,             # hide particles outside ROI
-            center_on_roi=False,           # keep world coords; set True to center ROI on screen
+            manim_seconds=3.0,                
+            roi_origin=(-1.5, -3.0),       
+            roi_size=(3.0, 4.0),
+            clip_outside=True,             
+            center_on_roi=False,           
         )
 
         self.pause()
