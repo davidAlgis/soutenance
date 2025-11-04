@@ -40,6 +40,7 @@ def show_sph_simulation(
     # intro animation
     grow_time: float = 0.35,  # seconds; set 0 to disable
     grow_lag: float = 0.0,  # 0.0 = all dots grow together; >0 adds a ripple
+    on_after_init: Optional[Callable[[any, VGroup], None]] = None,
 ):
     frames = import_sph_states(csv_path)
     if not frames:
@@ -157,7 +158,14 @@ def show_sph_simulation(
                 run_time=grow_time,
             )
         )
+
     scene.next_slide()  # wait for click before starting the CSV playback
+    if on_after_init is not None:
+        try:
+            on_after_init(scene, dots)
+        except Exception as e:
+            print(f"[SPH] on_after_init raised: {e}")
+
     scene.add(dots)
 
     # Visual duration
@@ -195,5 +203,3 @@ def show_sph_simulation(
         rate_func=linear,
     )
     dots.remove_updater(update)
-
-    scene.next_slide()

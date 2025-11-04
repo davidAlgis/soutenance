@@ -64,7 +64,7 @@ def plot_particles(particles):
 
 
 # Example usage:
-N = 20  # Number of particles
+N = 30  # Number of particles
 seed = 1  # You can change this to any integer for different sequences
 particles = place_particles(N, seed)
 
