@@ -11,9 +11,9 @@ from manim import *
 from manim import logger
 from manim_slides import Slide
 from manim_tikz import Tikz
+from sph_vis import show_sph_simulation
 from utils import (make_bullet_list, make_pro_cons, parse_selection,
                    tikz_from_file)
-from sph_vis import show_sph_simulation
 
 config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
@@ -2255,7 +2255,8 @@ class Presentation(Slide):
 
         def try_prepare_wave_solution():
             try:
-                from wave_equation_1d import simulate_wave_1d_dirichlet  # type: ignore
+                from wave_equation_1d import \
+                    simulate_wave_1d_dirichlet  # type: ignore
                 H, x_arr, t_arr = simulate_wave_1d_dirichlet(
                     L=2.0, c=1.0, W=0.6, A=0.25, sigma=0.12, nx=801, T=8.0, dt=0.005, t0=0.0
                 )
@@ -3455,8 +3456,8 @@ class Presentation(Slide):
 
     def slide_22(self):
         """
-        Slide 22 — Incompressibilité et estimation de densité (updated specs).
-        CSV expected: states_sph/particles.csv with header: Particle,X,Y in [0,1]^2.
+        Slide 22 — Incompressibilité et estimation de densité
+        CSV expected at states_sph/particles.csv with header: Particle,X,Y in [0,1]^2.
         """
         # ---------- Top bar ----------
         bar = self._top_bar("Incompressibilité et estimation de densité")
@@ -3472,28 +3473,30 @@ class Presentation(Slide):
         area_w = x_right - x_left
         area_h = y_top - y_bottom
 
-        # ---- Palette (fallbacks if palette_colors missing entries) ----
-        import csv, numpy as np
+        # ---- Palette fallbacks ----
+        import csv
+
+        import numpy as np
         blueGreen  = getattr(pc, "blueGreen", BLUE_D)
         jellyBean  = getattr(pc, "jellyBean", RED_D)
         fernGreen  = getattr(pc, "fernGreen", GREEN_D)
         oxfordBlue = getattr(pc, "oxfordBlue", BLUE_E)
 
-        # ---------- Intro text (LEFT aligned) ----------
+        # ---------- Intro (aligned left) ----------
+        intro = VGroup()
         t1 = Tex("Propriété essentielle à l'eau : l'incompressibilité.",
                  color=BLACK, font_size=self.BODY_FONT_SIZE).move_to(
             [x_left + 0.01*area_w, y_top - 0.55, 0]).align_to([x_left,0,0], LEFT)
-
-        bl1 = Tex(r"$\bullet$~~Densité constante : $|\hat{\rho}-\rho_0| \rightarrow 0$",
-                  color=BLACK, font_size=self.BODY_FONT_SIZE)
-        bl2 = Tex(r"$\bullet$~~La somme des volumes des particules reste constante $\nabla \cdot v = 0$",
-                  color=BLACK, font_size=self.BODY_FONT_SIZE)
-        bullets = VGroup(bl1, bl2).arrange(DOWN, aligned_edge=LEFT, buff=0.28)
+        b1 = Tex(r"$\bullet$~~Densité constante : $|\hat{\rho}-\rho_0| \rightarrow 0$",
+                 color=BLACK, font_size=self.BODY_FONT_SIZE)
+        b2 = Tex(r"$\bullet$~~La somme des volumes des particules reste constante $\nabla \cdot v = 0$",
+                 color=BLACK, font_size=self.BODY_FONT_SIZE)
+        bullets = VGroup(b1, b2).arrange(DOWN, aligned_edge=LEFT, buff=0.28)
         bullets.next_to(t1, DOWN, buff=0.5).align_to(t1, LEFT)
-
         t2 = Tex("L'estimation de densité au c\\oe ur de SPH.",
                  color=BLACK, font_size=self.BODY_FONT_SIZE)
         t2.next_to(bullets, DOWN, buff=0.9).align_to(t1, LEFT)
+        intro.add(t1, bullets, t2)
 
         self.play(FadeIn(t1, shift=UP, run_time=0.35))
         self.play(LaggedStart(*[FadeIn(m, shift=UP) for m in bullets], lag_ratio=0.2, run_time=0.6))
@@ -3501,15 +3504,15 @@ class Presentation(Slide):
         self.next_slide()
 
         # ---------- Clear intro (keep bar) ----------
-        self.play(FadeOut(VGroup(t1, bullets, t2), run_time=0.3))
+        self.play(FadeOut(intro, run_time=0.3))
 
         # ---------- Two columns (right larger) ----------
         sep_x = x_left + 0.42 * area_w
         separator = Line([sep_x, y_bottom, 0], [sep_x, y_top, 0], color=BLACK, stroke_width=6)
         self.play(Create(separator), run_time=0.25)
 
-        left_rect_center  = np.array([x_left + 0.21 * area_w, (y_top + y_bottom)/2, 0])
-        right_rect_center = np.array([x_left + 0.71 * area_w, (y_top + y_bottom)/2, 0])
+        left_center  = np.array([x_left + 0.21 * area_w, (y_top + y_bottom)/2, 0])
+        right_center = np.array([x_left + 0.71 * area_w, (y_top + y_bottom)/2, 0])
         left_w, right_w = sep_x - x_left - 0.2, x_right - sep_x - 0.2
         left_h, right_h = area_h - 0.2, area_h - 0.2
 
@@ -3529,10 +3532,10 @@ class Presentation(Slide):
 
         # Map [0,1]^2 to right column
         pad = 0.1
-        rc_left   = right_rect_center[0] - right_w/2 + pad
-        rc_right  = right_rect_center[0] + right_w/2 - pad
-        rc_bottom = right_rect_center[1] - right_h/2 + pad
-        rc_top    = right_rect_center[1] + right_h/2 - pad
+        rc_left   = right_center[0] - right_w/2 + pad
+        rc_right  = right_center[0] + right_w/2 - pad
+        rc_bottom = right_center[1] - right_h/2 + pad
+        rc_top    = right_center[1] + right_h/2 - pad
         rc_w, rc_h = rc_right - rc_left, rc_top - rc_bottom
         def to_world(p01):
             return np.array([rc_left + p01[0]*rc_w, rc_bottom + p01[1]*rc_h, 0.0])
@@ -3547,7 +3550,7 @@ class Presentation(Slide):
         self.play(LaggedStart(*[FadeIn(lb, shift=UP*0.07) for lb in labels], lag_ratio=0.02, run_time=0.45))
         self.next_slide()
 
-        # ---------- Select target (3rd) + left eq placeholder ----------
+        # ---------- Target particle (3rd) + left equation placeholder ----------
         target_idx = min(2, len(dots)-1)
         self.play(*[
             (dots[i].animate.set_color(jellyBean).set_fill(jellyBean,1.0) if i==target_idx
@@ -3555,7 +3558,7 @@ class Presentation(Slide):
             for i in range(len(dots))
         ], run_time=0.6)
 
-        eq_pos = np.array([left_rect_center[0], left_rect_center[1] - 0.65*left_h/2, 0])
+        eq_pos = np.array([left_center[0], left_center[1] - 0.65*left_h/2, 0])
         eq = MathTex(r"\rho_3 \;=\; ?", color=BLACK, font_size=self.BODY_FONT_SIZE+12).move_to(eq_pos)
         self.play(Write(eq), run_time=0.35)
         self.next_slide()
@@ -3569,16 +3572,16 @@ class Presentation(Slide):
         )
         self.play(Create(circle), run_time=0.45)
 
-        # Diagonal to top-right: 45° direction scaled to h_radius
-        diag = (np.array([1.0, 1.0, 0.0]) / np.sqrt(2.0)) * h_radius
+        # diagonal ↕ arrow to top-right from center to radius
+        diag = (h_radius/np.sqrt(2.0)) * np.array([1.0, 1.0, 0.0])
         h_arrow = DoubleArrow(center, center + diag,
                               color=BLACK, stroke_width=6, tip_length=0.16, buff=0.0)
         self.play(Create(h_arrow), run_time=0.25)
-        h_tex = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(h_arrow, UR, buff=0.06)
+        # place 'h' next to (not on) the arrow
+        h_tex = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(h_arrow, RIGHT, buff=0.08)
         self.play(Write(h_tex), run_time=0.2)
 
-        # ---- Four nearest neighbors (plain mass sum) ----
-        # compute 4-NN
+        # ---------- Four nearest neighbors (plain mass sum, break line every 2 terms) ----------
         dists = [(i, float(np.linalg.norm(dots[i].get_center()-center)))
                  for i in range(len(dots)) if i!=target_idx]
         dists.sort(key=lambda t: t[1])
@@ -3615,30 +3618,31 @@ class Presentation(Slide):
              else dots[i].animate.set_color(BLACK).set_fill(BLACK,1.0))
             for i in range(len(dots))
         ], run_time=0.5)
-        self.play(Transform(eq, MathTex(r"\rho_3 \;=\; ?", color=BLACK, font_size=self.BODY_FONT_SIZE+4).move_to(eq_pos)),
+        self.play(Transform(eq, MathTex(r"\rho_3 \;=\; ?", color=BLACK,
+                                        font_size=self.BODY_FONT_SIZE+4).move_to(eq_pos)),
                   run_time=0.25)
 
-        # ---------- Gaussian at top-left (axes intersect at origin; y-axis at r=0) ----------
-        ax_center = np.array([left_rect_center[0] - 0.18*left_w, left_rect_center[1] + 0.18*left_h, 0])
+        # ---------- Gaussian at top-left (axes intersect at origin, area gradient fill) ----------
+        ax_center = np.array([left_center[0] - 0.18*left_w, left_center[1] + 0.18*left_h, 0])
         x_len = 0.55*left_w
         y_len = 0.34*left_h
-        x_axis_pos = Arrow(ax_center - np.array([0.05*x_len,0,0]),
-                           ax_center + np.array([x_len,0,0]), stroke_width=6, buff=0.0, color=BLACK)
-        y_axis_pos = Arrow(ax_center - np.array([0,0.05*y_len,0]),
-                           ax_center + np.array([0,y_len,0]), stroke_width=6, buff=0.0, color=BLACK)
-        x_lbl = Tex("r", color=BLACK, font_size=self.BODY_FONT_SIZE-6).next_to(x_axis_pos, DOWN, buff=0.05)
-        y_lbl = Tex("W", color=BLACK, font_size=self.BODY_FONT_SIZE-6).next_to(y_axis_pos, LEFT, buff=0.05)
+        x_y_axis = 0.5*x_len
+        x_axis = Arrow(ax_center - np.array([0.05*x_len,0,0]),
+                       ax_center + np.array([x_len,0,0]), stroke_width=6, buff=0.0, color=BLACK)
+        y_axis = Arrow(ax_center + np.array([x_y_axis,0,0]),
+                       ax_center + np.array([x_y_axis,y_len,0]), stroke_width=6, buff=0.0, color=BLACK)
+        x_lbl = Tex("r", color=BLACK, font_size=self.BODY_FONT_SIZE-6).next_to(x_axis, RIGHT, buff=0.05)
+        y_lbl = Tex("W", color=BLACK, font_size=self.BODY_FONT_SIZE-6).next_to(ax_center + np.array([x_y_axis,y_len,0]), RIGHT, buff=0.05)
 
         def Wnorm(x): return np.exp(-(x*x)/(0.45*0.45))
         nS = 160
         xs = np.linspace(-1.0, 1.0, nS)
         pts_curve = [
-            ax_center + np.array([((x+1)/2)*x_len, Wnorm(x)*0.8*y_len, 0.0])
-            for x in xs
+            ax_center + np.array([((x+1)/2)*x_len, Wnorm(x)*0.8*y_len, 0.0]) for x in xs
         ]
-        curve = VMobject(stroke_width=6).set_points_smoothly(pts_curve).set_color(WHITE)
+        curve = VMobject(stroke_width=6).set_points_smoothly(pts_curve).set_color(BLACK)
 
-        # Gradient-filled area (lower blueGreen -> upper jellyBean)
+        # vertical-gradient-like fill under curve (via thin strips)
         strips = []
         for i in range(len(xs)-1):
             x0, x1 = xs[i], xs[i+1]
@@ -3648,26 +3652,26 @@ class Presentation(Slide):
             Y1 = ax_center + np.array([((x1+1)/2)*x_len, Wnorm(x1)*0.8*y_len, 0])
             poly = Polygon(X0, X1, Y1, Y0, stroke_width=0)
             h_avg = 0.5*(Wnorm(x0)+Wnorm(x1))
-            col = interpolate_color(blueGreen, jellyBean, h_avg)
-            poly.set_fill(col, opacity=0.7)
+            poly.set_fill(interpolate_color(blueGreen, jellyBean, h_avg), opacity=0.75)
             strips.append(poly)
         fill_group = VGroup(*strips)
 
         kernel_label = MathTex(
             r"W(r)=\frac{1}{h\pi}\exp\!\left(-\frac{r^{2}}{h^{2}}\right)",
             color=BLACK, font_size=self.BODY_FONT_SIZE-6
-        ).next_to(y_axis_pos, UP, buff=0.2).align_to(y_axis_pos, LEFT)
+        ).next_to(y_axis, UP, buff=0.2).align_to(y_axis, LEFT)
 
-        self.play(FadeIn(VGroup(x_axis_pos, y_axis_pos, x_lbl, y_lbl), run_time=0.25))
+        self.play(FadeIn(VGroup(x_axis, y_axis, x_lbl, y_lbl), run_time=0.25))
         self.play(FadeIn(fill_group, run_time=0.35))
         self.play(Create(curve), run_time=0.6)
         self.play(FadeIn(kernel_label), run_time=0.25)
 
-        # Weighted pass with 4-NN (oxfordBlue lines moved under x-axis)
+        # Helper: color from distance (0..h) mapped to gradient (blueGreen -> jellyBean upward)
         def color_for_r(dist, h):
             t = np.clip(dist / h, 0.0, 1.0)
-            return interpolate_color(jellyBean, blueGreen, 1.0 - t)
+            return interpolate_color(blueGreen, jellyBean, t)
 
+        # Weighted sum with 4-NN
         def eq_weighted_lines(taken):
             if not taken:
                 s = r"\rho_3 \;=\; ?"
@@ -3690,12 +3694,14 @@ class Presentation(Slide):
             L = Line(center, p, color=oxfordBlue, stroke_width=5)
             self.play(Create(L), run_time=0.25)
 
-            col = color_for_r(r, h_radius)
-            self.play(dots[k].animate.set_color(col).set_fill(col, 1.0), run_time=0.2)
+            # color neighbor by kernel value
+            self.play(dots[k].animate.set_color(color_for_r(r, h_radius)).set_fill(color_for_r(r, h_radius), 1.0),
+                      run_time=0.2)
 
+            # move the line below the x-axis keeping its length
             lx = np.clip((r / h_radius) * x_line_len, 0.0, x_line_len)
-            L_dest = Line([ax_center[0], line_y_under, 0],
-                          [ax_center[0] + lx, line_y_under, 0],
+            L_dest = Line([ax_center[0] + x_y_axis, line_y_under, 0],
+                          [ax_center[0] + x_y_axis + lx, line_y_under, 0],
                           color=oxfordBlue, stroke_width=5)
             self.play(Transform(L, L_dest), run_time=0.25)
 
@@ -3705,15 +3711,15 @@ class Presentation(Slide):
 
         self.next_slide()
 
-        # ---------- Remove right column, center the equation ----------
+        # ---------- Remove right column; center the equation ----------
         right_group = VGroup(*dots, *labels, circle, h_arrow, h_tex, separator,
-                             x_axis_pos, y_axis_pos, x_lbl, y_lbl, fill_group, curve, kernel_label)
+                             x_axis, y_axis, x_lbl, y_lbl, fill_group, curve, kernel_label)
         self.play(FadeOut(right_group), run_time=0.45)
 
         eq_center = np.array([x_left + 0.5*area_w, (y_top + y_bottom)/2, 0])
         self.play(eq.animate.move_to(eq_center), run_time=0.4)
 
-        # Transform to generic neighbor sum (French 'voisins')
+        # Transform to generic neighbor sum (voisins)
         eq1 = MathTex(r"\rho_i \;=\; \sum_{j\in\text{voisins}} m_j\, W(r_{ij},h)",
                       color=BLACK, font_size=self.BODY_FONT_SIZE+12).move_to(eq_center)
         self.play(Transform(eq, eq1), run_time=0.55)
