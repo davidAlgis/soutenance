@@ -3916,6 +3916,8 @@ class Presentation(Slide):
         if fp_idx is not None:
             self.remove(force_arrow, fp_label)
 
+        self.pause()
+        self.clear()
         self.next_slide()
 
 
