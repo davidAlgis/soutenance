@@ -19,7 +19,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "23"
+SLIDES_SELECTION = "23-24"
 
 
 class Presentation(Slide):
@@ -3921,10 +3921,171 @@ class Presentation(Slide):
 
 
     def slide_24(self):
-        self._show_text("SPH - Forces de viscosité")
+        """
+        Slide 24: Diffusion et forces de viscosités.
+
+        Steps:
+        1) Top bar + two left-aligned lines.
+        2) Wait, then split remaining area into two columns with a vertical line
+           (animated bottom-to-top). Left: "Faiblement visqueux" + bullets.
+           Right: "Hautement visqueux" + bullets.
+        3) Wait, then clear columns and divider; show center equation.
+        4) Wait, then transform the equation to the detailed SPH form.
+        """
+        # --- Top bar -----------------------------------------------------------
+        bar = self._top_bar("Diffusion et forces de viscosités")
+        self.add(bar)
+        self.add_foreground_mobject(bar)
+
+        # --- Usable area below bar --------------------------------------------
+        bar_rect = bar.submobjects[0]
+        y_top = bar_rect.get_bottom()[1] - 0.15
+        x_left = -config.frame_width / 2 + 0.6
+        x_right = config.frame_width / 2 - 0.6
+        y_bottom = -config.frame_height / 2 + 0.6
+        anchor_x = x_left + self.DEFAULT_PAD
+
+        # --- Two intro lines (Tex, left-aligned) -------------------------------
+        self.start_body()
+        line1 = Tex(
+            r"Propriété essentielle à l'eau : faiblement visqueux.",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        line1.next_to(self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT)
+        line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
+
+        line2 = Tex(
+            r"La viscosité représente la résistance à l'écoulement.",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        line2.next_to(line1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+        line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
+
+        self.add(line1, line2)
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Two columns with vertical divider --------------------------------
+        # Column area bounds
+        content_top_y = line2.get_bottom()[1] - 0.35
+        content_bottom_y = y_bottom + 0.35
+        content_h = max(1.8, content_top_y - content_bottom_y)
+        content_center_y = 0.5 * (content_top_y + content_bottom_y)
+
+        # Divider x, animated bottom->top
+        divider_x = 0.0
+        divider = Line(
+            start=[divider_x, content_bottom_y, 0.0],
+            end=[divider_x, content_top_y, 0.0],
+            color=BLACK,
+            stroke_width=6,
+        )
+        self.play(Create(divider, run_time=0.7))
+
+        # Column centers
+        left_cx = x_left + 0.5 * (divider_x - x_left) - 0.2
+        right_cx = x_right - 0.5 * (x_right - divider_x) + 0.2
+
+        # Helpers to build a bullet list with Tex rows
+        def make_bullets(labels, font_size):
+            rows = []
+            for lbl, color in labels:
+                dot = MathTex(r"\bullet", color=BLACK, font_size=font_size)
+                txt = Tex(lbl, color=color, font_size=font_size)
+                row = VGroup(dot, txt).arrange(RIGHT, buff=0.18, aligned_edge=DOWN)
+                rows.append(row)
+            group = VGroup(*rows).arrange(DOWN, buff=0.14, aligned_edge=LEFT)
+            return group
+
+        # Left column: title on 2 lines + bullets
+        left_title = Tex(
+            r"Faiblement\\visqueux",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 4,
+        )
+        left_title.move_to([left_cx, content_center_y + 0.65, 0.0])
+
+        left_bullets = make_bullets(
+            [
+                (r"Mercure", BLACK),
+                (r"Eau", pc.blueGreen),
+                (r"Lait", BLACK),
+            ],
+            font_size=self.BODY_FONT_SIZE - 2,
+        )
+        left_bullets.next_to(left_title, DOWN, buff=0.28, aligned_edge=LEFT)
+        # Re-anchor bullets to column center x
+        dx_left = left_cx - left_bullets.get_left()[0]
+        left_bullets.shift(RIGHT * dx_left)
+
+        # Right column: title on 2 lines + bullets
+        right_title = Tex(
+            r"Hautement\\visqueux",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 4,
+        )
+        right_title.move_to([right_cx, content_center_y + 0.65, 0.0])
+
+        right_bullets = make_bullets(
+            [
+                (r"Huile", BLACK),
+                (r"Miel", BLACK),
+                (r"Beurre de cacahuète", BLACK),
+            ],
+            font_size=self.BODY_FONT_SIZE - 2,
+        )
+        right_bullets.next_to(right_title, DOWN, buff=0.28, aligned_edge=LEFT)
+        dx_right = right_cx - right_bullets.get_left()[0]
+        right_bullets.shift(RIGHT * dx_right)
+
+        cols_group = VGroup(left_title, left_bullets, right_title, right_bullets, divider)
+        self.play(
+            LaggedStart(
+                FadeIn(left_title), FadeIn(left_bullets),
+                FadeIn(right_title), FadeIn(right_bullets),
+                lag_ratio=0.12, run_time=0.8
+            )
+        )
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Clear columns and divider ----------------------------------------
+        self.play(FadeOut(cols_group, run_time=0.35))
+
+        # --- Center equation (large) ------------------------------------------
+        eq_center = MathTex(
+            r"\mathbf{F}_i^{\mathrm{viscosity}} = \frac{m_i}{\rho_i}\,\mu\,\nabla^{2}\mathbf{v}",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 10,
+        )
+        eq_center.move_to([0.0, content_center_y, 0.0])
+        self.play(FadeIn(eq_center, run_time=0.4))
+
+        # --- Wait for user -----------------------------------------------------
+        self.next_slide()
+
+        # --- Transform to SPH viscosity form ----------------------------------
+        eq_sph = MathTex(
+            r"\mathbf{F}_i^{v} = 2(d+2)\frac{m_i}{\rho_i}"
+            r"\sum_j \frac{m_j}{\rho_j}"
+            r"\frac{\mathbf{A}_{ij}\cdot\mathbf{r}_{ij}}{\lVert\mathbf{r}_{ij}\rVert^{2} + 0.01\,h^{2}}"
+            r"\,\nabla W_{ij}",
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE + 6,
+        )
+        eq_sph.move_to(eq_center.get_center())
+
+        self.play(ReplacementTransform(eq_center, eq_sph), run_time=0.8)
+
+        # --- End slide ---------------------------------------------------------
         self.pause()
         self.clear()
         self.next_slide()
+
 
     def slide_25(self):
         self._show_text("SPH - Couplage avec solides")
