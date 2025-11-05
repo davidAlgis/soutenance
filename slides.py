@@ -3901,9 +3901,12 @@ class Presentation(Slide):
 
         # Drive everything for 10 seconds
         self.play(
-            progress.animate.set_value(1.0).set_rate_func(linear).set_run_time(50.0),
-            rho_tracker.animate.set_value(1027.0).set_rate_func(linear).set_run_time(50.0),
+            progress.animate.set_value(1.0),
+            rho_tracker.animate.set_value(1027.0),
+            run_time=10.0,
+            rate_func=linear,
         )
+
 
         # Cleanup updaters
         for d in dots:
