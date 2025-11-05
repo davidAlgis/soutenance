@@ -3827,7 +3827,7 @@ class Presentation(Slide):
                               lag_ratio=0.03, run_time=0.9))
         self.next_slide()
 
-        # ---------- Transform color to CSV colors (use rgb_to_color) ----------
+        # ---------- Transform color to CSV colors ----------
         self.play(*[
             dots[i].animate.set_color(rgb_to_color(cols[i])).set_fill(rgb_to_color(cols[i]), 1.0)
             for i in range(len(dots))
@@ -3839,30 +3839,28 @@ class Presentation(Slide):
         self.play(Transform(eq, eq3), run_time=0.5)
         self.next_slide()
 
-        # ---------- 10s coupled animation (move to quincunx + recolor + equation to |1027-1027|=0 + F^p arrow) ----------
-        from manim import DecimalNumber, Arrow, Tex, ValueTracker, always_redraw
+        # ---------- Coupled animation (10s): move to quincunx + recolor to blueGreen + equation to |1027-1027|=0 + F^p arrow ----------
+        from manim import Arrow, Tex, ValueTracker, always_redraw
 
-        # Numbers that update with rho_tracker
-        rho_tracker = ValueTracker(875.0)
-        a_num = DecimalNumber(rho_tracker.get_value(), num_decimal_places=0, color=BLACK)
-        b_num = DecimalNumber(abs(rho_tracker.get_value() - 1027.0), num_decimal_places=0, color=BLACK)
-
-        def a_upd(m):
-            m.set_value(rho_tracker.get_value())
-            m.move_to(eq_center + np.array([-1.55, 0.0, 0]))
-        def b_upd(m):
-            m.set_value(abs(rho_tracker.get_value() - 1027.0))
-            m.move_to(eq_center + np.array([+1.55, 0.0, 0]))
-
-        a_num.add_updater(a_upd)
-        b_num.add_updater(b_upd)
-
-        eq_static = MathTex(r"\left|\,\square - 1027\,\right| \;=\; \square",
-                            color=BLACK, font_size=self.BODY_FONT_SIZE + 10).move_to(eq_center)
-        self.play(Transform(eq, eq_static), FadeIn(a_num), FadeIn(b_num), run_time=0.4)
-
-        # Single progress tracker drives *all* motions/colors
+        # Single progress tracker drives motions/colors
         progress = ValueTracker(0.0)
+
+        # Density tracker drives the equation numbers
+        rho_tracker = ValueTracker(875.0)
+
+        # One live MathTex for the whole equation (no overlapping numbers)
+        def make_live_eq():
+            # Use integers to keep layout stable
+            a = int(round(rho_tracker.get_value()))
+            b = abs(a - 1027)
+            m = MathTex(rf"\left|{a}-1027\right|\;=\;{b}",
+                        color=BLACK, font_size=self.BODY_FONT_SIZE + 10)
+            m.move_to(eq_center)
+            return m
+
+        eq_live = always_redraw(make_live_eq)
+        # Replace the static eq with the live one
+        self.play(FadeTransform(eq3, eq_live), run_time=0.4)
 
         # Cache start/end + start color for each dot, add updaters
         start_pos = [d.get_center() for d in dots]
@@ -3883,15 +3881,14 @@ class Presentation(Slide):
 
         # Force arrow for one particle (index 0) that shrinks to 0
         fp_idx = 0 if len(dots) > 0 else None
-        arrow_fade = ValueTracker(0.0)
         if fp_idx is not None:
             def make_force_arrow():
-                start = start_pos[fp_idx] * (1 - progress.get_value()) + end_pos[fp_idx] * progress.get_value()
+                t = progress.get_value()
+                start = start_pos[fp_idx] * (1 - t) + end_pos[fp_idx] * t
                 target = end_pos[fp_idx]
-                # Arrow length proportional to remaining distance
-                curr_end = start + (target - start) * (1.0 - progress.get_value())
+                curr_end = start + (target - start) * (1.0 - t)  # length reduces to 0
                 arr = Arrow(start, curr_end, color=BLACK, stroke_width=6, buff=0.0, tip_length=0.16)
-                arr.set_opacity(1.0 - progress.get_value())
+                arr.set_opacity(1.0 - t)
                 return arr
             force_arrow = always_redraw(make_force_arrow)
             fp_label = Tex(r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE).add_updater(
@@ -3899,7 +3896,7 @@ class Presentation(Slide):
             )
             self.add(force_arrow, fp_label)
 
-        # Drive everything for 10 seconds
+        # Drive everything together for 10 seconds (you can keep your adjusted duration here)
         self.play(
             progress.animate.set_value(1.0),
             rho_tracker.animate.set_value(1027.0),
@@ -3907,18 +3904,17 @@ class Presentation(Slide):
             rate_func=linear,
         )
 
-
         # Cleanup updaters
         for d in dots:
             d.clear_updaters()
-        a_num.remove_updater(a_upd)
-        b_num.remove_updater(b_upd)
         if fp_idx is not None:
             self.remove(force_arrow, fp_label)
 
         self.pause()
         self.clear()
         self.next_slide()
+
+
 
 
 
