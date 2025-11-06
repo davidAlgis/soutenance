@@ -1,0 +1,35 @@
+{
+    "h": 0.26,
+    "distBetweenParticlesAtInit": 0.13,
+    "stiffnessCoefficient": 3.0,
+    "gridOrigin": [
+        -1.0,
+        -0.7,
+        -1.0
+    ],
+    "gridSize": [
+        2.0,
+        2.5,
+        2.0
+    ],
+    "gridCellSize": [
+        0.2,
+        0.2,
+        0.2
+    ],
+    "originBoxFluidParticles": [
+        [
+            -0.8,
+            -0.45,
+            0.0
+        ]
+    ],
+    "sizeBoxFluidParticles": [
+        [
+            1.6,
+            0.9,
+            0.25
+        ]
+    ],
+    "nbrFluidBox": 1
+}
