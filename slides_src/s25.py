@@ -11,33 +11,21 @@ from manim import *
 from manim import logger
 from manim_slides import Slide
 from manim_tikz import Tikz
+from slide_registry import slide
 from sph_vis import show_sph_simulation
 from utils import (make_bullet_list, make_pro_cons, parse_selection,
                    tikz_from_file)
-
-config.background_color = WHITE
-# --------- Sélection des slides à rendre -----------
-# Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
-# On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "25"
-from slide_registry import slide
 
 
 @slide(25)
 def slide_25(self):
     """
     Slide 25 — Couplage avec des solides
-
-    Phases:
-      1) Draw a thick pc.orange rectangle (line-by-line).
-      2) Replace it by 'solid' particles (pc.temptress) sampled along the border,
-         keeping the rectangle faintly visible underneath.
-      3) Clear, then draw a filled orange band covering full width and 20% height
-         in the bottom half, add 6 large solid particles centered on the band and
-         3 blueGreen fluid particles above.
-      4) Draw a oxford-blue arrow from a fluid to a neighboring solid with label F^p,
-         then reverse the arrow direction.
-      5) End with pause/clear/next_slide.
+    - Draw thick orange frame, then replace by border particles.
+    - Clear and show a full-width orange band (20% height) at the bottom half,
+      with 6 large solid particles and 3 blueGreen fluid particles above.
+    - Draw arrow F^p from a fluid toward a solid, then reverse it.
+    - Finish with pause/clear/next_slide.
     """
     import numpy as np
     from manim import (AnimationGroup, Arrow, Create, Dot, FadeIn, FadeOut,
@@ -106,7 +94,6 @@ def slide_25(self):
     def sample_segment(a, b, n):
         return [a + (b - a) * (i / (n - 1)) for i in range(n)]
 
-    # Use moderate counts to avoid tiny-clip mux issues
     n_long, n_short = 22, 14
     pts_bottom = sample_segment(pBL, pBR, n_long)
     pts_right = sample_segment(pBR, pTR, n_short)
@@ -114,7 +101,7 @@ def slide_25(self):
     pts_left = sample_segment(pTL, pBL, n_short)
 
     chain_pts = pts_bottom + pts_right[:-1] + pts_top[:-1] + pts_left[:-1]
-    dot_r = min((r_right - r_left), (r_top - r_bottom)) / 48.0
+    dot_r = min((r_right - r_left), (r_top - r_bottom)) / 40.0  # larger
     border_dots = [
         Dot(p, radius=dot_r, color=temptress, fill_opacity=1.0)
         for p in chain_pts
@@ -130,34 +117,36 @@ def slide_25(self):
         ),
     )
 
-    # ---------- 3) Clear, then draw filled band + 6 solids + 3 fluids ----------
+    # ---------- 3) Clear, then draw filled band + 6 larger solids + 3 fluids ----------
     self.next_slide()
     self.play(
         FadeOut(VGroup(*border_dots, edges), run_time=0.35),
         FadeOut(txt, run_time=0.2),
     )
 
-    # Orange band: full width, 20% of body height, in bottom half
+    # Full-width orange band (entire slide width, no padding)
     band_h = 0.20 * area_h
     band_y = y_bottom + 0.28 + 0.5 * band_h
     band = Rectangle(
-        width=area_w,
+        width=config.frame_width,
         height=band_h,
         color=orange,
         fill_color=orange,
         fill_opacity=0.55,
         stroke_width=0,
-    ).move_to([x_left + 0.5 * area_w, band_y, 0])
+    ).move_to(
+        [0.0, band_y, 0.0]
+    )  # centered at x=0 so it spans whole slide
     self.play(FadeIn(band), run_time=0.25)
 
-    # Six solid particles centered on band
-    cx = x_left + 0.5 * area_w
-    cy = band_y
-    usable_w = area_w * 0.90
+    # Six solid particles centered on the band (larger)
     n_solids = 6
+    cx = 0.0
+    cy = band_y
+    usable_w = config.frame_width * 0.88
     gap = usable_w / (n_solids - 1)
     start_x = cx - usable_w / 2.0
-    solid_R = band_h * 0.24  # large enough to visually fill horizontally
+    solid_R = band_h * 0.30  # bigger than before
 
     solids = []
     for i in range(n_solids):
@@ -166,10 +155,14 @@ def slide_25(self):
             Dot([px, cy, 0], radius=solid_R, color=temptress, fill_opacity=1.0)
         )
 
-    # Three fluid particles above the band (top half), spread across
-    top_half_y = band_y + band_h * 2.1
-    fluid_xs = [start_x + 0.5 * gap, start_x + 3.0 * gap, start_x + 5.2 * gap]
-    fluid_R = solid_R * 0.80
+    # Three fluid particles above the band, spread and bigger
+    top_half_y = band_y + band_h * 2.25
+    fluid_xs = [
+        start_x + 0.45 * gap,
+        start_x + 2.1 * gap,
+        start_x + 4.35 * gap,
+    ]
+    fluid_R = solid_R * 0.95  # a bit larger than before
     fluids = [
         Dot(
             [fx, top_half_y, 0],
@@ -196,13 +189,18 @@ def slide_25(self):
     f = fluids[0]
     s = solids[1] if len(solids) > 1 else solids[0]
 
-    start = f.get_bottom() + np.array([0.0, -0.55 * f.radius, 0.0])
-    end = s.get_top() + np.array([0.0, 0.55 * s.radius, 0.0])
+    # Aim toward particle centers, but clamp to their rims
+    fc = f.get_center()
+    sc = s.get_center()
+    v = sc - fc
+    vn = v / np.linalg.norm(v)
+    start = fc + vn * (fluid_R * 0.92)  # just inside fluid rim toward solid
+    end = sc - vn * (solid_R * 0.92)  # just inside solid rim toward fluid
 
     arrow = Arrow(
         start, end, color=oxford, stroke_width=6, buff=0.0, tip_length=0.18
     )
-    label = Tex(r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
+    label = Tex(r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE+10).next_to(
         arrow, LEFT, buff=0.08
     )
 
@@ -215,10 +213,12 @@ def slide_25(self):
     )
     self.next_slide()
 
-    # Reverse tip to point toward the fluid
+    # Reverse tip to point toward the fluid (keep center-aimed)
+    arrow_rev_start = end
+    arrow_rev_end = start
     self.play(
         AnimationGroup(
-            arrow.animate.put_start_and_end_on(end, start),
+            arrow.animate.put_start_and_end_on(arrow_rev_start, arrow_rev_end),
             label.animate.next_to(arrow, LEFT, buff=0.08),
             lag_ratio=0.0,
         ),
