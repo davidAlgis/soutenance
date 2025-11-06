@@ -21,7 +21,13 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 def slide_29(self):
     """
     Slide 29: Methode X-Pencil.
-    Batches animations to reduce the number of partial movie files.
+    Minimal changes requested by user:
+    - Extra vertical padding between top bar and the two rectangles.
+    - Keep only the right-side 6 blueGreen cells; remove the 6 left ones.
+    - Remove the 4 cornflower cells on the left; surround only on the right side.
+    - Put the brace at the right of the whole grid.
+    - Lower the 'Mémoire partagée' rectangle in the second part.
+    - Lower the 30 particles.
     """
     # --- Top bar -----------------------------------------------------------
     bar = self._top_bar("Méthode X-Pencil")
@@ -39,7 +45,9 @@ def slide_29(self):
     # --- Two rectangles (top left / top right) ----------------------------
     rect_w = min(3.8, area_w * 0.28)
     rect_h = 0.9
-    top_y = y_top - 0.25
+    # Added vertical padding below the top bar
+    TOP_RECT_VPAD = 0.55
+    top_y = y_top - TOP_RECT_VPAD
 
     left_rect = Rectangle(
         width=rect_w, height=rect_h, color=BLACK, stroke_width=3
@@ -62,7 +70,7 @@ def slide_29(self):
     self.add(left_rect, left_lbl, right_rect, right_lbl)
 
     # --- 7x7 grid ----------------------------------------------------------
-    grid_top = top_y - rect_h * 0.9
+    grid_top = top_y - rect_h * 0.95
     grid_bottom = y_bottom + 0.5
     grid_h = max(2.8, grid_top - grid_bottom)
     grid_w = min(area_w * 0.70, 9.0)
@@ -94,53 +102,49 @@ def slide_29(self):
         cell_matrix.append(row)
         row_groups.append(VGroup(*row))
 
-    # Draw rows in ONE clip (lagged)
+    # Draw rows in one clip
     self.play(
         LaggedStart(
             *[FadeIn(g, run_time=0.18) for g in row_groups], lag_ratio=0.08
         ),
     )
 
-    # --- Color the 6 cells on rows 4-5 and surround in cornflower ----------
-    block_rows = [3, 4]  # zero-based rows 4 and 5
-    block_cols = list(range(0, 6))  # first 6 columns
+    # --- Color the cells: keep only the RIGHT-side 6 on rows 4-5 -----------
+    # Previously first 6 columns; now last 6 columns (0-based: 1..6)
+    block_rows = [3, 4]  # rows 4 and 5 (0-based)
+    block_cols = list(range(4, 7))  # keep the 6 on the RIGHT side only
     blue_set = {(r, c) for r in block_rows for c in block_cols}
 
+    # Surrounding cells ONLY on/right of the block (no left-of-block padding)
     surround_set = set()
-    min_r, max_r = max(min(block_rows) - 1, 0), min(
-        max(block_rows) + 1, rows - 1
-    )
-    min_c, max_c = max(min(block_cols) - 1, 0), min(
-        max(block_cols) + 1, cols - 1
-    )
+    min_r = max(min(block_rows) - 1, 0)
+    max_r = min(max(block_rows) + 1, rows - 1)
+    min_c = min(block_cols)  # do not include cc < min_c
+    max_c = min(max(block_cols) + 1, cols - 1)
+
     for rr in range(min_r, max_r + 1):
         for cc in range(min_c, max_c + 1):
             if (rr, cc) in blue_set:
                 continue
             if (
-                (
-                    rr in block_rows
-                    and (
-                        cc == min(block_cols) - 1 or cc == max(block_cols) + 1
-                    )
-                )
+                (rr in block_rows and cc in (min_c, max(block_cols) + 1))
                 or (
                     cc in block_cols
-                    and (
-                        rr == min(block_rows) - 1 or rr == max(block_rows) + 1
-                    )
+                    and rr in (min(block_rows) - 1, max(block_rows) + 1)
                 )
                 or (
                     (rr in (min(block_rows) - 1, max(block_rows) + 1))
-                    and (cc in (min(block_cols) - 1, max(block_cols) + 1))
+                    and (cc in (min_c, max(block_cols) + 1))
                 )
             ):
                 surround_set.add((rr, cc))
-
+    surround_set.add((2, 3))
+    surround_set.add((3, 3))
+    surround_set.add((4, 3))
+    surround_set.add((5, 3))
     blue_cells = [cell_matrix[r][c] for (r, c) in sorted(blue_set)]
     corn_cells = [cell_matrix[r][c] for (r, c) in sorted(surround_set)]
 
-    # Color in TWO clips
     self.play(
         *[m.animate.set_fill(pc.blueGreen, 1.0) for m in blue_cells],
         run_time=0.30
@@ -153,17 +157,18 @@ def slide_29(self):
     # --- Wait ---------------------------------------------------------------
     self.next_slide()
 
-    # --- Brace + curved arrow + copy arrow (ONE clip for each group) -------
-    block_top_y = max(cell_matrix[r][c].get_top()[1] for (r, c) in blue_set)
-    block_bottom_y = min(
-        cell_matrix[r][c].get_bottom()[1] for (r, c) in blue_set
+    # --- Brace at the RIGHT of the WHOLE GRID ------------------------------
+    grid_right_x = max(
+        cell_matrix[r][c].get_right()[0]
+        for r in range(rows)
+        for c in range(cols)
     )
-    block_right_x = max(
-        cell_matrix[r][c].get_right()[0] for (r, c) in blue_set
-    )
+    grid_top_y = max(cell_matrix[2][c].get_top()[1] for c in range(cols))
+    grid_bottom_y = min(cell_matrix[5][c].get_bottom()[1] for c in range(cols))
 
     brace_anchor = Line(
-        [block_right_x, block_bottom_y, 0.0], [block_right_x, block_top_y, 0.0]
+        [grid_right_x + 0.02, grid_bottom_y, 0.0],
+        [grid_right_x + 0.02, grid_top_y, 0.0],
     )
     brace = Brace(brace_anchor, direction=RIGHT, color=BLACK)
 
@@ -172,19 +177,11 @@ def slide_29(self):
     mid_above[1] = top_y + 0.05
     curve = CubicBezier(
         brace_center + np.array([0.25, 0.0, 0.0]),
-        brace_center + np.array([0.9, 0.9, 0.0]),
+        brace_center + np.array([5.0, 0.9, 0.0]),
         mid_above - np.array([0.9, 0.9, 0.0]),
-        mid_above,
-        stroke_color=BLACK,
+        mid_above - np.array([0.1, 0.0, 0.0]),
+        stroke_color=pc.blueGreen,
         stroke_width=5,
-    )
-    curve_tip = Arrow(
-        curve.get_points()[-2],
-        curve.get_points()[-1],
-        buff=0.0,
-        stroke_width=5,
-        tip_length=0.16,
-        color=BLACK,
     )
 
     copy_arrow = Arrow(
@@ -200,9 +197,7 @@ def slide_29(self):
     self.play(
         AnimationGroup(
             Create(brace, run_time=0.4),
-            AnimationGroup(
-                Create(curve, run_time=0.5), FadeIn(curve_tip, run_time=0.2)
-            ),
+            AnimationGroup(Create(curve, run_time=0.5)),
             AnimationGroup(
                 Create(copy_arrow, run_time=0.5),
                 FadeIn(copy_lbl, run_time=0.2),
@@ -214,27 +209,26 @@ def slide_29(self):
     # --- Wait ---------------------------------------------------------------
     self.next_slide()
 
-    # --- Keep only bar + right rectangle (ONE clip) ------------------------
-    # Keep only the bar + shared-memory box; fade everything else.
+    # --- Keep only bar + right rectangle; fade others ----------------------
     keep = VGroup(bar, right_rect, right_lbl)
-    to_fade = Group(
-        *[m for m in self.mobjects if m not in keep]
-    )  # Group accepts any Mobject
+    to_fade = Group(*[m for m in self.mobjects if m not in keep])
     self.play(FadeOut(to_fade, run_time=0.35))
 
-    # Center the shared-memory rectangle at top
-    right_rect.move_to([0.0, top_y, 0.0])
+    # Lower the shared-memory rectangle in the second part
+    SECOND_TOP_VPAD = TOP_RECT_VPAD + 0.20  # slightly lower than before
+    right_rect.move_to([0.0, y_top - SECOND_TOP_VPAD, 0.0])
     right_lbl.move_to(right_rect.get_center())
     self.add_foreground_mobject(right_rect)
     self.add_foreground_mobject(right_lbl)
 
-    # --- Particles from CSV (single Grow LaggedStart) ----------------------
-    body_top = y_top - 0.35
+    # --- Particles from CSV (lowered area) ---------------------------------
+    # Lower the particle field by reducing the body_top
+    body_top = y_top - (SECOND_TOP_VPAD + 0.85)
     body_bottom = y_bottom + 0.4
     body_left = x_left + 0.4
     body_right = x_right - 0.4
     body_w = body_right - body_left
-    body_h = body_top - body_bottom
+    body_h = max(1.2, body_top - body_bottom)
 
     def _load_pts(path: str, max_count: int = 30):
         try:
@@ -307,7 +301,7 @@ def slide_29(self):
     )
     self.play(Create(circle, run_time=0.5))
 
-    # --- Four neighbor demos (ONE play per neighbor using Succession) ------
+    # --- Four neighbor demos (batched per neighbor) ------------------------
     centers = np.array([p.get_center() for p in particles])
     tgt = centers[target_idx]
     dists = np.linalg.norm(centers - tgt, axis=1)
@@ -327,7 +321,7 @@ def slide_29(self):
         label = Tex(
             r"Mem. partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE - 6
         )
-        label.move_to(0.5 * (start_pt + end_pt) + np.array([0.0, 0.18, 0.0]))
+        label.move_to(start_pt - np.array([0.0, 0.3, 0.0]))
 
         self.play(
             Succession(
