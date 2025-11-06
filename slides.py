@@ -19,7 +19,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "31"
+SLIDES_SELECTION = "32"
 import slides_src  # triggers registration via decorators
 from slide_registry import all_numbers, get
 
