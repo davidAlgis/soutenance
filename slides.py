@@ -3730,6 +3730,8 @@ class Presentation(Slide):
                       color=BLACK, font_size=self.BODY_FONT_SIZE+12).move_to(eq_center)
         self.play(Transform(eq, eq2), run_time=0.5)
         self.next_slide()
+        self.pause()
+        self.clear()
 
     def slide_23(self):
         """
