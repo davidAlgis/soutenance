@@ -1,30 +1,64 @@
-# thesis_slides.py (now supports selective rendering)
-# 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
-# Texte conservé exactement tel qu'écrit par l'utilisateur.
-
-# flake8: noqa: F405
-import os
-
-import numpy as np
-import palette_colors as pc
 from manim import *
-from manim import logger
-from manim_slides import Slide
-from manim_tikz import Tikz
-from sph_vis import show_sph_simulation
-from utils import (make_bullet_list, make_pro_cons, parse_selection,
-                   tikz_from_file)
-
-config.background_color = WHITE
-# --------- Sélection des slides à rendre -----------
-# Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
-# On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "25"
 from slide_registry import slide
+
 
 @slide(33)
 def slide_33(self):
-        self._show_text("Définir globalement formellement la force d'Airy")
-        self.pause()
-        self.clear()
-        self.next_slide()
+    """
+    Slide 33: Forces d'Airy.
+
+    Steps:
+      1) Top bar titled "Forces d'Airy".
+      2) Show objective sentence (BODY_FONT_SIZE).
+      3) Wait for user input (self.next_slide()).
+      4) Center a large equation: "F_i^A(t) = ?".
+      5) Wait for user input (self.next_slide()).
+      6) Animate transform to:
+         F_i^A(t) = \\frac{m}{dt} \\cdot \\tau_i(t) \\cdot (1-\\phi_i(t))
+                    \\cdot \\left(v_i^A(t) - v_i(t)\\right)
+    """
+    # --- Top bar ---
+    bar = self._top_bar("Forces d'Airy")
+    self.add(bar)
+    self.add_foreground_mobject(bar)
+
+    # --- Objective line (use Tex, BODY_FONT_SIZE) ---
+    self.start_body()
+    objective = Tex(
+        r'Objectif : faire "tendre" les particules SPH pour se distribuer '
+        r"uniformement sur la surface des vagues d'Airy.",
+        font_size=self.BODY_FONT_SIZE,
+        color=BLACK,
+    )
+    objective.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    )
+    dx = (
+        bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
+    ) - objective.get_left()[0]
+    objective.shift(RIGHT * dx)
+    self.add(objective)
+
+    # --- Wait for input ---
+    self.wait(0.1)
+    self.next_slide()
+
+    # --- Big centered question equation (in math mode) ---
+    eq_question = Tex(r"$F_i^A(t) = ?$", font_size=72, color=BLACK)
+    eq_question.move_to([0.0, 0.0, 0.0])
+    self.add(eq_question)
+    self.wait(0.1)
+    # --- Wait for input ---
+    self.next_slide()
+
+    # --- Transform into full formula (in math mode) ---
+    eq_full = Tex(
+        r"$F_i^A(t) = \frac{m}{dt} \cdot \tau_i(t) \cdot (1-\phi_i(t))"
+        r"\cdot \left(v_i^A(t) - v_i(t)\right)$",
+        font_size=48,
+        color=BLACK,
+    )
+    eq_full.move_to(eq_question.get_center())
+
+    # Animate transform
+    self.play(ReplacementTransform(eq_question, eq_full))
