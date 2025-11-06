@@ -12,21 +12,7 @@ from slide_registry import slide
 def slide_32(self):
     """
     Hybridation, forces d'Airy et zones.
-
-    Steps implemented:
-    1) Top bar, title, "Preuve de concept :" and a bullet list (3 items).
-    2) Transform the bullet list content to the 2D/Airy/SPH version.
-    3) Clear text, draw a cosine surface (0.1*cos(0.3*x)) on [-10, 10].
-    4) Place three small boats on the curve (left, mid-right, right).
-    5) Highlight right boat with a rounded "jelly bean" rectangle, then clear
-       everything except the top bar.
-    6) Draw a new cosine surface (0.2*cos(1.2*x)) on [-5, 5] and one boat at center.
-    7) Spawn a uniform field of particles (cornFlower) from bottom up to y=0
-       with line-wise grow animation; keep boat in foreground.
-    8) On the top particle line, draw fernGreen arrows pointing toward the
-       cosine curve with a small random horizontal component; then remove them.
-    9) Draw three nested rectangles: outer fernGreen on frame border (animated
-       line-by-line), inner uclaGold, innermost blueGreen.
+    Implements the sequence requested for slide 32.
     """
     # ------------------------------------------------------------------ Title
     bar = self._top_bar("Hybridation, forces d'Airy et zones")
@@ -69,7 +55,6 @@ def slide_32(self):
                     buff=self.BODY_LINE_BUFF,
                     aligned_edge=LEFT,
                 )
-            # Align to left padding
             dx = (
                 bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
             ) - t.get_left()[0]
@@ -81,7 +66,7 @@ def slide_32(self):
         ["Simulation 3D", "Methode de Tessendorf", "SPH"]
     )
     self.add(bullets_v1)
-    self.wait(0.01)
+    self.wait(0.1)
     self.next_slide()
 
     bullets_v2 = make_bullets(
@@ -97,7 +82,6 @@ def slide_32(self):
             run_time=0.8,
         )
     )
-
     bullets_v1 = bullets_v2
 
     self.next_slide()
@@ -112,12 +96,11 @@ def slide_32(self):
         X = np.linspace(x_min, x_max, samples)
         pts = []
         sx = config.frame_width / (x_max - x_min)
-        sy = config.frame_height * 0.25  # vertical scaling for visibility
-        y0 = 0.0  # center on screen
+        y0 = 0.0
         for xv in X:
             yv = a * np.cos(k * xv)
             px = (xv - (x_min + x_max) * 0.5) * sx
-            py = y0 + yv * (config.frame_height * 0.25)  # normalized amplitude
+            py = y0 + yv * (config.frame_height * 0.25)
             pts.append([px, py, 0.0])
         path = VMobject()
         path.set_points_smoothly(pts)
@@ -126,7 +109,7 @@ def slide_32(self):
 
     # ------------------------------------- First surface: 0.1*cos(0.3*x), [-10,10]
     curve1 = make_cosine_curve(
-        a=0.1, k=0.3, x_min=-10.0, x_max=10.0, color=pc.blueGreen
+        a=0.06, k=2.5, x_min=-10.0, x_max=10.0, color=pc.blueGreen
     )
     self.play(Create(curve1, run_time=1.2))
 
@@ -143,10 +126,8 @@ def slide_32(self):
         [-2.0, 1.0, 0.0],
     ]
 
-    def place_on_curve(curve_func, x_screen):
-        # Recover y on curve by sampling; curve1 lies around y=0 with amplitude set above.
-        # Build the deterministic value used for our cosine.
-        return 0.1 * np.cos(1.5 * x_screen)
+    def place_on_curve(x_screen):
+        return 0.1 * np.cos(1.2 * x_screen)
 
     def make_boat(scale=0.25):
         poly = Polygon(*boat_shape, color=pc.uclaGold, stroke_width=3)
@@ -154,12 +135,11 @@ def slide_32(self):
         poly.scale(scale)
         return poly
 
-    # Choose three x positions in screen space
     xs = [-6.5, 0.5, 6.5]
     boats = []
     for xv in xs:
         b = make_boat()
-        yv = place_on_curve(lambda x: 0.0, xv) * (config.frame_height * 0.25)
+        yv = place_on_curve(xv) * (config.frame_height * 0.25)
         b.move_to([xv * (config.frame_width / 20.0), yv, 0.0])
         self.add(b)
         boats.append(b)
@@ -178,11 +158,9 @@ def slide_32(self):
     jb.move_to(right_boat.get_center())
     self.play(Create(jb, run_time=0.6))
 
+    self.next_slide()
     # ---------------------------------------------- Clear all except the top bar
     self.play(FadeOut(VGroup(curve1, *boats, jb), run_time=0.4))
-    # Keep bar visible (already present)
-
-    self.next_slide()
 
     # ------------------------------ Second surface: 0.2*cos(1.2*x), [-5, 5] + boat
     curve2 = make_cosine_curve(
@@ -190,7 +168,8 @@ def slide_32(self):
     )
     self.play(Create(curve2, run_time=1.0))
 
-    center_boat = make_boat()
+    # Larger single boat (about 4x the earlier boats)
+    center_boat = make_boat(scale=1.0)  # 0.25 * 4 = 1.0
     y_center = 0.2 * np.cos(1.2 * 0.0) * (config.frame_height * 0.25)
     center_boat.move_to([0.0, y_center, 0.0])
     self.add(center_boat)
@@ -199,7 +178,6 @@ def slide_32(self):
     self.next_slide()
 
     # --------------------------------------- Uniform particle field (cornFlower)
-    # Grid spans full width; vertically from bottom to y=0.
     x_min_px = -config.frame_width * 0.48
     x_max_px = config.frame_width * 0.48
     y_min_px = -config.frame_height * 0.48
@@ -226,14 +204,12 @@ def slide_32(self):
             run_time=1.0,
         )
     )
-    # Ensure boat remains above particles
     self.add_foreground_mobject(center_boat)
 
     self.next_slide()
 
     # ---------------------------------------------------- Arrows from top line
     top_line = lines[-1]
-    # Compute boat horizontal extent to skip arrows behind boat
     boat_left = center_boat.get_left()[0]
     boat_right = center_boat.get_right()[0]
 
@@ -242,22 +218,22 @@ def slide_32(self):
         x0, y0, _ = dot.get_center()
         if boat_left - 0.1 <= x0 <= boat_right + 0.1:
             continue
-        # End on the cosine curve at same x; add a tiny random horizontal component
         jitter = (np.random.rand() - 0.5) * (dx * 0.25)
         y_curve = (
             0.2
             * np.cos(1.2 * (x0 / (config.frame_width / 10.0)))
             * (config.frame_height * 0.25)
         )
-        start = np.array([x0 + jitter, y0 + dy * 0.6, 0.0])
-        end = np.array([x0, y_curve, 0.0])
+        # Longer and thicker arrows with larger tips
+        start = np.array([x0, y0, 0.0])
+        end = np.array([x0 + jitter, y_curve, 0.0])
         arr = Arrow(
             start=start,
             end=end,
             buff=0.0,
-            stroke_width=3,
+            stroke_width=15,
             color=pc.fernGreen,
-            max_tip_length_to_length_ratio=0.12,
+            max_tip_length_to_length_ratio=0.3,
         )
         arrows.add(arr)
 
@@ -275,14 +251,14 @@ def slide_32(self):
     )
 
     # ------------------------------------------ Nested rectangles (zone concept)
-    # Outer: border of the slide drawn line-by-line
     outer_w = config.frame_width * 0.94
     outer_h = config.frame_height * 0.86
+    # Lower the outer rectangle so it does not collide with the top bar
+    y_offset = -config.frame_height * 0.06
 
-    # Build four sides to animate sequentially
-    x0, y0 = -outer_w / 2.0, -outer_h / 2.0
-    x1, y1 = outer_w / 2.0, outer_h / 2.0
-    # Lines as VMobjects
+    x0, y0 = -outer_w / 2.0, -outer_h / 2.0 + y_offset
+    x1, y1 = outer_w / 2.0, outer_h / 2.0 + y_offset
+
     l1 = (
         VMobject()
         .set_stroke(color=pc.fernGreen, width=6)
@@ -303,13 +279,11 @@ def slide_32(self):
         .set_stroke(color=pc.fernGreen, width=6)
         .set_points_as_corners([[x0, y1, 0.0], [x0, y0, 0.0]])
     )
-    frame_lines = VGroup(l1, l2, l3, l4)
     self.play(Create(l1, run_time=0.25))
     self.play(Create(l2, run_time=0.25))
     self.play(Create(l3, run_time=0.25))
     self.play(Create(l4, run_time=0.25))
 
-    # Inner rectangles
     inner1 = RoundedRectangle(
         width=outer_w * 0.78,
         height=outer_h * 0.78,
@@ -317,7 +291,7 @@ def slide_32(self):
         stroke_color=pc.uclaGold,
         stroke_width=6,
     )
-    inner1.move_to(ORIGIN)
+    inner1.move_to([0.0, y_offset, 0.0])
     inner2 = RoundedRectangle(
         width=outer_w * 0.58,
         height=outer_h * 0.54,
@@ -325,7 +299,7 @@ def slide_32(self):
         stroke_color=pc.blueGreen,
         stroke_width=6,
     )
-    inner2.move_to(ORIGIN)
+    inner2.move_to([0.0, y_offset, 0.0])
     self.add(inner1, inner2)
 
     # End of slide
