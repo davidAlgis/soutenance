@@ -28,17 +28,21 @@ def slide_25(self):
     """
     Slide 25 — Couplage avec des solides
 
-    Visual result after zoom:
-      • Only ~6 solid particles visible on the orange bottom strip (no corner).
-      • 3 blue fluid particles, spread a bit randomly and clearly higher.
-      • Band occupies most of the slide width.
-      • Arrow Fp first points fluid -> solid, then reverses.
+    Phases:
+      1) Draw a thick pc.orange rectangle (line-by-line).
+      2) Replace it by 'solid' particles (pc.temptress) sampled along the border,
+         keeping the rectangle faintly visible underneath.
+      3) Clear, then draw a filled orange band covering full width and 20% height
+         in the bottom half, add 6 large solid particles centered on the band and
+         3 blueGreen fluid particles above.
+      4) Draw a oxford-blue arrow from a fluid to a neighboring solid with label F^p,
+         then reverse the arrow direction.
+      5) End with pause/clear/next_slide.
     """
-    import random
-
     import numpy as np
-    from manim import (AnimationGroup, Arrow, Create, Dot, FadeIn,
-                       GrowFromCenter, LaggedStart, Line, Tex, VGroup)
+    from manim import (AnimationGroup, Arrow, Create, Dot, FadeIn, FadeOut,
+                       GrowFromCenter, LaggedStart, Line, Rectangle, Tex,
+                       VGroup)
     from manim.utils.rate_functions import linear
 
     # ---------- Top bar ----------
@@ -46,7 +50,7 @@ def slide_25(self):
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # ---------- Body area ----------
+    # ---------- Body frame ----------
     bar_rect = bar.submobjects[0]
     y_top = bar_rect.get_bottom()[1] - 0.15
     x_left = -config.frame_width / 2 + 0.6
@@ -59,219 +63,163 @@ def slide_25(self):
     orange = getattr(pc, "orange", ORANGE)
     temptress = getattr(pc, "temptress", MAROON_D)
     blueGreen = getattr(pc, "blueGreen", BLUE_D)
+    oxford = getattr(pc, "oxford", BLACK)
 
-    # ---------- Sentence ----------
-    body = Tex(
-        "On considere le solide comme un ensemble de particules",
+    # ---------- Intro sentence ----------
+    txt = Tex(
+        "On considère le solide comme un ensemble de particules",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     ).move_to([x_left + 0.5 * area_w, y_top - 0.45, 0])
-    self.play(FadeIn(body), run_time=0.45)
+    self.play(FadeIn(txt), run_time=0.45)
 
-    # ---------- Rectangle geometry ----------
+    # ---------- 1) Thick rectangle (draw each edge) ----------
     pad_side = 0.35
-    pad_top = 0.95
-    rect_left = x_left + pad_side
-    rect_right = x_right - pad_side
-    rect_top = y_top - pad_top
-    rect_bottom = y_bottom + 0.22
+    pad_top = 0.90
+    r_left = x_left + pad_side
+    r_right = x_right - pad_side
+    r_top = y_top - pad_top
+    r_bottom = y_bottom + 0.28
 
-    pBL = np.array([rect_left, rect_bottom, 0.0])
-    pBR = np.array([rect_right, rect_bottom, 0.0])
-    pTR = np.array([rect_right, rect_top, 0.0])
-    pTL = np.array([rect_left, rect_top, 0.0])
+    pBL = np.array([r_left, r_bottom, 0])
+    pBR = np.array([r_right, r_bottom, 0])
+    pTR = np.array([r_right, r_top, 0])
+    pTL = np.array([r_left, r_top, 0])
 
-    edge_w = 22
-    e_bottom = Line(pBL, pBR, color=orange, stroke_width=edge_w)
-    e_right = Line(pBR, pTR, color=orange, stroke_width=edge_w)
-    e_top = Line(pTR, pTL, color=orange, stroke_width=edge_w)
-    e_left = Line(pTL, pBL, color=orange, stroke_width=edge_w)
-    border_edges = VGroup(e_bottom, e_right, e_top, e_left)
+    stroke_w = 22
+    e_bottom = Line(pBL, pBR, color=orange, stroke_width=stroke_w)
+    e_right = Line(pBR, pTR, color=orange, stroke_width=stroke_w)
+    e_top = Line(pTR, pTL, color=orange, stroke_width=stroke_w)
+    e_left = Line(pTL, pBL, color=orange, stroke_width=stroke_w)
+    edges = VGroup(e_bottom, e_right, e_top, e_left)
 
-    inset = 0.035 * min(area_w, area_h)
-    gBL = pBL + np.array([+inset, +inset, 0])
-    gBR = pBR + np.array([-inset, +inset, 0])
-    gTR = pTR + np.array([-inset, -inset, 0])
-    gTL = pTL + np.array([+inset, -inset, 0])
-    guide = VGroup(
-        Line(gBL, gBR, color=WHITE, stroke_width=3),
-        Line(gBR, gTR, color=WHITE, stroke_width=3),
-        Line(gTR, gTL, color=WHITE, stroke_width=3),
-        Line(gTL, gBL, color=WHITE, stroke_width=3),
-    )
-
-    # PLAY #1 – draw rectangle + guide
     self.play(
         LaggedStart(
             *[Create(m) for m in [e_bottom, e_right, e_top, e_left]],
-            lag_ratio=0.08,
-            run_time=0.9,
+            lag_ratio=0.12,
+            run_time=1.0,
             rate_func=linear
-        ),
-        Create(guide, run_time=0.35, rate_func=linear),
+        )
     )
 
-    self.next_slide()
-
-    # ---------- Border particles (larger) ----------
+    # ---------- 2) Replace by border particles (keep faint rectangle) ----------
     def sample_segment(a, b, n):
         return [a + (b - a) * (i / (n - 1)) for i in range(n)]
 
-    n_long, n_short = 28, 18
+    # Use moderate counts to avoid tiny-clip mux issues
+    n_long, n_short = 22, 14
     pts_bottom = sample_segment(pBL, pBR, n_long)
-    pts_left = sample_segment(pBL, pTL, n_short)
-    pts_top = sample_segment(pTL, pTR, n_long)
     pts_right = sample_segment(pBR, pTR, n_short)
+    pts_top = sample_segment(pTR, pTL, n_long)
+    pts_left = sample_segment(pTL, pBL, n_short)
 
-    chain = pts_bottom + pts_right[:-1] + pts_top[:-1] + pts_left[:-1]
-
-    dot_r = min((rect_right - rect_left), (rect_top - rect_bottom)) / 45.0
-    solid_dots = [
-        Dot(p, radius=dot_r, color=temptress, fill_opacity=1.0) for p in chain
+    chain_pts = pts_bottom + pts_right[:-1] + pts_top[:-1] + pts_left[:-1]
+    dot_r = min((r_right - r_left), (r_top - r_bottom)) / 48.0
+    border_dots = [
+        Dot(p, radius=dot_r, color=temptress, fill_opacity=1.0)
+        for p in chain_pts
     ]
 
-    # PLAY #2 – fade rectangle, grow dots
+    self.next_slide()
     self.play(
-        border_edges.animate.set_opacity(0.65),
+        edges.animate.set_opacity(0.5),
         LaggedStart(
-            *[GrowFromCenter(d) for d in solid_dots],
+            *[GrowFromCenter(d) for d in border_dots],
             lag_ratio=0.02,
             run_time=0.9
         ),
-        run_time=0.9,
     )
 
+    # ---------- 3) Clear, then draw filled band + 6 solids + 3 fluids ----------
     self.next_slide()
-
-    # ---------- Tight horizontal zoom on ~6 bottom particles ----------
-    # Choose the bottom line dots and pick a central window of 6
-    bottom_line = [
-        d for d in solid_dots if abs(d.get_center()[1] - rect_bottom) < 1e-3
-    ]
-    bottom_line.sort(key=lambda d: d.get_center()[0])
-    if len(bottom_line) < 6:
-        window = bottom_line
-    else:
-        mid = len(bottom_line) // 2
-        start = max(0, mid - 3)
-        window = bottom_line[start : start + 6]
-
-    # ROI: small horizontal window around those 6 dots; thin vertical band
-    xs = [d.get_center()[0] for d in window]
-    x_min, x_max = min(xs), max(xs)
-    roi_w = (x_max - x_min) * 1.25  # small padding
-    band_h = 0.28 * (rect_top - rect_bottom)
-    roi_center = np.array(
-        [(x_min + x_max) * 0.5, rect_bottom + 0.5 * band_h, 0.0]
-    )
-
-    # Compute scale so ROI fills ~86% of the current scene width
-    target_w = 0.86 * (x_right - x_left)
-    scale_factor = max(1.0, target_w / max(roi_w, 1e-6))
-
-    # After scaling, shift upward to leave headroom for fluids
-    shift_vec = np.array([0.0, +0.30, 0.0])
-
-    world = VGroup(border_edges, guide, *solid_dots)
-    # Hide non-window bottom dots so only ~6 remain perceptible
-    hide = [d for d in bottom_line if d not in window]
     self.play(
-        world.animate.scale(scale_factor, about_point=roi_center).shift(
-            shift_vec
-        ),
-        AnimationGroup(
-            *[d.animate.set_opacity(0.05) for d in hide], lag_ratio=0.0
-        ),
-        run_time=0.8,
+        FadeOut(VGroup(*border_dots, edges), run_time=0.35),
+        FadeOut(txt, run_time=0.2),
     )
-    # Keep only the visible subset for later logic clarity (they still exist visually)
-    # but we use 'window' list when placing fluids/arrow.
 
-    # ---------- Three fluid dots ABOVE strip, spread & higher ----------
-    # Estimate local spacing
-    if len(window) >= 2:
-        spacing = abs(window[1].get_center()[0] - window[0].get_center()[0])
-    else:
-        spacing = (rect_right - rect_left) / 12.0
+    # Orange band: full width, 20% of body height, in bottom half
+    band_h = 0.20 * area_h
+    band_y = y_bottom + 0.28 + 0.5 * band_h
+    band = Rectangle(
+        width=area_w,
+        height=band_h,
+        color=orange,
+        fill_color=orange,
+        fill_opacity=0.55,
+        stroke_width=0,
+    ).move_to([x_left + 0.5 * area_w, band_y, 0])
+    self.play(FadeIn(band), run_time=0.25)
 
-    # Pick 3 indices across the visible group and jitter x positions
-    base_indices = (
-        [0, len(window) // 2, len(window) - 1]
-        if len(window) >= 3
-        else list(range(len(window)))
-    )
-    fluid_dots = []
-    rng = random.Random(42)
-    for bi in base_indices:
-        base_x = window[bi].get_center()[0]
-        jx = rng.uniform(-0.22 * spacing, +0.22 * spacing)
-        x = base_x + jx
-        y = rect_bottom + band_h * 0.85  # clearly higher above the strip
-        fluid_dots.append(
-            Dot(
-                [x, y, 0],
-                radius=dot_r * 1.7,
-                color=blueGreen,
-                fill_opacity=1.0,
-            )
+    # Six solid particles centered on band
+    cx = x_left + 0.5 * area_w
+    cy = band_y
+    usable_w = area_w * 0.90
+    n_solids = 6
+    gap = usable_w / (n_solids - 1)
+    start_x = cx - usable_w / 2.0
+    solid_R = band_h * 0.24  # large enough to visually fill horizontally
+
+    solids = []
+    for i in range(n_solids):
+        px = start_x + i * gap
+        solids.append(
+            Dot([px, cy, 0], radius=solid_R, color=temptress, fill_opacity=1.0)
         )
 
-    # PLAY #3 – grow fluids
-    if fluid_dots:
-        self.play(
-            LaggedStart(
-                *[GrowFromCenter(d) for d in fluid_dots],
-                lag_ratio=0.18,
-                run_time=0.5
-            )
+    # Three fluid particles above the band (top half), spread across
+    top_half_y = band_y + band_h * 2.1
+    fluid_xs = [start_x + 0.5 * gap, start_x + 3.0 * gap, start_x + 5.2 * gap]
+    fluid_R = solid_R * 0.80
+    fluids = [
+        Dot(
+            [fx, top_half_y, 0],
+            radius=fluid_R,
+            color=blueGreen,
+            fill_opacity=1.0,
         )
+        for fx in fluid_xs
+    ]
 
+    self.play(
+        LaggedStart(
+            *[GrowFromCenter(d) for d in solids], lag_ratio=0.10, run_time=0.6
+        ),
+        LaggedStart(
+            *[GrowFromCenter(d) for d in fluids], lag_ratio=0.15, run_time=0.6
+        ),
+    )
+
+    # ---------- 4) Arrow and label, then reverse ----------
     self.next_slide()
 
-    # ---------- Arrow Fp (downward), then reverse ----------
-    # Choose the fluid closest (in x) to the center window, and the nearest solid (by x)
-    if not fluid_dots or not window:
-        # End gracefully if something went wrong
-        self.pause()
-        self.clear()
-        self.next_slide()
-        return
+    # choose the leftmost fluid and the nearest solid on its right
+    f = fluids[0]
+    s = solids[1] if len(solids) > 1 else solids[0]
 
-    f = min(fluid_dots, key=lambda d: abs(d.get_center()[0] - roi_center[0]))
-    solid_neigh = min(
-        window, key=lambda d: abs(d.get_center()[0] - f.get_center()[0])
-    )
-
-    start_pt = f.get_bottom() + np.array(
-        [0, -0.55 * f.radius, 0]
-    )  # from fluid downward
-    end_pt = solid_neigh.get_top() + np.array(
-        [0, 0.65 * solid_neigh.radius, 0]
-    )
+    start = f.get_bottom() + np.array([0.0, -0.55 * f.radius, 0.0])
+    end = s.get_top() + np.array([0.0, 0.55 * s.radius, 0.0])
 
     arrow = Arrow(
-        start_pt,
-        end_pt,
-        color=BLACK,
-        stroke_width=6,
-        buff=0.0,
-        tip_length=0.18,
+        start, end, color=oxford, stroke_width=6, buff=0.0, tip_length=0.18
     )
-    fp = Tex("Fp", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
+    label = Tex(r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
         arrow, LEFT, buff=0.08
     )
 
-    # PLAY #4 – draw arrow + label
     self.play(
-        AnimationGroup(Create(arrow, run_time=0.45), FadeIn(fp, run_time=0.2))
+        AnimationGroup(
+            Create(arrow, run_time=0.45),
+            FadeIn(label, run_time=0.25),
+            lag_ratio=0.0,
+        )
     )
     self.next_slide()
 
-    # PLAY #5 – reverse
+    # Reverse tip to point toward the fluid
     self.play(
         AnimationGroup(
-            arrow.animate.put_start_and_end_on(end_pt, start_pt),
-            fp.animate.next_to(arrow, LEFT, buff=0.08),
+            arrow.animate.put_start_and_end_on(end, start),
+            label.animate.next_to(arrow, LEFT, buff=0.08),
             lag_ratio=0.0,
         ),
         run_time=0.55,
