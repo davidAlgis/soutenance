@@ -27,15 +27,19 @@ def slide_30(self):
     area_w = x_right - x_left
     area_h = y_top - y_bottom
 
-    # Camera triangle (left)
+    # Camera triangle (left, pointing RIGHT; aperture side on the RIGHT)
     cam_w = min(1.6, area_w * 0.18)
     cam_h = cam_w * 0.85
     cam_center = np.array(
-        [x_left + cam_w * 0.9, (y_top + y_bottom) / 2.0 - 0.1, 0.0]
+        [x_left + cam_w * 1.1, (y_top + y_bottom) / 2.0 - 0.1, 0.0]
     )
-    p_apex = cam_center + np.array([+cam_w * 0.55, 0.0, 0.0])
-    p_bl = cam_center + np.array([-cam_w * 0.55, -cam_h * 0.55, 0.0])
-    p_tl = cam_center + np.array([-cam_w * 0.55, +cam_h * 0.55, 0.0])
+    p_apex = cam_center + np.array([-cam_w * 0.58, 0.0, 0.0])  # rightmost
+    p_bl = cam_center + np.array(
+        [+cam_w * 0.58, -cam_h * 0.58, 0.0]
+    )  # back bottom-left
+    p_tl = cam_center + np.array(
+        [+cam_w * 0.58, +cam_h * 0.58, 0.0]
+    )  # back top-left
 
     camera_tri = Polygon(p_apex, p_bl, p_tl, color=BLACK, stroke_width=4)
     camera_label = Text(
@@ -61,19 +65,24 @@ def slide_30(self):
 
     self.next_slide()
 
-    # ---------------- Rays: robust growth without put_start_and_end_on ------
-    impact_angles = [np.pi * 0.90, np.pi, np.pi * 1.10]
+    # ---------------- Rays: start along the aperture edge ------------------
+    # Define a small "aperture segment" near the apex on the right side,
+    # then emit 3 rays from different points on that segment.
+    edge_top = p_tl
+    edge_bot = p_bl
+    start_pts = [
+        (1.0 - t) * edge_top + t * edge_bot for t in (0.15, 0.50, 0.85)
+    ]
+
+    # Hit points on the LEFT side of the circle (angles around pi)
+    impact_angles = [np.pi * 0.92, np.pi, np.pi * 1.08]
     impact_points = [
         circle_center + circle_r * np.array([np.cos(a), np.sin(a), 0.0])
         for a in impact_angles
     ]
-    ray_start = p_apex + np.array([0.10, 0.0, 0.0])
 
     def grow_and_flash(start_pt, end_pt):
-        # Use a bare VMobject and set its points explicitly to avoid zero-length cross products.
-        seg = VMobject()
-        seg.set_stroke(pc.uclaGold, width=6)
-        # Initialize with a zero-length 2-point polyline so FadeIn works.
+        seg = VMobject().set_stroke(pc.uclaGold, width=6)
         seg.set_points_as_corners(
             np.vstack([start_pt, start_pt]).astype(float)
         )
@@ -93,7 +102,9 @@ def slide_30(self):
             FadeOut(dot, run_time=0.20),
         )
 
-    ray_sequences = [grow_and_flash(ray_start, ip) for ip in impact_points]
+    ray_sequences = [
+        grow_and_flash(s, e) for s, e in zip(start_pts, impact_points)
+    ]
     self.play(LaggedStart(*ray_sequences, lag_ratio=0.22))
 
     self.next_slide()
@@ -104,27 +115,30 @@ def slide_30(self):
             self.remove(mob)
 
     # ---------------- GPU title + two-column layout ------------------------
-    gpu_title = Text("GPU", color=BLACK, weight=BOLD, font_size=64)
+    gpu_title = Text(
+        "GPU", color=BLACK, weight=BOLD, font_size=self.BODY_FONT_SIZE + 10
+    )
     gpu_title.next_to(self._current_bar, DOWN, buff=0.35)
     self.play(FadeIn(gpu_title, run_time=0.3))
 
-    col_pad_x = 1.0
+    # Column centers
+    col_pad_x = 0.8
     left_center = np.array(
-        [-config.frame_width * 0.25 - col_pad_x, -0.15, 0.0]
+        [-config.frame_width * 0.22 - col_pad_x, -0.35, 0.0]
     )
     right_center = np.array(
-        [+config.frame_width * 0.25 + col_pad_x, -0.15, 0.0]
+        [+config.frame_width * 0.22 + col_pad_x, -0.15, 0.0]
     )
 
-    # -------- Left column: GPU grid (many squares) --------
+    # -------- Left column: GPU grid (many squares), smaller & lower --------
     left_title = Tex(
-        r"C\oe ur g\'en\'eral", font_size=self.BODY_FONT_SIZE, color=BLACK
+        r"C\oe ur g\'en\'eral", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
     )
-    left_title.move_to(left_center + np.array([0.0, +2.2, 0.0]))
+    left_title.move_to([-config.frame_width * 0.22 - col_pad_x, 2.0, 0.0])
 
     L_rows, L_cols = 8, 10
-    L_box_w, L_box_h = 0.48, 0.48
-    L_gap = 0.08
+    L_box_w, L_box_h = 0.42, 0.42  # smaller
+    L_gap = 0.07
     L_total_w = L_cols * L_box_w + (L_cols - 1) * L_gap
     L_total_h = L_rows * L_box_h + (L_rows - 1) * L_gap
     L_top_left = left_center + np.array(
@@ -157,11 +171,11 @@ def slide_30(self):
 
     self.next_slide()
 
-    # -------- Right column: 3x3 RT cores grid --------
+    # -------- Right column: 3x3 RT cores grid in pc.apple ------------------
     right_title = Tex(
-        r"C\oe ur RT", font_size=self.BODY_FONT_SIZE, color=BLACK
+        r"C\oe ur RT", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
     )
-    right_title.move_to(right_center + np.array([0.0, +2.2, 0.0]))
+    right_title.move_to([+config.frame_width * 0.22 + col_pad_x, +2.0, 0.0])
 
     R_rows, R_cols = 3, 3
     R_box_w, R_box_h = 0.85, 0.85
@@ -181,8 +195,8 @@ def slide_30(self):
                 width=R_box_w,
                 height=R_box_h,
                 stroke_opacity=1.0,
-                fill_opacity=0.05,
-                color=pc.blueGreen,
+                fill_opacity=0.10,
+                color=pc.apple,
             ).move_to([x, y, 0.0])
             right_boxes.append(rect)
 
