@@ -49,11 +49,9 @@ def slide_34(self):
         - either just under the bar (above is None) or under another Tex.
         """
         if above is None:
-            # left clamp
             mobj.to_edge(LEFT, buff=0.0)
             dx = (left_center_x - left_w * 0.5 + 0.1) - mobj.get_left()[0]
             mobj.shift(RIGHT * dx)
-            # top clamp under the bar with a comfortable gap
             dy = (top_y - 0.15) - mobj.get_top()[1]
             mobj.shift(UP * dy)
         else:
@@ -82,7 +80,6 @@ def slide_34(self):
     intro = Tex(
         "Version lagrangienne d'Airy :", color=BLACK, font_size=TEXT_FS
     )
-    # left margin under bar
     intro.to_edge(LEFT, buff=0.4)
     dy_intro = top_y - intro.get_top()[1]
     intro.shift(UP * dy_intro)
@@ -118,9 +115,7 @@ def slide_34(self):
 
     # Left-column equation h(x,t) placed much lower than the intro
     eq_h = Tex(r"$h(x,t)=A\cos(kx+\omega t)$", color=BLACK, font_size=TEXT_FS)
-    place_left_tex(
-        eq_h, above=intro, buff=LINE_BUFF * 1.2
-    )  # extra margin to avoid overlap
+    place_left_tex(eq_h, above=intro, buff=LINE_BUFF * 1.2)
     self.add(eq_h)
 
     # ------------------------------------------------------ Label grid (a,b)
@@ -154,7 +149,7 @@ def slide_34(self):
     ]
     crosses_group = VGroup(*crosses)
 
-    # Left-column vector {a; b} MUST be shown at the same time as crosses
+    # Left-column vector {a; b} must appear together with crosses
     ab_tex = Tex(
         r"$\begin{cases} a \\ b \end{cases}$", color=BLACK, font_size=TEXT_FS
     )
@@ -206,27 +201,41 @@ def slide_34(self):
         x_norm = px / right_w
         y_norm = py / (top_y - bottom_y)
         p_world = map_to_right(x_norm, y_norm)
-        particles.append(
-            Dot(point=p_world, radius=0.06, color=pc.blueGreen)
-        )  # larger dots
+        particles.append(Dot(point=p_world, radius=0.06, color=pc.blueGreen))
     particles_group = VGroup(*particles)
     self.add(particles_group)
 
-    # Replace {a;b} by mapping, and KEEP IT in the left column (avoid center jump)
+    # Replace {a;b} by mapping, and pre-place the destination ON THE LEFT before anim
     mapping_tex = Tex(
         r"$\begin{cases} x(a,b,t) = a + \xi(a,b,t), \\ y(a,b,t) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
     )
+    place_left_tex(mapping_tex, above=eq_h, buff=LINE_BUFF)  # pre-position
     self.play(TransformMatchingTex(ab_tex, mapping_tex, run_time=0.8))
-    place_left_tex(
-        mapping_tex, above=eq_h, buff=LINE_BUFF
-    )  # clamp to left column
-    ab_tex = mapping_tex
+    ab_tex = mapping_tex  # now in-place, do not re-place afterwards
 
     self.next_slide()
 
     # ------------------------------------------------------- Animate t (0..2pi)
+    def make_wave_curve():  # redefined here to capture updated t each frame
+        n = 400
+        pts = []
+        y_mid = 0.62
+        y_scale = (top_y - bottom_y) * 0.15
+        for i in range(n):
+            xn = i / (n - 1)
+            x_world = xn * right_w
+            y_val = A * np.cos(
+                k_val * x_world + omega_val * t_tracker.get_value()
+            )
+            yn = y_mid + (y_val * y_scale) / (top_y - bottom_y)
+            pts.append(map_to_right(xn, yn))
+        curve = VMobject()
+        curve.set_points_smoothly(pts)
+        curve.set_stroke(color=pc.oxfordBlue, width=4)
+        return curve
+
     def wave_updater(mobj):
         mobj.become(make_wave_curve())
 
@@ -251,7 +260,6 @@ def slide_34(self):
 
     self.next_slide()
 
-    # simple loop (second cycle)
     self.play(t_tracker.animate.set_value(4 * np.pi), run_time=2.5)
     t_tracker.set_value(t_tracker.get_value() % (2 * np.pi))
 
@@ -275,21 +283,21 @@ def slide_34(self):
         y_norm = py / (top_y - bottom_y)
         p_world = map_to_right(x_norm, y_norm)
         u, w = get_velocity(a0, b0, A, k_val, omega_val, t_tracker.get_value())
-        vel_scale = 0.35  # larger arrows
+        vel_scale = 0.35
         end_world = p_world + np.array([u * vel_scale, w * vel_scale, 0.0])
         arrows.add(
             Arrow(
                 start=p_world,
                 end=end_world,
                 buff=0.0,
-                stroke_width=6,  # thicker
+                stroke_width=6,
                 color=pc.uclaGold,
-                max_tip_length_to_length_ratio=0.25,  # bigger tip
+                max_tip_length_to_length_ratio=0.25,
             )
         )
     self.add(arrows)
 
-    # Velocity equations, left column, same size and spacing
+    # Velocity equations: pre-place destination ON THE LEFT before anim
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
@@ -298,13 +306,12 @@ def slide_34(self):
         color=BLACK,
         font_size=TEXT_FS,
     )
+    place_left_tex(vel_tex, above=eq_h, buff=LINE_BUFF)  # pre-position
     self.play(TransformMatchingTex(ab_tex, vel_tex, run_time=0.8))
-    place_left_tex(vel_tex, above=eq_h, buff=LINE_BUFF)  # clamp to left column
-    ab_tex = vel_tex
+    ab_tex = vel_tex  # do not re-place afterwards
 
     self.next_slide()
 
-    # Animate again with arrows updated
     def arrows_updater(arr_group):
         for idx, ((_i, _j, xn, yn), arr) in enumerate(
             zip(label_points, arr_group)
@@ -359,7 +366,7 @@ def slide_34(self):
         FadeOut(eq_h, run_time=0.5),
     )
 
-    # Move velocity block to top-left, ensure visibility and left alignment.
+    # Move velocity block to top-left without center jump: just shift it.
     vel_left_margin = -full_w * 0.5 + 0.4
     dx = vel_left_margin - ab_tex.get_left()[0]
     dy = top_y - ab_tex.get_top()[1]
@@ -404,25 +411,26 @@ def slide_34(self):
 
     self.next_slide()
 
+    # Pre-place destination ON THE LEFT before anim (and fix eta to depend on a,b,t)
     inv_FG_tex = Tex(
-        r"$\begin{cases} x = F(a) = a + \xi(a,b,t), \\ y = G(b) = b + \eta(b,t) \end{cases}$",
+        r"$\begin{cases} x = F(a) = a + \xi(a,b,t), \\ y = G(b) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
     )
-    # Animate adding F and G; keep left alignment and spacing
-    self.play(TransformMatchingTex(inv_start_tex, inv_FG_tex, run_time=1.0))
     inv_FG_tex.next_to(nr_goal_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
-    inv_start_tex = inv_FG_tex
+    self.play(TransformMatchingTex(inv_start_tex, inv_FG_tex, run_time=1.0))
+    inv_start_tex = inv_FG_tex  # stays in place
 
     self.next_slide()
 
+    # Pre-place final inversion ON THE LEFT before anim
     inv_final_tex = Tex(
         r"$\begin{cases} a = F^{-1}(x,y,t), \\ b = G^{-1}(x,y,t) \end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
     )
-    self.play(TransformMatchingTex(inv_start_tex, inv_final_tex, run_time=1.0))
     inv_final_tex.next_to(nr_goal_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
+    self.play(TransformMatchingTex(inv_start_tex, inv_final_tex, run_time=1.0))
 
     # End
     self.pause()
