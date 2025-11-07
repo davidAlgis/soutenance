@@ -3,3 +3,4 @@ media/
 slides/
 env/
 states_sph/
+.mypy_cache/
