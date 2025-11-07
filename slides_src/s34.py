@@ -12,14 +12,17 @@ def slide_34(self):
     """
     Vitesse d'Airy (slide 34).
 
-    Two-column layout:
-    - Left column (narrow): formulas, always left-aligned and clamped inside the column.
-    - Right column (wide): wave, label crosses, particles and velocity arrows.
+    Full rewrite with a strictly consistent physical frame so that the wave curve
+    and the top particle row coincide on the free surface:
+    - Horizontal physical coordinate: x_phys in [-X_RANGE/2, X_RANGE/2]
+    - Vertical physical coordinate:   b in [0, B_MAX]; free surface is at b = B_MAX
+    - Wave: eta(x,t) = A_phys * cos(k*x - omega*t)
+    - Lagrangian displacements use amp_base so that AE(b=B_MAX) == A_phys
 
-    All texts are BLACK, same font size, and use a uniform vertical spacing.
+    All texts are BLACK, same font size and spacing. Left formulas are pre-placed.
     """
 
-    # ----------------------------- layout and common params (columns + spacing)
+    # ----------------------------- layout and common params
     full_w = config.frame_width
     full_h = config.frame_height
 
@@ -29,7 +32,6 @@ def slide_34(self):
     left_center_x = -full_w * 0.5 + left_w * 0.5 + 0.3
     right_center_x = left_center_x + (left_w * 0.5) + (right_w * 0.5) + 0.3
 
-    # Top bar and vertical bounds
     bar = self._top_bar("Vitesse d'Airy")
     self.add(bar)
     self.add_foreground_mobject(bar)
@@ -37,16 +39,13 @@ def slide_34(self):
     top_y = bar_rect.get_bottom()[1] - 0.2
     bottom_y = -full_h * 0.5 + 0.3
 
-    # Uniform typography
     TEXT_FS = 30
     LINE_BUFF = 0.35
 
     # ----------------------------- helpers
     def place_left_tex(mobj, above=None, buff=LINE_BUFF):
         """
-        Place a Tex in the left column:
-        - left-aligned on the column left edge
-        - either just under the bar (above is None) or under another Tex.
+        Place a Tex in the left column, left-aligned and clamped inside the column.
         """
         if above is None:
             mobj.to_edge(LEFT, buff=0.0)
@@ -70,11 +69,71 @@ def slide_34(self):
             [x0 + x_norm * right_w, y0 + y_norm * (top_y - bottom_y), 0.0]
         )
 
-    # Wave parameters and time
-    A = 0.2
+    # --------------------------- physical frame (CONSISTENT for curve & particles)
+    t_tracker = ValueTracker(0.0)
+
     k_val = 0.3
     omega_val = 1.0
-    t_tracker = ValueTracker(0.0)
+
+    # Horizontal span: many periods visible
+    X_PERIODS = 4.5
+    X_RANGE = (
+        2.0 * np.pi * X_PERIODS
+    ) / k_val  # x_phys in [-X_RANGE/2, X_RANGE/2]
+
+    # Vertical: labels b in [0, B_MAX]; free surface is at b = B_MAX
+    B_MAX = 1.0
+
+    # Choose physical free-surface amplitude
+    A_phys = 0.18
+
+    # Airy Lagrangian uses AE = amp_base * exp(k*b). To match the Eulerian wave
+    # at the free surface, we set amp_base so that AE(b=B_MAX) == A_phys.
+    # => amp_base = A_phys * exp(-k*B_MAX)
+    amp_base = A_phys * np.exp(-k_val * B_MAX)
+
+    # Right-column vertical placement for the free surface (screen normalized)
+    y_mid = 0.62  # yn position of b = B_MAX (free surface)
+
+    # Converters between physical and normalized
+    def xn_from_xphys(x_phys):
+        return (x_phys / X_RANGE) + 0.5
+
+    def yn_from_b(b_phys):
+        # b in [0..B_MAX] -> [0..y_mid]
+        return (b_phys / B_MAX) * y_mid
+
+    def yn_from_surface(b_phys_surface):
+        # b_phys_surface = b + eta. For the free surface: b=B_MAX, so zero line is y_mid.
+        return yn_from_b(b_phys_surface)
+
+    # --------------------------- Airy Lagrangian displacement (physical)
+    def get_horizontal_displacement(a, b, amp_base, k, omega, t_val):
+        """
+        xi(a,b,t) with AE(b) = amp_base * exp(k*b).
+        Use phase k*a - omega*t to be consistent with Eulerian cos(k*x - omega*t).
+        """
+        theta = k * a - omega * t_val
+        AE = amp_base * np.exp(k * b)
+        return -AE * np.sin(theta)
+
+    def get_vertical_displacement(a, b, amp_base, k, omega, t_val):
+        """
+        eta(a,b,t) with the standard first-order correction in the phase.
+        """
+        theta = k * a - omega * t_val
+        AE = amp_base * np.exp(k * b)
+        return AE * np.cos(theta - k * AE * np.sin(theta))
+
+    def get_particle_position(a, b, amp_base, k, omega, t_val):
+        """
+        Returns (x_phys, b_phys_surface) in the SAME physical frame as the curve,
+        where b_phys_surface = b + eta(a,b,t).
+        """
+        return (
+            a + get_horizontal_displacement(a, b, amp_base, k, omega, t_val),
+            b + get_vertical_displacement(a, b, amp_base, k, omega, t_val),
+        )
 
     # ---------------------------------------------- Intro text under the bar
     intro = Tex(
@@ -87,23 +146,23 @@ def slide_34(self):
 
     self.next_slide()
 
-    # ----------------------------------------------------- Right-column curve
-    # Put the mean level of the wave a bit higher.
+    # ----------------------------------------------------- Eulerian wave curve on free surface
     def make_wave_curve():
         """
-        h(x,t) = A cos(k x + omega t), spanning the full right column width.
+        Eulerian wave at the free surface:
+          eta(x,t) = A_phys * cos(k*x - omega*t)
+          b_surface(x,t) = B_MAX + eta(x,t)
         """
         n = 400
         pts = []
-        y_mid = 0.62  # higher mean line
-        y_scale = (top_y - bottom_y) * 0.15
         for i in range(n):
             xn = i / (n - 1)
-            x_world = xn * right_w
-            y_val = A * np.cos(
-                k_val * x_world + omega_val * t_tracker.get_value()
+            x_phys = (xn - 0.5) * X_RANGE
+            eta = A_phys * np.cos(
+                k_val * x_phys - omega_val * t_tracker.get_value()
             )
-            yn = y_mid + (y_val * y_scale) / (top_y - bottom_y)
+            b_surface = B_MAX + eta
+            yn = yn_from_surface(b_surface)
             pts.append(map_to_right(xn, yn))
         curve = VMobject()
         curve.set_points_smoothly(pts)
@@ -113,43 +172,49 @@ def slide_34(self):
     wave_curve = make_wave_curve()
     self.add(wave_curve)
 
-    # Left-column equation h(x,t) placed much lower than the intro
-    eq_h = Tex(r"$h(x,t)=A\cos(kx+\omega t)$", color=BLACK, font_size=TEXT_FS)
+    # Left-column equation h(x,t)
+    eq_h = Tex(r"$h(x,t)=A\cos(kx-\omega t)$", color=BLACK, font_size=TEXT_FS)
     place_left_tex(eq_h, above=intro, buff=LINE_BUFF * 1.2)
     self.add(eq_h)
 
-    # ------------------------------------------------------ Label grid (a,b)
+    # ------------------------------------------------------ Label grid (a,b) in SAME frame
     grid_nx, grid_ny = 7, 7
-    label_points = []
+    labels_phys = []  # (i, j, a_phys, b_phys)
     for j in range(grid_ny):
         for i in range(grid_nx):
-            xn = i / (grid_nx - 1)  # 0..1 across width (full spread)
-            yn = (j / (grid_ny - 1)) * 0.5  # 0..0.5 vertically (bottom to mid)
-            label_points.append((i, j, xn, yn))
+            a_phys = (
+                (i / (grid_nx - 1)) - 0.5
+            ) * X_RANGE  # [-X_RANGE/2, X_RANGE/2]
+            b_phys = (j / (grid_ny - 1)) * B_MAX  # [0, B_MAX]
+            labels_phys.append((i, j, a_phys, b_phys))
 
     def make_cross(center, size=0.03):
-        """
-        Small diagonal cross at center in pc.apple.
-        """
         dx = size
         dy = size
         p1 = center + np.array([-dx, -dy, 0.0])
         p2 = center + np.array([dx, dy, 0.0])
         p3 = center + np.array([-dx, dy, 0.0])
         p4 = center + np.array([dx, -dy, 0.0])
-        l1 = VMobject().set_stroke(color=pc.apple, width=3)
-        l1.set_points_as_corners([p1, p2])
-        l2 = VMobject().set_stroke(color=pc.apple, width=3)
-        l2.set_points_as_corners([p3, p4])
+        l1 = (
+            VMobject()
+            .set_stroke(color=pc.apple, width=3)
+            .set_points_as_corners([p1, p2])
+        )
+        l2 = (
+            VMobject()
+            .set_stroke(color=pc.apple, width=3)
+            .set_points_as_corners([p3, p4])
+        )
         return VGroup(l1, l2)
 
-    crosses = [
-        make_cross(map_to_right(xn, yn), size=0.03)
-        for (_i, _j, xn, yn) in label_points
-    ]
+    crosses = []
+    for _i, _j, a_phys, b_phys in labels_phys:
+        xn = xn_from_xphys(a_phys)
+        yn = yn_from_b(b_phys)  # top row (b=B_MAX) maps exactly to y_mid
+        crosses.append(make_cross(map_to_right(xn, yn), size=0.03))
     crosses_group = VGroup(*crosses)
 
-    # Left-column vector {a; b} must appear together with crosses
+    # Left-column vector {a; b}
     ab_tex = Tex(
         r"$\begin{cases} a \\ b \end{cases}$", color=BLACK, font_size=TEXT_FS
     )
@@ -160,11 +225,10 @@ def slide_34(self):
     row_groups = []
     for j in range(grid_ny):
         row = VGroup()
-        for idx, (_i, jj, xn, yn) in enumerate(label_points):
+        for idx, (_i, jj, _a, _b) in enumerate(labels_phys):
             if jj == j:
                 row.add(crosses[idx])
         row_groups.append(row)
-
     self.play(
         LaggedStart(
             *[Create(r) for r in row_groups], lag_ratio=0.15, run_time=1.2
@@ -174,85 +238,53 @@ def slide_34(self):
 
     self.next_slide()
 
-    # --------------------------------------- Particles from Lagrangian mapping
-    def get_horizontal_displacement(a, b, amp, k, omega, t_val):
-        theta = k * a - omega * t_val
-        AE = amp * np.exp(k * b)
-        return -AE * np.sin(theta)
-
-    def get_vertical_displacement(a, b, amp, k, omega, t_val):
-        theta = k * a - omega * t_val
-        AE = amp * np.exp(k * b)
-        return AE * np.cos(theta - k * AE * np.sin(theta))
-
-    def get_particle_position(a, b, amp, k, omega, t_val):
-        return (
-            a + get_horizontal_displacement(a, b, amp, k, omega, t_val),
-            b + get_vertical_displacement(a, b, amp, k, omega, t_val),
-        )
-
+    # --------------------------------------- Particles at displaced positions (SAME frame)
     particles = []
-    for _i, _j, xn, yn in label_points:
-        a0 = xn * right_w
-        b0 = yn * (top_y - bottom_y)
-        px, py = get_particle_position(
-            a0, b0, A, k_val, omega_val, t_tracker.get_value()
+    for _i, _j, a_phys, b_phys in labels_phys:
+        px_phys, pb_phys = get_particle_position(
+            a_phys, b_phys, amp_base, k_val, omega_val, t_tracker.get_value()
         )
-        x_norm = px / right_w
-        y_norm = py / (top_y - bottom_y)
-        p_world = map_to_right(x_norm, y_norm)
-        particles.append(Dot(point=p_world, radius=0.06, color=pc.blueGreen))
+        xn = xn_from_xphys(px_phys)
+        yn = yn_from_surface(
+            pb_phys
+        )  # pb_phys is b + eta: a "surface-like" vertical position
+        particles.append(
+            Dot(point=map_to_right(xn, yn), radius=0.06, color=pc.blueGreen)
+        )
     particles_group = VGroup(*particles)
     self.add(particles_group)
 
-    # Replace {a;b} by mapping, and pre-place the destination ON THE LEFT before anim
+    # Replace {a;b} by mapping; pre-place destination on the left
     mapping_tex = Tex(
         r"$\begin{cases} x(a,b,t) = a + \xi(a,b,t), \\ y(a,b,t) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
     )
-    place_left_tex(mapping_tex, above=eq_h, buff=LINE_BUFF)  # pre-position
+    place_left_tex(mapping_tex, above=eq_h, buff=LINE_BUFF)
     self.play(TransformMatchingTex(ab_tex, mapping_tex, run_time=0.8))
-    ab_tex = mapping_tex  # now in-place, do not re-place afterwards
+    ab_tex = mapping_tex
 
     self.next_slide()
 
-    # ------------------------------------------------------- Animate t (0..2pi)
-    def make_wave_curve():  # redefined here to capture updated t each frame
-        n = 400
-        pts = []
-        y_mid = 0.62
-        y_scale = (top_y - bottom_y) * 0.15
-        for i in range(n):
-            xn = i / (n - 1)
-            x_world = xn * right_w
-            y_val = A * np.cos(
-                k_val * x_world + omega_val * t_tracker.get_value()
-            )
-            yn = y_mid + (y_val * y_scale) / (top_y - bottom_y)
-            pts.append(map_to_right(xn, yn))
-        curve = VMobject()
-        curve.set_points_smoothly(pts)
-        curve.set_stroke(color=pc.oxfordBlue, width=4)
-        return curve
-
+    # ------------------------------------------------------- Animate t (0..2pi) with updaters
     def wave_updater(mobj):
         mobj.become(make_wave_curve())
 
     wave_curve.add_updater(wave_updater)
 
     def particles_updater(group):
-        idx = 0
-        for _i, _j, xn, yn in label_points:
-            a0 = xn * right_w
-            b0 = yn * (top_y - bottom_y)
-            px, py = get_particle_position(
-                a0, b0, A, k_val, omega_val, t_tracker.get_value()
+        for idx, (_i, _j, a_phys, b_phys) in enumerate(labels_phys):
+            px_phys, pb_phys = get_particle_position(
+                a_phys,
+                b_phys,
+                amp_base,
+                k_val,
+                omega_val,
+                t_tracker.get_value(),
             )
-            x_norm = px / right_w
-            y_norm = py / (top_y - bottom_y)
-            group[idx].move_to(map_to_right(x_norm, y_norm))
-            idx += 1
+            xn = xn_from_xphys(px_phys)
+            yn = yn_from_surface(pb_phys)
+            group[idx].move_to(map_to_right(xn, yn))
 
     particles_group.add_updater(particles_updater)
 
@@ -263,28 +295,33 @@ def slide_34(self):
     self.play(t_tracker.animate.set_value(4 * np.pi), run_time=2.5)
     t_tracker.set_value(t_tracker.get_value() % (2 * np.pi))
 
-    # ------------------------------------------------------ Velocities arrows
-    def get_velocity(a, b, amp, k, omega, t_val):
+    # ------------------------------------------------------ Velocities (arrows) in SAME frame
+    def get_velocity(a, b, amp_base, k, omega, t_val):
+        """
+        Return (u,w) in physical units at label (a,b); AE(b)=amp_base*exp(k*b).
+        """
         theta = k * a - omega * t_val
-        AE = amp * np.exp(k * b)
+        AE = amp_base * np.exp(k * b)
         u = AE * omega * np.cos(theta)
-        dep_a = get_horizontal_displacement(a, b, amp, k, omega, t_val)
+        dep_a = get_horizontal_displacement(a, b, amp_base, k, omega, t_val)
         w = AE * np.sin(k * dep_a + theta) * (omega - k * u)
         return (u, w)
 
     arrows = VGroup()
-    for (_i, _j, xn, yn), dot in zip(label_points, particles):
-        a0 = xn * right_w
-        b0 = yn * (top_y - bottom_y)
-        px, py = get_particle_position(
-            a0, b0, A, k_val, omega_val, t_tracker.get_value()
+    for (_i, _j, a_phys, b_phys), dot in zip(labels_phys, particles):
+        px_phys, pb_phys = get_particle_position(
+            a_phys, b_phys, amp_base, k_val, omega_val, t_tracker.get_value()
         )
-        x_norm = px / right_w
-        y_norm = py / (top_y - bottom_y)
-        p_world = map_to_right(x_norm, y_norm)
-        u, w = get_velocity(a0, b0, A, k_val, omega_val, t_tracker.get_value())
+        xn = xn_from_xphys(px_phys)
+        yn = yn_from_surface(pb_phys)
+        p_world = map_to_right(xn, yn)
+
+        u, w = get_velocity(
+            a_phys, b_phys, amp_base, k_val, omega_val, t_tracker.get_value()
+        )
         vel_scale = 0.35
         end_world = p_world + np.array([u * vel_scale, w * vel_scale, 0.0])
+
         arrows.add(
             Arrow(
                 start=p_world,
@@ -297,7 +334,7 @@ def slide_34(self):
         )
     self.add(arrows)
 
-    # Velocity equations: pre-place destination ON THE LEFT before anim
+    # Velocity equations; pre-place on the left before transform
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
@@ -306,29 +343,39 @@ def slide_34(self):
         color=BLACK,
         font_size=TEXT_FS,
     )
-    place_left_tex(vel_tex, above=eq_h, buff=LINE_BUFF)  # pre-position
+    place_left_tex(vel_tex, above=eq_h, buff=LINE_BUFF)
     self.play(TransformMatchingTex(ab_tex, vel_tex, run_time=0.8))
-    ab_tex = vel_tex  # do not re-place afterwards
+    ab_tex = vel_tex
 
     self.next_slide()
 
     def arrows_updater(arr_group):
-        for idx, ((_i, _j, xn, yn), arr) in enumerate(
-            zip(label_points, arr_group)
+        for idx, ((_i, _j, a_phys, b_phys), arr) in enumerate(
+            zip(labels_phys, arr_group)
         ):
-            a0 = xn * right_w
-            b0 = yn * (top_y - bottom_y)
-            px, py = get_particle_position(
-                a0, b0, A, k_val, omega_val, t_tracker.get_value()
+            px_phys, pb_phys = get_particle_position(
+                a_phys,
+                b_phys,
+                amp_base,
+                k_val,
+                omega_val,
+                t_tracker.get_value(),
             )
-            x_norm = px / right_w
-            y_norm = py / (top_y - bottom_y)
-            p_world = map_to_right(x_norm, y_norm)
+            xn = xn_from_xphys(px_phys)
+            yn = yn_from_surface(pb_phys)
+            p_world = map_to_right(xn, yn)
+
             u, w = get_velocity(
-                a0, b0, A, k_val, omega_val, t_tracker.get_value()
+                a_phys,
+                b_phys,
+                amp_base,
+                k_val,
+                omega_val,
+                t_tracker.get_value(),
             )
             vel_scale = 0.35
             end_world = p_world + np.array([u * vel_scale, w * vel_scale, 0.0])
+
             arr.become(
                 Arrow(
                     start=p_world,
@@ -353,7 +400,7 @@ def slide_34(self):
         run_time=2.5,
     )
 
-    # ------------------------------------------------------- Clear right column, keep velocity eq
+    # ------------------------------------------------------- clear right column, keep velocity eq
     wave_curve.clear_updaters()
     particles_group.clear_updaters()
     arrows.clear_updaters()
@@ -366,7 +413,7 @@ def slide_34(self):
         FadeOut(eq_h, run_time=0.5),
     )
 
-    # Move velocity block to top-left without center jump: just shift it.
+    # Move velocity block to top-left
     vel_left_margin = -full_w * 0.5 + 0.4
     dx = vel_left_margin - ab_tex.get_left()[0]
     dy = top_y - ab_tex.get_top()[1]
@@ -374,9 +421,9 @@ def slide_34(self):
 
     self.next_slide()
 
-    # ------------------------------------------------------- Newton–Raphson text
+    # ------------------------------------------------------- Newton–Raphson text & equations
     missing_labels_tex = Tex(
-        "Mais, on ne possède pas les labels.", color=BLACK, font_size=TEXT_FS
+        "Mais, on ne possede pas les labels.", color=BLACK, font_size=TEXT_FS
     )
     missing_labels_tex.next_to(ab_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
     self.add(missing_labels_tex)
@@ -384,7 +431,7 @@ def slide_34(self):
     self.next_slide()
 
     nr_title_tex = Tex(
-        "On utilise la méthode de Newton-Raphson :",
+        "On utilise la methode de Newton-Raphson :",
         color=BLACK,
         font_size=TEXT_FS,
     )
@@ -394,7 +441,7 @@ def slide_34(self):
     self.add(nr_title_tex)
 
     nr_goal_tex = Tex(
-        "À partir d'une position donnée déterminer $a$ et $b$",
+        "A partir d'une position donnee determiner $a$ et $b$",
         color=BLACK,
         font_size=TEXT_FS,
     )
@@ -411,7 +458,6 @@ def slide_34(self):
 
     self.next_slide()
 
-    # Pre-place destination ON THE LEFT before anim (and fix eta to depend on a,b,t)
     inv_FG_tex = Tex(
         r"$\begin{cases} x = F(a) = a + \xi(a,b,t), \\ y = G(b) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
@@ -419,11 +465,10 @@ def slide_34(self):
     )
     inv_FG_tex.next_to(nr_goal_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
     self.play(TransformMatchingTex(inv_start_tex, inv_FG_tex, run_time=1.0))
-    inv_start_tex = inv_FG_tex  # stays in place
+    inv_start_tex = inv_FG_tex
 
     self.next_slide()
 
-    # Pre-place final inversion ON THE LEFT before anim
     inv_final_tex = Tex(
         r"$\begin{cases} a = F^{-1}(x,y,t), \\ b = G^{-1}(x,y,t) \end{cases}$",
         color=BLACK,
