@@ -12,17 +12,27 @@ def slide_34(self):
     """
     Vitesse d'Airy (slide 34).
 
-    Full rewrite with a strictly consistent physical frame so that the wave curve
-    and the top particle row coincide on the free surface:
-    - Horizontal physical coordinate: x_phys in [-X_RANGE/2, X_RANGE/2]
-    - Vertical physical coordinate:   b in [0, B_MAX]; free surface is at b = B_MAX
-    - Wave: eta(x,t) = A_phys * cos(k*x - omega*t)
-    - Lagrangian displacements use amp_base so that AE(b=B_MAX) == A_phys
+    Full rewrite that keeps CSV reading and enforces the staging:
+    1) Show crosses only (labels).
+    2) Next slide -> show particles only at CSV positions (no arrows).
+    3) Next slide -> add velocity arrows.
 
-    All texts are BLACK, same font size and spacing. Left formulas are pre-placed.
+    Other rules:
+    - The right-column curve, crosses, particles and arrows share the SAME frame derived
+      from the CSV ranges. The curve zero-line is aligned via the mean top-row position.
+    - All texts are BLACK with uniform font size and spacing.
+    - Animate TransformMatchingTex between position and velocity equations on the left.
+    - Slower time animation; visuals are placed slightly lower (SCALE_Y).
     """
 
-    # ----------------------------- layout and common params
+    # ----------------------------- imports and layout
+    import csv
+
+    import numpy as np
+    from manim import (BLACK, ORIGIN, Arrow, Create, Dot, FadeOut, LaggedStart,
+                       Tex, TransformMatchingTex, ValueTracker, VGroup,
+                       VMobject, config)
+
     full_w = config.frame_width
     full_h = config.frame_height
 
@@ -42,21 +52,28 @@ def slide_34(self):
     TEXT_FS = 30
     LINE_BUFF = 0.35
 
-    # ----------------------------- helpers
+    # Place visuals a bit lower in the right column
+    SCALE_Y = 0.82
+
     def place_left_tex(mobj, above=None, buff=LINE_BUFF):
         """
-        Place a Tex in the left column, left-aligned and clamped inside the column.
+        Place a Tex in the left column, left-aligned and inside the column.
         """
         if above is None:
             mobj.to_edge(LEFT, buff=0.0)
             dx = (left_center_x - left_w * 0.5 + 0.1) - mobj.get_left()[0]
-            mobj.shift(RIGHT * dx)
+            mobj.shift(np.array([dx, 0.0, 0.0]))
             dy = (top_y - 0.15) - mobj.get_top()[1]
-            mobj.shift(UP * dy)
+            mobj.shift(np.array([0.0, dy, 0.0]))
         else:
-            mobj.next_to(above, DOWN, buff=buff, aligned_edge=LEFT)
+            mobj.next_to(
+                above,
+                direction=np.array([0.0, -1.0, 0.0]),
+                buff=buff,
+                aligned_edge=LEFT,
+            )
             dx = (left_center_x - left_w * 0.5 + 0.1) - mobj.get_left()[0]
-            mobj.shift(RIGHT * dx)
+            mobj.shift(np.array([dx, 0.0, 0.0]))
         return mobj
 
     def map_to_right(x_norm, y_norm):
@@ -66,104 +83,158 @@ def slide_34(self):
         x0 = right_center_x - right_w * 0.5
         y0 = bottom_y
         return np.array(
-            [x0 + x_norm * right_w, y0 + y_norm * (top_y - bottom_y), 0.0]
+            [
+                x0 + x_norm * right_w,
+                y0 + y_norm * (top_y - bottom_y) * SCALE_Y,
+                0.0,
+            ]
         )
 
-    # --------------------------- physical frame (CONSISTENT for curve & particles)
-    t_tracker = ValueTracker(0.0)
-
-    k_val = 0.3
-    omega_val = 1.0
-
-    # Horizontal span: many periods visible
-    X_PERIODS = 4.5
-    X_RANGE = (
-        2.0 * np.pi * X_PERIODS
-    ) / k_val  # x_phys in [-X_RANGE/2, X_RANGE/2]
-
-    # Vertical: labels b in [0, B_MAX]; free surface is at b = B_MAX
-    B_MAX = 1.0
-
-    # Choose physical free-surface amplitude
-    A_phys = 0.18
-
-    # Airy Lagrangian uses AE = amp_base * exp(k*b). To match the Eulerian wave
-    # at the free surface, we set amp_base so that AE(b=B_MAX) == A_phys.
-    # => amp_base = A_phys * exp(-k*B_MAX)
-    amp_base = A_phys * np.exp(-k_val * B_MAX)
-
-    # Right-column vertical placement for the free surface (screen normalized)
-    y_mid = 0.62  # yn position of b = B_MAX (free surface)
-
-    # Converters between physical and normalized
-    def xn_from_xphys(x_phys):
-        return (x_phys / X_RANGE) + 0.5
-
-    def yn_from_b(b_phys):
-        # b in [0..B_MAX] -> [0..y_mid]
-        return (b_phys / B_MAX) * y_mid
-
-    def yn_from_surface(b_phys_surface):
-        # b_phys_surface = b + eta. For the free surface: b=B_MAX, so zero line is y_mid.
-        return yn_from_b(b_phys_surface)
-
-    # --------------------------- Airy Lagrangian displacement (physical)
-    def get_horizontal_displacement(a, b, amp_base, k, omega, t_val):
-        """
-        xi(a,b,t) with AE(b) = amp_base * exp(k*b).
-        Use phase k*a - omega*t to be consistent with Eulerian cos(k*x - omega*t).
-        """
-        theta = k * a - omega * t_val
-        AE = amp_base * np.exp(k * b)
-        return -AE * np.sin(theta)
-
-    def get_vertical_displacement(a, b, amp_base, k, omega, t_val):
-        """
-        eta(a,b,t) with the standard first-order correction in the phase.
-        """
-        theta = k * a - omega * t_val
-        AE = amp_base * np.exp(k * b)
-        return AE * np.cos(theta - k * AE * np.sin(theta))
-
-    def get_particle_position(a, b, amp_base, k, omega, t_val):
-        """
-        Returns (x_phys, b_phys_surface) in the SAME physical frame as the curve,
-        where b_phys_surface = b + eta(a,b,t).
-        """
-        return (
-            a + get_horizontal_displacement(a, b, amp_base, k, omega, t_val),
-            b + get_vertical_displacement(a, b, amp_base, k, omega, t_val),
-        )
-
-    # ---------------------------------------------- Intro text under the bar
+    # ----------------------------- intro text
     intro = Tex(
         "Version lagrangienne d'Airy :", color=BLACK, font_size=TEXT_FS
     )
     intro.to_edge(LEFT, buff=0.4)
     dy_intro = top_y - intro.get_top()[1]
-    intro.shift(UP * dy_intro)
+    intro.shift(np.array([0.0, dy_intro, 0.0]))
     self.add(intro)
 
     self.next_slide()
 
-    # ----------------------------------------------------- Eulerian wave curve on free surface
+    # ----------------------------- CSV load
+    # CSV header: index_p;time;label_x;label_y;pos_x;pos_y;vel_x;vel_y
+    csv_path = "states_sph/airy_particles.csv"
+    times = []
+    rows_by_index = {}
+
+    with open(csv_path, "r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f, delimiter=";")
+        for r in reader:
+            idx = int(r["index_p"])
+            t = float(r["time"])
+            lx = float(r["label_x"])
+            ly = float(r["label_y"])
+            px = float(r["pos_x"])
+            py = float(r["pos_y"])
+            vx = float(r["vel_x"])
+            vy = float(r["vel_y"])
+            if idx not in rows_by_index:
+                rows_by_index[idx] = {
+                    "time": [],
+                    "label_x": [],
+                    "label_y": [],
+                    "pos_x": [],
+                    "pos_y": [],
+                    "vel_x": [],
+                    "vel_y": [],
+                }
+            d = rows_by_index[idx]
+            d["time"].append(t)
+            d["label_x"].append(lx)
+            d["label_y"].append(ly)
+            d["pos_x"].append(px)
+            d["pos_y"].append(py)
+            d["vel_x"].append(vx)
+            d["vel_y"].append(vy)
+            times.append(t)
+
+    # Sort series by time; build time bounds and physical ranges
+    for idx, d in rows_by_index.items():
+        order = np.argsort(np.array(d["time"]))
+        for k in d.keys():
+            d[k] = list(np.array(d[k])[order])
+
+    times_all = np.unique(np.array(times))
+    if len(times_all) == 0:
+        return
+
+    T_MIN = float(times_all.min())
+    T_MAX = float(times_all.max())
+
+    all_x = []
+    all_y = []
+    for d in rows_by_index.values():
+        all_x.extend(d["label_x"])
+        all_x.extend(d["pos_x"])
+        all_y.extend(d["label_y"])
+        all_y.extend(d["pos_y"])
+    X_MIN = float(np.min(all_x))
+    X_MAX = float(np.max(all_x))
+    Y_MIN = float(np.min(all_y))
+    Y_MAX = float(np.max(all_y))
+    if X_MAX == X_MIN:
+        X_MAX = X_MIN + 1.0
+    if Y_MAX == Y_MIN:
+        Y_MAX = Y_MIN + 1.0
+
+    def xn_from_xphys(x_phys):
+        return (x_phys - X_MIN) / (X_MAX - X_MIN)
+
+    def yn_from_yphys(y_phys):
+        return (y_phys - Y_MIN) / (Y_MAX - Y_MIN)
+
+    def lerp_series(ts, ys, t):
+        """
+        Linear interpolation y(t) with times ts and samples ys.
+        """
+        if t <= ts[0]:
+            return ys[0]
+        if t >= ts[-1]:
+            return ys[-1]
+        i = int(np.searchsorted(ts, t))
+        t1, t2 = ts[i - 1], ts[i]
+        y1, y2 = ys[i - 1], ys[i]
+        a = 0.0 if t2 == t1 else (t - t1) / (t2 - t1)
+        return (1.0 - a) * y1 + a * y2
+
+    # Identify top label row indices (max label_y at t0)
+    t0 = float(times_all[0])
+    label_y_at_t0 = []
+    for idx, d in rows_by_index.items():
+        label_y_at_t0.append(lerp_series(d["time"], d["label_y"], t0))
+    max_label_y = float(np.max(label_y_at_t0))
+    top_eps = max(1e-6, 1e-3 * max(1.0, abs(max_label_y)))
+    top_indices = [
+        idx
+        for idx, d in rows_by_index.items()
+        if abs(lerp_series(d["time"], d["label_y"], t0) - max_label_y)
+        <= top_eps
+    ]
+
+    # ----------------------------- right-column visuals: curve and crosses
+    # Wave parameters for visual curve alignment
+    A = 0.2
+    k_val = 1.25
+    omega_val = 3.51
+
+    t_tracker = ValueTracker(T_MIN)
+
+    def compute_y0(t):
+        """
+        Mean y of the top label row at time t, to align the curve midline.
+        """
+        if not top_indices:
+            return 0.0
+        vals = []
+        for idx in top_indices:
+            d = rows_by_index[idx]
+            vals.append(lerp_series(d["time"], d["pos_y"], t))
+        return float(np.mean(vals))
+
     def make_wave_curve():
         """
-        Eulerian wave at the free surface:
-          eta(x,t) = A_phys * cos(k*x - omega*t)
-          b_surface(x,t) = B_MAX + eta(x,t)
+        y(x,t) = y0(t) + A*cos(k*x - omega*t) plotted in the CSV physical x-range.
         """
         n = 400
         pts = []
+        y0 = compute_y0(t_tracker.get_value())
         for i in range(n):
             xn = i / (n - 1)
-            x_phys = (xn - 0.5) * X_RANGE
-            eta = A_phys * np.cos(
+            x_phys = X_MIN + xn * (X_MAX - X_MIN)
+            y_phys = y0 + A * np.cos(
                 k_val * x_phys - omega_val * t_tracker.get_value()
             )
-            b_surface = B_MAX + eta
-            yn = yn_from_surface(b_surface)
-            pts.append(map_to_right(xn, yn))
+            pts.append(map_to_right(xn, yn_from_yphys(y_phys)))
         curve = VMobject()
         curve.set_points_smoothly(pts)
         curve.set_stroke(color=pc.oxfordBlue, width=4)
@@ -172,22 +243,12 @@ def slide_34(self):
     wave_curve = make_wave_curve()
     self.add(wave_curve)
 
-    # Left-column equation h(x,t)
+    # Left equation for h
     eq_h = Tex(r"$h(x,t)=A\cos(kx-\omega t)$", color=BLACK, font_size=TEXT_FS)
     place_left_tex(eq_h, above=intro, buff=LINE_BUFF * 1.2)
     self.add(eq_h)
 
-    # ------------------------------------------------------ Label grid (a,b) in SAME frame
-    grid_nx, grid_ny = 7, 7
-    labels_phys = []  # (i, j, a_phys, b_phys)
-    for j in range(grid_ny):
-        for i in range(grid_nx):
-            a_phys = (
-                (i / (grid_nx - 1)) - 0.5
-            ) * X_RANGE  # [-X_RANGE/2, X_RANGE/2]
-            b_phys = (j / (grid_ny - 1)) * B_MAX  # [0, B_MAX]
-            labels_phys.append((i, j, a_phys, b_phys))
-
+    # Crosses at label positions (time-independent)
     def make_cross(center, size=0.03):
         dx = size
         dy = size
@@ -207,54 +268,60 @@ def slide_34(self):
         )
         return VGroup(l1, l2)
 
+    # Unique label positions at t0 for staging by rows
+    labels_once = []
+    for idx, d in rows_by_index.items():
+        lx0 = d["label_x"][0]
+        ly0 = d["label_y"][0]
+        labels_once.append((idx, lx0, ly0))
+    unique_ys = sorted({round(ly, 6) for (_, _, ly) in labels_once})
+    y_to_row = {y: i for i, y in enumerate(unique_ys)}
+
     crosses = []
-    for _i, _j, a_phys, b_phys in labels_phys:
-        xn = xn_from_xphys(a_phys)
-        yn = yn_from_b(b_phys)  # top row (b=B_MAX) maps exactly to y_mid
-        crosses.append(make_cross(map_to_right(xn, yn), size=0.03))
+    rows_groups = {}
+    for idx, lx, ly in labels_once:
+        xn = xn_from_xphys(lx)
+        yn = yn_from_yphys(ly)
+        c = make_cross(map_to_right(xn, yn), size=0.03)
+        crosses.append(c)
+        rid = y_to_row[round(ly, 6)]
+        rows_groups.setdefault(rid, VGroup()).add(c)
+
     crosses_group = VGroup(*crosses)
 
-    # Left-column vector {a; b}
+    # Left "labels" vector
     ab_tex = Tex(
-        r"$\begin{cases} a \\ b \end{cases}$", color=BLACK, font_size=TEXT_FS
+        r"$\begin{pmatrix} a \\ b \end{pmatrix}$",
+        color=BLACK,
+        font_size=TEXT_FS,
     )
     place_left_tex(ab_tex, above=eq_h, buff=LINE_BUFF)
     self.add(ab_tex)
 
     # Animate crosses row-by-row
-    row_groups = []
-    for j in range(grid_ny):
-        row = VGroup()
-        for idx, (_i, jj, _a, _b) in enumerate(labels_phys):
-            if jj == j:
-                row.add(crosses[idx])
-        row_groups.append(row)
+    row_ids_sorted = sorted(rows_groups.keys())
     self.play(
         LaggedStart(
-            *[Create(r) for r in row_groups], lag_ratio=0.15, run_time=1.2
+            *[Create(rows_groups[rid]) for rid in row_ids_sorted],
+            lag_ratio=0.15,
+            run_time=1.2,
         )
     )
     self.add(crosses_group)
 
+    # ----------------------------- PAUSE 1: crosses only
     self.next_slide()
 
-    # --------------------------------------- Particles at displaced positions (SAME frame)
-    particles = []
-    for _i, _j, a_phys, b_phys in labels_phys:
-        px_phys, pb_phys = get_particle_position(
-            a_phys, b_phys, amp_base, k_val, omega_val, t_tracker.get_value()
-        )
-        xn = xn_from_xphys(px_phys)
-        yn = yn_from_surface(
-            pb_phys
-        )  # pb_phys is b + eta: a "surface-like" vertical position
-        particles.append(
-            Dot(point=map_to_right(xn, yn), radius=0.06, color=pc.blueGreen)
-        )
-    particles_group = VGroup(*particles)
-    self.add(particles_group)
+    # ----------------------------- particles only (no arrows yet)
+    # Create particle dots and their updater; add after this pause so they appear alone.
+    ordered_indices = sorted(rows_by_index.keys())
+    particles = VGroup()
+    for _ in ordered_indices:
+        particles.add(Dot(point=ORIGIN, radius=0.06, color=pc.blueGreen))
+    self.add(particles)
+    self.add_foreground_mobject(particles)
 
-    # Replace {a;b} by mapping; pre-place destination on the left
+    # Position equation on the left (animate from labels vector)
     mapping_tex = Tex(
         r"$\begin{cases} x(a,b,t) = a + \xi(a,b,t), \\ y(a,b,t) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
@@ -264,77 +331,85 @@ def slide_34(self):
     self.play(TransformMatchingTex(ab_tex, mapping_tex, run_time=0.8))
     ab_tex = mapping_tex
 
-    self.next_slide()
-
-    # ------------------------------------------------------- Animate t (0..2pi) with updaters
+    # Updater for curve and particles
     def wave_updater(mobj):
         mobj.become(make_wave_curve())
 
     wave_curve.add_updater(wave_updater)
 
     def particles_updater(group):
-        for idx, (_i, _j, a_phys, b_phys) in enumerate(labels_phys):
-            px_phys, pb_phys = get_particle_position(
-                a_phys,
-                b_phys,
-                amp_base,
-                k_val,
-                omega_val,
-                t_tracker.get_value(),
-            )
-            xn = xn_from_xphys(px_phys)
-            yn = yn_from_surface(pb_phys)
-            group[idx].move_to(map_to_right(xn, yn))
+        t = t_tracker.get_value()
+        for i, idx in enumerate(ordered_indices):
+            d = rows_by_index[idx]
+            px = lerp_series(d["time"], d["pos_x"], t)
+            py = lerp_series(d["time"], d["pos_y"], t)
+            xn = xn_from_xphys(px)
+            yn = yn_from_yphys(py)
+            group[i].move_to(map_to_right(xn, yn))
 
-    particles_group.add_updater(particles_updater)
+    particles.add_updater(particles_updater)
 
-    self.play(t_tracker.animate.set_value(2 * np.pi), run_time=2.5)
+    # Slower animation over one period
+    SLOW_RT = 4.0
+    self.play(
+        t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
+    )
 
+    # ----------------------------- PAUSE 2: particles are visible and animated
     self.next_slide()
 
-    self.play(t_tracker.animate.set_value(4 * np.pi), run_time=2.5)
-    t_tracker.set_value(t_tracker.get_value() % (2 * np.pi))
-
-    # ------------------------------------------------------ Velocities (arrows) in SAME frame
-    def get_velocity(a, b, amp_base, k, omega, t_val):
-        """
-        Return (u,w) in physical units at label (a,b); AE(b)=amp_base*exp(k*b).
-        """
-        theta = k * a - omega * t_val
-        AE = amp_base * np.exp(k * b)
-        u = AE * omega * np.cos(theta)
-        dep_a = get_horizontal_displacement(a, b, amp_base, k, omega, t_val)
-        w = AE * np.sin(k * dep_a + theta) * (omega - k * u)
-        return (u, w)
+    # ----------------------------- add velocity arrows now (in addition)
+    # Screen-space scaling for velocity vectors
+    x_scale_screen = right_w / (X_MAX - X_MIN)
+    y_scale_screen = ((top_y - bottom_y) * SCALE_Y) / (Y_MAX - Y_MIN)
+    VEL_GAIN = 1.2
 
     arrows = VGroup()
-    for (_i, _j, a_phys, b_phys), dot in zip(labels_phys, particles):
-        px_phys, pb_phys = get_particle_position(
-            a_phys, b_phys, amp_base, k_val, omega_val, t_tracker.get_value()
-        )
-        xn = xn_from_xphys(px_phys)
-        yn = yn_from_surface(pb_phys)
-        p_world = map_to_right(xn, yn)
-
-        u, w = get_velocity(
-            a_phys, b_phys, amp_base, k_val, omega_val, t_tracker.get_value()
-        )
-        vel_scale = 0.35
-        end_world = p_world + np.array([u * vel_scale, w * vel_scale, 0.0])
-
+    for _ in ordered_indices:
         arrows.add(
             Arrow(
-                start=p_world,
-                end=end_world,
+                ORIGIN,
+                ORIGIN + np.array([0.4, 0.0, 0.0]),
                 buff=0.0,
-                stroke_width=6,
+                stroke_width=7,
                 color=pc.uclaGold,
-                max_tip_length_to_length_ratio=0.25,
+                max_tip_length_to_length_ratio=0.3,
             )
         )
     self.add(arrows)
+    self.add_foreground_mobject(arrows)
 
-    # Velocity equations; pre-place on the left before transform
+    def arrows_updater(group):
+        t = t_tracker.get_value()
+        for i, idx in enumerate(ordered_indices):
+            d = rows_by_index[idx]
+            px = lerp_series(d["time"], d["pos_x"], t)
+            py = lerp_series(d["time"], d["pos_y"], t)
+            vx = lerp_series(d["time"], d["vel_x"], t)
+            vy = lerp_series(d["time"], d["vel_y"], t)
+
+            p_world = map_to_right(xn_from_xphys(px), yn_from_yphys(py))
+            end_world = p_world + np.array(
+                [
+                    vx * x_scale_screen * VEL_GAIN,
+                    vy * y_scale_screen * VEL_GAIN,
+                    0.0,
+                ]
+            )
+            group[i].become(
+                Arrow(
+                    start=p_world,
+                    end=end_world,
+                    buff=0.0,
+                    stroke_width=7,
+                    color=pc.uclaGold,
+                    max_tip_length_to_length_ratio=0.3,
+                )
+            )
+
+    arrows.add_updater(arrows_updater)
+
+    # Animate transform of left text: position -> velocity equations
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
@@ -347,85 +422,51 @@ def slide_34(self):
     self.play(TransformMatchingTex(ab_tex, vel_tex, run_time=0.8))
     ab_tex = vel_tex
 
-    self.next_slide()
-
-    def arrows_updater(arr_group):
-        for idx, ((_i, _j, a_phys, b_phys), arr) in enumerate(
-            zip(labels_phys, arr_group)
-        ):
-            px_phys, pb_phys = get_particle_position(
-                a_phys,
-                b_phys,
-                amp_base,
-                k_val,
-                omega_val,
-                t_tracker.get_value(),
-            )
-            xn = xn_from_xphys(px_phys)
-            yn = yn_from_surface(pb_phys)
-            p_world = map_to_right(xn, yn)
-
-            u, w = get_velocity(
-                a_phys,
-                b_phys,
-                amp_base,
-                k_val,
-                omega_val,
-                t_tracker.get_value(),
-            )
-            vel_scale = 0.35
-            end_world = p_world + np.array([u * vel_scale, w * vel_scale, 0.0])
-
-            arr.become(
-                Arrow(
-                    start=p_world,
-                    end=end_world,
-                    buff=0.0,
-                    stroke_width=6,
-                    color=pc.uclaGold,
-                    max_tip_length_to_length_ratio=0.25,
-                )
-            )
-
-    arrows.add_updater(arrows_updater)
+    # Animate one more period with arrows visible
     self.play(
-        t_tracker.animate.set_value(t_tracker.get_value() + 2 * np.pi),
-        run_time=2.5,
+        t_tracker.animate.set_value(T_MIN + 2 * (T_MAX - T_MIN)),
+        run_time=SLOW_RT,
+    )
+    t_tracker.set_value(
+        ((t_tracker.get_value() - T_MIN) % (T_MAX - T_MIN)) + T_MIN
     )
 
+    # ----------------------------- extra loop with arrows
     self.next_slide()
-
     self.play(
-        t_tracker.animate.set_value(t_tracker.get_value() + 2 * np.pi),
-        run_time=2.5,
+        t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
     )
 
-    # ------------------------------------------------------- clear right column, keep velocity eq
+    # ----------------------------- clear right column, keep velocity eq
     wave_curve.clear_updaters()
-    particles_group.clear_updaters()
+    particles.clear_updaters()
     arrows.clear_updaters()
     self.play(
         FadeOut(
-            VGroup(wave_curve, crosses_group, particles_group, arrows),
-            run_time=0.5,
+            VGroup(wave_curve, crosses_group, particles, arrows), run_time=0.6
         ),
-        FadeOut(intro, run_time=0.5),
-        FadeOut(eq_h, run_time=0.5),
+        FadeOut(intro, run_time=0.6),
+        FadeOut(eq_h, run_time=0.6),
     )
 
     # Move velocity block to top-left
     vel_left_margin = -full_w * 0.5 + 0.4
     dx = vel_left_margin - ab_tex.get_left()[0]
     dy = top_y - ab_tex.get_top()[1]
-    ab_tex.shift(RIGHT * dx + UP * dy)
+    ab_tex.shift(np.array([dx, dy, 0.0]))
 
     self.next_slide()
 
-    # ------------------------------------------------------- Newton–Raphson text & equations
+    # Newton-Raphson text and equations
     missing_labels_tex = Tex(
         "Mais, on ne possede pas les labels.", color=BLACK, font_size=TEXT_FS
     )
-    missing_labels_tex.next_to(ab_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
+    missing_labels_tex.next_to(
+        ab_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
+    )
     self.add(missing_labels_tex)
 
     self.next_slide()
@@ -436,7 +477,10 @@ def slide_34(self):
         font_size=TEXT_FS,
     )
     nr_title_tex.next_to(
-        missing_labels_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT
+        missing_labels_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
     )
     self.add(nr_title_tex)
 
@@ -445,7 +489,12 @@ def slide_34(self):
         color=BLACK,
         font_size=TEXT_FS,
     )
-    nr_goal_tex.next_to(nr_title_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
+    nr_goal_tex.next_to(
+        nr_title_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
+    )
     self.add(nr_goal_tex)
 
     inv_start_tex = Tex(
@@ -453,7 +502,12 @@ def slide_34(self):
         color=BLACK,
         font_size=TEXT_FS,
     )
-    inv_start_tex.next_to(nr_goal_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
+    inv_start_tex.next_to(
+        nr_goal_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
+    )
     self.add(inv_start_tex)
 
     self.next_slide()
@@ -463,7 +517,12 @@ def slide_34(self):
         color=BLACK,
         font_size=TEXT_FS,
     )
-    inv_FG_tex.next_to(nr_goal_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
+    inv_FG_tex.next_to(
+        nr_goal_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
+    )
     self.play(TransformMatchingTex(inv_start_tex, inv_FG_tex, run_time=1.0))
     inv_start_tex = inv_FG_tex
 
@@ -474,7 +533,12 @@ def slide_34(self):
         color=BLACK,
         font_size=TEXT_FS,
     )
-    inv_final_tex.next_to(nr_goal_tex, DOWN, buff=LINE_BUFF, aligned_edge=LEFT)
+    inv_final_tex.next_to(
+        nr_goal_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
+    )
     self.play(TransformMatchingTex(inv_start_tex, inv_final_tex, run_time=1.0))
 
     # End
