@@ -7,15 +7,13 @@ from slide_registry import slide
 @slide(36)
 def slide_36(self):
     """
-    Slide 36: Decoupage du domaine en zones.
+    Slide 36: Découpage du domaine en zones.
 
-    Sequence:
-      1) Top bar + intro line.
-      2) Animate the curve y = 0.2*cos(1.2 x) for x in [-5, 5] (blueGreen).
-      3) Place a uclaGold boat centered on the curve.
-      4) FernGreen border rectangle (drawn side-by-side), label top-left.
-      5) Inner blueGreen rectangle tightly surrounding the boat (drawn side-by-side), label.
-      6) Intermediate uclaGold rectangle between both (drawn side-by-side), label.
+    Fixes:
+      1) Wave fills full horizontal span of the frame.
+      2) fernGreen outer rectangle top stays below the intro line.
+      3) Boat slightly scaled down.
+      4) Add final pause/clear/next_slide.
     """
     # --- Top bar ---
     bar = self._top_bar("Découpage du domaine en zones")
@@ -41,20 +39,21 @@ def slide_36(self):
     # Pause
     self.next_slide()
 
-    # --- Wave curve: y = 0.2 cos(1.2 x), x in [-5, 5] ---
-    x_min, x_max = -5.0, 5.0
+    # --- Wave curve: y = 0.2*cos(1.2 x), spanning full frame width ---
+    x_min = -config.frame_width / 2.0
+    x_max = config.frame_width / 2.0
     sample_n = 800
     X = np.linspace(x_min, x_max, sample_n)
     Y = 0.2 * np.cos(1.2 * X)
-
-    # Build a smooth path centered vertically around y=0
     pts = np.column_stack([X, Y, np.zeros_like(X)])
-    wave = VMobject()
-    wave.set_points_smoothly(pts)
-    wave.set_stroke(color=pc.blueGreen, width=4)
+    wave = (
+        VMobject()
+        .set_points_smoothly(pts)
+        .set_stroke(color=pc.blueGreen, width=4)
+    )
     self.play(Create(wave))
 
-    # --- Boat centered on the curve at x=0 ---
+    # --- Boat centered on the curve at x=0 (slightly scaled down) ---
     boat_shape = [
         [-1.0, 0.0, 0.0],
         [1.0, 0.0, 0.0],
@@ -68,28 +67,32 @@ def slide_36(self):
         *[np.array(p) for p in boat_shape], color=pc.uclaGold, stroke_width=4
     )
     boat.set_fill(pc.uclaGold, opacity=1.0)
-    y_mid = 0.2 * np.cos(0.0)  # y on the curve at x=0
-    boat.move_to(np.array([0.0, y_mid, 0.0]))
+    boat.move_to(np.array([0.0, 0.2 * np.cos(0.0), 0.0]))
+    boat.scale(0.4)  # fix: reduce boat size a bit
     self.add_foreground_mobject(boat)
     self.add(boat)
 
     # Pause
     self.next_slide()
 
-    # --- FernGreen border rectangle (near slide borders), drawn line by line ---
-    margin = 0.3
-    rect_outer_w = config.frame_width - 2 * margin
-    rect_outer_h = config.frame_height - 2 * margin
-    outer_ul = np.array([-rect_outer_w / 2, rect_outer_h / 2, 0.0])
-    outer_ur = np.array([rect_outer_w / 2, rect_outer_h / 2, 0.0])
-    outer_lr = np.array([rect_outer_w / 2, -rect_outer_h / 2, 0.0])
-    outer_ll = np.array([-rect_outer_w / 2, -rect_outer_h / 2, 0.0])
+    # --- fernGreen border rectangle, top kept below the intro text ---
+    margin_lr = 0.3
+    margin_bottom = 0.3
+    top_gap = 0.25  # distance below intro line
+    top_y = intro.get_bottom()[1] - top_gap
+    left_x = -config.frame_width / 2.0 + margin_lr
+    right_x = config.frame_width / 2.0 - margin_lr
+    bottom_y = -config.frame_height / 2.0 + margin_bottom
+
+    outer_ul = np.array([left_x, top_y, 0.0])
+    outer_ur = np.array([right_x, top_y, 0.0])
+    outer_lr = np.array([right_x, bottom_y, 0.0])
+    outer_ll = np.array([left_x, bottom_y, 0.0])
 
     o_top = Line(outer_ul, outer_ur, color=pc.fernGreen, stroke_width=6)
     o_right = Line(outer_ur, outer_lr, color=pc.fernGreen, stroke_width=6)
     o_bottom = Line(outer_lr, outer_ll, color=pc.fernGreen, stroke_width=6)
     o_left = Line(outer_ll, outer_ul, color=pc.fernGreen, stroke_width=6)
-
     self.play(
         LaggedStart(
             Create(o_top),
@@ -100,7 +103,6 @@ def slide_36(self):
         )
     )
 
-    # Label "Zone statique" inside top-left
     label_static = Tex("Zone statique", color=pc.fernGreen, font_size=36)
     label_static.next_to(o_top, DOWN, buff=0.18).align_to(o_left, LEFT).shift(
         RIGHT * 0.18
@@ -110,23 +112,18 @@ def slide_36(self):
     # Pause
     self.next_slide()
 
-    # --- BlueGreen inner rectangle surrounding the boat, drawn line by line ---
-    # Get boat bounds and pad a bit
-    bb_ul = boat.get_corner(UL)
-    bb_ur = boat.get_corner(UR)
-    bb_lr = boat.get_corner(DR)
-    bb_ll = boat.get_corner(DL)
-    pad = 0.25
-    in_ul = np.array([bb_ul[0] - pad, bb_ul[1] + pad, 0.0])
-    in_ur = np.array([bb_ur[0] + pad, bb_ur[1] + pad, 0.0])
-    in_lr = np.array([bb_lr[0] + pad, bb_lr[1] - pad, 0.0])
-    in_ll = np.array([bb_ll[0] - pad, bb_ll[1] - pad, 0.0])
+    # --- Inner blueGreen rectangle surrounding the (now smaller) boat ---
+    pad_y = 0.6
+    pad_x = 1.2
+    in_ul = boat.get_corner(UL) + np.array([-pad_x, pad_y, 0.0])
+    in_ur = boat.get_corner(UR) + np.array([pad_x, pad_y, 0.0])
+    in_lr = boat.get_corner(DR) + np.array([pad_x, -pad_y, 0.0])
+    in_ll = boat.get_corner(DL) + np.array([-pad_x, -pad_y, 0.0])
 
     i_top = Line(in_ul, in_ur, color=pc.blueGreen, stroke_width=6)
     i_right = Line(in_ur, in_lr, color=pc.blueGreen, stroke_width=6)
     i_bottom = Line(in_lr, in_ll, color=pc.blueGreen, stroke_width=6)
     i_left = Line(in_ll, in_ul, color=pc.blueGreen, stroke_width=6)
-
     self.play(
         LaggedStart(
             Create(i_top),
@@ -137,7 +134,6 @@ def slide_36(self):
         )
     )
 
-    # Label "Zone SPH"
     label_sph = Tex("Zone SPH", color=pc.blueGreen, font_size=36)
     label_sph.next_to(i_top, DOWN, buff=0.14).align_to(i_left, LEFT).shift(
         RIGHT * 0.14
@@ -147,37 +143,20 @@ def slide_36(self):
     # Pause
     self.next_slide()
 
-    # --- UCLA Gold intermediate rectangle between the two, drawn line by line ---
-    # Choose a rectangle that fits between: shrink outer slightly, expand inner
-    gold_pad_outer = 0.45
-    gold_pad_inner = 0.45
-
-    # From outer (shrink)
-    g_outer_ul = outer_ul + np.array([gold_pad_outer, -gold_pad_outer, 0.0])
-    g_outer_ur = outer_ur + np.array([-gold_pad_outer, -gold_pad_outer, 0.0])
-    g_outer_lr = outer_lr + np.array([-gold_pad_outer, gold_pad_outer, 0.0])
-    g_outer_ll = outer_ll + np.array([gold_pad_outer, gold_pad_outer, 0.0])
-
-    # From inner (expand)
-    g_inner_ul = in_ul + np.array([-gold_pad_inner, gold_pad_inner, 0.0])
-    g_inner_ur = in_ur + np.array([gold_pad_inner, gold_pad_inner, 0.0])
-    g_inner_lr = in_lr + np.array([gold_pad_inner, -gold_pad_inner, 0.0])
-    g_inner_ll = in_ll + np.array([-gold_pad_inner, -gold_pad_inner, 0.0])
-
-    # Interpolate corners to ensure it sits between inner and outer bounds
+    # --- Intermediate uclaGold rectangle between inner and outer ---
+    # Interpolate between inner corners and outer corners so it sits between.
     def mid(a, b, t=0.5):
-        return (1 - t) * a + t * b
+        return (1.0 - t) * a + t * b
 
-    g_ul = mid(g_inner_ul, g_outer_ul, t=0.5)
-    g_ur = mid(g_inner_ur, g_outer_ur, t=0.5)
-    g_lr = mid(g_inner_lr, g_outer_lr, t=0.5)
-    g_ll = mid(g_inner_ll, g_outer_ll, t=0.5)
+    g_ul = mid(in_ul, outer_ul, t=0.5)
+    g_ur = mid(in_ur, outer_ur, t=0.5)
+    g_lr = mid(in_lr, outer_lr, t=0.5)
+    g_ll = mid(in_ll, outer_ll, t=0.5)
 
     g_top = Line(g_ul, g_ur, color=pc.uclaGold, stroke_width=6)
     g_right = Line(g_ur, g_lr, color=pc.uclaGold, stroke_width=6)
     g_bottom = Line(g_lr, g_ll, color=pc.uclaGold, stroke_width=6)
     g_left = Line(g_ll, g_ul, color=pc.uclaGold, stroke_width=6)
-
     self.play(
         LaggedStart(
             Create(g_top),
@@ -188,9 +167,13 @@ def slide_36(self):
         )
     )
 
-    # Label "Zone tampon"
     label_buffer = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
     label_buffer.next_to(g_top, DOWN, buff=0.16).align_to(g_left, LEFT).shift(
         RIGHT * 0.16
     )
     self.add(label_buffer)
+
+    # --- End of slide ---
+    self.pause()
+    self.clear()
+    self.next_slide()
