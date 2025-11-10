@@ -6,6 +6,7 @@ from manim import (BLACK, DOWN, LEFT, ORIGIN, RIGHT, UP, AnimationGroup, Arrow,
                    VGroup, VMobject, config)
 from slide_registry import slide
 
+
 @slide(34)
 def slide_34(self):
     """
@@ -29,25 +30,12 @@ def slide_34(self):
     """
     # ----------------------------- imports and layout
     import csv
+
     import numpy as np
-    from manim import (
-        BLACK,
-        LEFT,
-        ORIGIN,
-        Arrow,
-        Create,
-        Dot,
-        FadeIn,
-        FadeOut,
-        GrowFromCenter,
-        LaggedStart,
-        Tex,
-        TransformMatchingTex,
-        ValueTracker,
-        VGroup,
-        VMobject,
-        config,
-    )
+    from manim import (BLACK, LEFT, ORIGIN, Arrow, Create, Dot, FadeIn,
+                       FadeOut, GrowFromCenter, LaggedStart, Tex,
+                       TransformMatchingTex, ValueTracker, VGroup, VMobject,
+                       config)
 
     full_w = config.frame_width
     full_h = config.frame_height
@@ -105,7 +93,9 @@ def slide_34(self):
         )
 
     # ----------------------------- intro text (ensure at least one animation before pause)
-    intro = Tex("Version lagrangienne d'Airy :", color=BLACK, font_size=TEXT_FS)
+    intro = Tex(
+        "Version lagrangienne d'Airy :", color=BLACK, font_size=TEXT_FS
+    )
     intro.to_edge(LEFT, buff=0.4)
     dy_intro = top_y - intro.get_top()[1]
     intro.shift(np.array([0.0, dy_intro, 0.0]))
@@ -300,7 +290,11 @@ def slide_34(self):
     crosses_group = VGroup(*crosses)
 
     # Left labels vector
-    ab_tex = Tex(r"$\begin{pmatrix} a \\ b \end{pmatrix}$", color=BLACK, font_size=TEXT_FS)
+    ab_tex = Tex(
+        r"$\begin{pmatrix} a \\ b \end{pmatrix}$",
+        color=BLACK,
+        font_size=TEXT_FS,
+    )
     place_left_tex(ab_tex, above=eq_h, buff=LINE_BUFF)
     self.add(ab_tex)
 
@@ -362,7 +356,9 @@ def slide_34(self):
 
     # Slower animation over one period with particles visible
     SLOW_RT = 4.0
-    self.play(t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT)
+    self.play(
+        t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
+    )
 
     # ----------------------------- PAUSE 2: particles are visible and animated
     self.next_slide()
@@ -398,7 +394,11 @@ def slide_34(self):
             vy = lerp_series(d["time"], d["vel_y"], t)
             p_world = map_to_right(xn_from_xphys(px), yn_from_yphys(py))
             end_world = p_world + np.array(
-                [vx * x_scale_screen * VEL_GAIN, vy * y_scale_screen * VEL_GAIN, 0.0]
+                [
+                    vx * x_scale_screen * VEL_GAIN,
+                    vy * y_scale_screen * VEL_GAIN,
+                    0.0,
+                ]
             )
             group[i].become(
                 Arrow(
@@ -434,12 +434,19 @@ def slide_34(self):
     ab_tex = vel_cases_tex
 
     # Animate one more period with arrows visible
-    self.play(t_tracker.animate.set_value(T_MIN + 2 * (T_MAX - T_MIN)), run_time=SLOW_RT)
-    t_tracker.set_value(((t_tracker.get_value() - T_MIN) % (T_MAX - T_MIN)) + T_MIN)
+    self.play(
+        t_tracker.animate.set_value(T_MIN + 2 * (T_MAX - T_MIN)),
+        run_time=SLOW_RT,
+    )
+    t_tracker.set_value(
+        ((t_tracker.get_value() - T_MIN) % (T_MAX - T_MIN)) + T_MIN
+    )
 
     # ----------------------------- extra loop with arrows
     self.next_slide()
-    self.play(t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT)
+    self.play(
+        t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
+    )
 
     # ----------------------------- clear right visuals; smoothly convert to vector and move under bar
     wave_curve.clear_updaters()
@@ -469,7 +476,7 @@ def slide_34(self):
         font_size=TEXT_FS,
     )
     # Position target exactly where current equation is, so TransformMatchingTex doesn't jump
-    vel_vector_tex.move_to(ab_tex.get_center())
+    vel_vector_tex.move_to(ab_tex.get_center() + np.array([1.5, 0.0, 0.0]))
     self.play(TransformMatchingTex(ab_tex, vel_vector_tex, run_time=0.6))
     ab_tex = vel_vector_tex
 
@@ -483,29 +490,50 @@ def slide_34(self):
     self.next_slide()
 
     # Newton-Raphson texts fade in smoothly
-    missing_labels_tex = Tex("Mais, on ne possede pas les labels.", color=BLACK, font_size=TEXT_FS)
+    missing_labels_tex = Tex(
+        "Mais, on ne possède pas les labels.", color=BLACK, font_size=TEXT_FS
+    )
     missing_labels_tex.next_to(
-        ab_tex, direction=np.array([0.0, -1.0, 0.0]), buff=LINE_BUFF, aligned_edge=LEFT
+        ab_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
     )
     self.play(FadeIn(missing_labels_tex), run_time=0.3)
 
     self.next_slide()
 
-    nr_title_tex = Tex("On utilise la methode de Newton-Raphson :", color=BLACK, font_size=TEXT_FS)
+    nr_title_tex = Tex(
+        "On utilise la méthode de Newton-Raphson :",
+        color=BLACK,
+        font_size=TEXT_FS,
+    )
     nr_title_tex.next_to(
-        missing_labels_tex, direction=np.array([0.0, -1.0, 0.0]), buff=LINE_BUFF, aligned_edge=LEFT
+        missing_labels_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
     )
     self.play(FadeIn(nr_title_tex), run_time=0.3)
 
-    nr_goal_tex = Tex("A partir d'une position donnee determiner $a$ et $b$", color=BLACK, font_size=TEXT_FS)
+    nr_goal_tex = Tex(
+        "A partir d'une position donnée determiner $a$ et $b$",
+        color=BLACK,
+        font_size=TEXT_FS,
+    )
     nr_goal_tex.next_to(
-        nr_title_tex, direction=np.array([0.0, -1.0, 0.0]), buff=LINE_BUFF, aligned_edge=LEFT
+        nr_title_tex,
+        direction=np.array([0.0, -1.0, 0.0]),
+        buff=LINE_BUFF,
+        aligned_edge=LEFT,
     )
     self.play(FadeIn(nr_goal_tex), run_time=0.3)
 
     # Final inverse mapping cases: BIGGER and CENTERED; keep same Y across transforms
     BIG_FS = 38
-    inv_y_ref = nr_goal_tex.get_bottom()[1] - LINE_BUFF - BIG_FS * 0.012  # reference Y
+    inv_y_ref = (
+        nr_goal_tex.get_bottom()[1] - LINE_BUFF - BIG_FS * 0.012 - 1.0
+    )  # reference Y
 
     inv_start_tex = Tex(
         r"$\begin{cases} x = a + \xi(a,b,t), \\ y = b + \eta(a,b,t) \end{cases}$",
@@ -540,4 +568,3 @@ def slide_34(self):
     self.wait(0.2)
     self.clear()
     self.next_slide()
-
