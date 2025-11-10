@@ -9,11 +9,12 @@ from slide_registry import slide
 @slide(37)
 def slide_37(self):
     """
-    Slide 37: Régulation de particules.
+    Slide 37: Regulation de particules.
 
-    Fix: avoid zero-duration play() when there are no 'above-curve' particles
-    by guarding empty LaggedStart. Also uses visibility checks based on fill/
-    stroke opacity instead of get_opacity().
+    Fix:
+      - Sample particle Y relative to the water curve at each X so some points
+        are below AND slightly above the curve in the same reference frame.
+      - Keep earlier guards to avoid zero-duration plays.
     """
     # --- Top bar ---
     bar = self._top_bar("Régulation de particules")
@@ -39,7 +40,7 @@ def slide_37(self):
     # Layout
     frame_w = config.frame_width
     frame_h = config.frame_height
-    body_top = subtitle.get_bottom()[1] - 0.2
+    body_top = subtitle.get_bottom()[1] - 0.5
     body_bottom = -frame_h / 2.0 + 0.2
 
     # Pause
@@ -104,14 +105,14 @@ def slide_37(self):
     # Pause
     self.next_slide()
 
-    # --- Particles generation ---
-    rng = random.Random(1337)
+    # --- Particles generation (Y sampled around the curve at each X) ---
+    rng = random.Random(1)
     N = 50
     x_lo = x_fern + 0.15
     x_hi = x_gold - 0.15
 
     def mkdot(x, y, color):
-        d = Dot([x, y, 0.0], radius=0.06, color=color)
+        d = Dot([x, y, 0.0], radius=0.1, color=color)
         d.set_fill(color, opacity=1.0)
         d.set_stroke(color, opacity=1.0, width=0)
         return d
@@ -120,14 +121,20 @@ def slide_37(self):
     for i in range(N):
         t = (i + 0.5) / N
         x = x_lo + t * (x_hi - x_lo) + rng.uniform(-0.15, 0.15)
-        y = rng.uniform(body_bottom, 0.5)
+        y_curve = y_center + 0.3 * np.cos(0.2 * x)
+        # Jitter around the curve: mostly below, some slightly above
+        y = y_curve + rng.uniform(body_bottom, 0.3)
+        # Clamp to body area
+        y = max(body_bottom, min(y, body_top - 0.05))
         dots.append(mkdot(x, y, pc.blueGreen))
 
+    # Dense zone: 10 extra under-curve dots on the left
     dense_dots = []
     for _ in range(10):
         x = rng.uniform(x_fern + 0.25, x_fern + 1.0)
         y_curve = y_center + 0.3 * np.cos(0.2 * x)
         y = y_curve - rng.uniform(0.15, 0.35)
+        y = max(body_bottom, min(y, body_top - 0.05))
         dense_dots.append(mkdot(x, y, pc.blueGreen))
 
     all_dots = dots + dense_dots
