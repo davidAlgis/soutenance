@@ -1,56 +1,107 @@
 import os
 
 import numpy as np
-from manim import FadeIn, FadeOut, ImageMobject, Tex, ValueTracker, config
+from manim import (FadeIn, FadeOut, ImageMobject, Tex, ValueTracker, VGroup,
+                   config)
 from slide_registry import slide
 
 
 @slide(38)
 def slide_38(self):
     """
-    Resultat de l'hybridation (slide 38).
+    Résultat de l'hybridation (slide 38).
 
-    Performance-friendly GIF playback with white made transparent:
-      - Preload + scale frames once.
-      - Convert each RGBA frame so near-white pixels (background) become alpha=0.
-      - Drive a single ImageMobject via a ValueTracker-based updater.
-
-    Behavior:
-      - Top bar "Resultat de l'hybridation".
-      - Plays Figures/hybrid.gif below the bar, scaled to fit.
+    Steps:
+      1) Top bar.
+      2) Show 'Figures/surface_particles_mean.jpeg' centered, scaled to fit
+         within the slide with a small padding on all sides.
+      3) Next slide -> remove the first figure, show 'Figures/rb_pos.jpeg'
+         with the same padding rule.
+      4) Next slide -> remove the second figure, then play 'Figures/hybrid.gif'
+         with near-white set transparent. The GIF fills the slide horizontally:
+            - no padding on left, right, and bottom,
+            - a small padding below the top bar (top aligned to this line).
     """
     # --- Top bar ---
-    bar = self._top_bar("Resultat de l'hybridation")
+    bar = self._top_bar("Résultat de l'hybridation")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]
 
-    # --- Usable area below bar ---
+    # Slide geometry
     full_w = config.frame_width
     full_h = config.frame_height
-    left_x = -full_w * 0.5 + 0.3
-    right_x = full_w * 0.5 - 0.3
-    bottom_y = -full_h * 0.5 + 0.3
-    top_y = bar_rect.get_bottom()[1] - 0.15
-    usable_w = right_x - left_x
-    usable_h = top_y - bottom_y
-    center_xy = np.array([0.0, (top_y + bottom_y) * 0.5, 0.0])
 
-    # --- Load GIF frames ---
+    # Small generic padding for still images
+    PAD_ALL = 0.3
+
+    # For the GIF: no padding on left/right/bottom, keep a small top padding
+    TOP_GIF_PAD = 0.15
+
+    # Usable rect for still images (with padding on all sides)
+    left_x_img = -full_w * 0.5 + PAD_ALL
+    right_x_img = full_w * 0.5 - PAD_ALL
+    bottom_y_img = -full_h * 0.5 + PAD_ALL
+    top_y_img = bar_rect.get_bottom()[1] - PAD_ALL
+
+    usable_w_img = max(0.01, right_x_img - left_x_img)
+    usable_h_img = max(0.01, top_y_img - bottom_y_img)
+    center_img = np.array([0.0, 0.5 * (top_y_img + bottom_y_img), 0.0])
+
+    # Helper to load/show a still image to fit in the padded area
+    def image_fit_center(path: str):
+        if not os.path.isfile(path):
+            msg = Tex(f"Fichier manquant : {path}", font_size=36)
+            msg.move_to(center_img)
+            return msg
+        mob = ImageMobject(path)
+        # Scale to fit within usable rect (preserve aspect)
+        if mob.width > 0:
+            mob.scale(usable_w_img / mob.width)
+        if mob.height > usable_h_img:
+            mob.scale(usable_h_img / mob.height)
+        mob.move_to(center_img)
+        return mob
+
+    # --- 1) First still image
+    im1_path = "Figures/surface_particles_mean.jpeg"
+    im1 = image_fit_center(im1_path)
+    self.play(FadeIn(im1, run_time=0.3))  # ensure at least one animation
+    self.next_slide()
+
+    # --- 2) Second still image (swap)
+    im2_path = "Figures/rb_pos.jpeg"
+    im2 = image_fit_center(im2_path)
+    self.play(FadeOut(im1, run_time=0.25), FadeIn(im2, run_time=0.25))
+    self.next_slide()
+
+    # --- 3) GIF with white made transparent, filling the slide width (no L/R/B padding),
+    #         aligned so the top sits just under the bar (keep small top padding).
+    # Remove second image
+    self.play(FadeOut(im2, run_time=0.25))
+
+    # GIF usable "frame"
+    left_x_gif = -full_w * 0.5
+    right_x_gif = full_w * 0.5
+    bottom_y_gif = -full_h * 0.5
+    top_y_gif = bar_rect.get_bottom()[1] - TOP_GIF_PAD
+
+    usable_w_gif = max(0.01, right_x_gif - left_x_gif)  # == full_w
+    # Height is not constrained; we align top to top_y_gif and allow it to extend downward.
+
+    # Load GIF frames and build transparent ImageMobjects
     from PIL import Image, ImageSequence
 
     gif_path = "Figures/hybrid.gif"
     if not os.path.isfile(gif_path):
+        # Graceful fallback
         msg = Tex("Fichier manquant : Figures/hybrid.gif", font_size=36)
-        msg.move_to(center_xy)
-        self.add(msg)
-        self.play(FadeIn(msg, run_time=0.2))  # ensure at least one animation
+        msg.move_to(np.array([0.0, 0.5 * (top_y_gif + bottom_y_gif), 0.0]))
+        self.play(FadeIn(msg, run_time=0.2))
         self.next_slide()
         return
 
     pil_img = Image.open(gif_path)
-
-    # Collect frames + native frame durations (sec)
     pil_frames = []
     durations = []
     for frame in ImageSequence.Iterator(pil_img):
@@ -58,91 +109,68 @@ def slide_38(self):
         durations.append(max(0.01, dur_ms / 1000.0))
         pil_frames.append(frame.convert("RGBA"))
 
-    if not pil_frames:
-        msg = Tex("Impossible de lire : Figures/hybrid.gif", font_size=36)
-        msg.move_to(center_xy)
-        self.add(msg)
-        self.play(FadeIn(msg, run_time=0.2))
-        self.next_slide()
-        return
-
-    # --- Compute target size once (preserve aspect) ---
-    w0, h0 = pil_frames[0].size
-    aspect = w0 / max(1, h0)
-    target_w = min(usable_w, usable_h * aspect)
-    target_h = target_w / aspect
-
-    # --- Helper: key out near-white to transparent (alpha=0) ---
-    def rgba_with_white_transparent(img_rgba, tol=14):
-        """
-        Convert PIL RGBA -> numpy RGBA and make near-white pixels transparent.
-        tol: 0..255; higher = more aggressive (default 14 is mild).
-        """
-        arr = np.array(img_rgba, dtype=np.uint8)  # HxWx4
+    # Key near-white to transparent
+    def rgba_white_to_alpha(arr_rgba: np.ndarray, tol=14) -> np.ndarray:
+        arr = arr_rgba.copy()
         rgb = arr[..., :3]
-        a = arr[..., 3:4]
-
-        # A pixel is "near white" if all three channels are above 255 - tol
+        a = arr[..., 3]
         mask = (
             (rgb[..., 0] >= 255 - tol)
             & (rgb[..., 1] >= 255 - tol)
             & (rgb[..., 2] >= 255 - tol)
         )
-
-        # Zero the alpha for those pixels
         a[mask] = 0
-        arr[..., 3] = a[..., 0]
+        arr[..., 3] = a
         return arr
 
-    # --- Precreate scaled ImageMobjects with transparency applied ---
+    # Build ImageMobjects for each frame, scaled to fill FULL WIDTH.
+    # Then align each frame's TOP to top_y_gif (small padding under the bar).
     frames_mobs = []
     for fr in pil_frames:
-        # Key the white to transparent
-        arr_rgba = rgba_with_white_transparent(fr, tol=14)
-        mob = ImageMobject(arr_rgba)
-
-        # Scale to fit usable area (preserve aspect)
+        arr = np.array(fr, dtype=np.uint8)
+        arr = rgba_white_to_alpha(arr, tol=14)
+        mob = ImageMobject(arr)
         if mob.width > 0:
-            mob.scale(target_w / mob.width)
-        if mob.height > target_h:
-            mob.scale(target_h / mob.height)
-
-        mob.move_to(center_xy)
+            mob.scale(usable_w_gif / mob.width)  # force full width
+        # Align top to the padded top line
+        dy = top_y_gif - mob.get_top()[1]
+        mob.shift(np.array([0.0, dy, 0.0]))
         frames_mobs.append(mob)
 
-    # --- Single display object that swaps content via updater ---
+    if not frames_mobs:
+        msg = Tex("Impossible de lire : Figures/hybrid.gif", font_size=36)
+        msg.move_to(np.array([0.0, 0.5 * (top_y_gif + bottom_y_gif), 0.0]))
+        self.play(FadeIn(msg, run_time=0.2))
+        self.next_slide()
+        return
+
+    # Single display object driven by time
     display = frames_mobs[0].copy()
     self.add(display)
 
-    # Build timeline (cumulative durations)
     durations = np.array(durations, dtype=float)
     cum = np.cumsum(durations)
     total = float(cum[-1])
     t = ValueTracker(0.0)
 
-    def frame_index_from_time(tt: float) -> int:
+    def idx_from_time(tt: float) -> int:
         if total <= 0.0:
             return 0
         x = tt % total
-        idx = int(np.searchsorted(cum, x, side="right"))
-        if idx >= len(frames_mobs):
-            idx = len(frames_mobs) - 1
-        return idx
+        i = int(np.searchsorted(cum, x, side="right"))
+        return min(i, len(frames_mobs) - 1)
 
-    def display_updater(m):
-        m.become(frames_mobs[frame_index_from_time(t.get_value())])
+    def updater(m):
+        m.become(frames_mobs[idx_from_time(t.get_value())])
 
-    display.add_updater(display_updater)
+    display.add_updater(updater)
 
-    # Play one full pass at native speed (ensures an animation before pause)
+    # Play one full pass
     self.play(t.animate.set_value(total), run_time=total)
-
-    # Hold briefly
-    self.wait(0.2)
     self.next_slide()
 
-    # Clean exit
+    # Cleanup (optional)
     display.clear_updaters()
-    self.play(FadeOut(display, run_time=0.3))
+    self.play(FadeOut(display, run_time=0.25))
     self.clear()
     self.next_slide()
