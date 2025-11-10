@@ -415,8 +415,8 @@ def slide_34(self):
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
-        r"v_y(a,b,t) = A e^{kb} \sin\left(ka - \omega t + k\xi(a,b,t)\right), \\"
-        r"\cdot \left(\omega - k v_x(a,b,t)\right)"
+        r"v_y(a,b,t) = A e^{kb} \sin(ka - \omega t \\"
+        r"~~~~+ k\xi(a,b,t))\left(\omega - k v_x(a,b,t)\right)"
         r"\end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
