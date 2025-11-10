@@ -12,26 +12,27 @@ def slide_34(self):
     """
     Vitesse d'Airy (slide 34).
 
-    Full rewrite that keeps CSV reading and enforces the staging:
-    1) Show crosses only (labels).
-    2) Next slide -> show particles only at CSV positions (no arrows).
-    3) Next slide -> add velocity arrows.
+    CSV-driven staging:
+      1) Show label crosses only.
+      2) Next slide -> reveal particles ONLY (no arrows) WHILE transforming the
+         left equation from labels (a,b) to positions (x,y) in a single play().
+      3) Next slide -> add velocity arrows and transform the left equation to
+         velocity. The second velocity line is split in two to avoid overlap.
 
-    Other rules:
-    - The right-column curve, crosses, particles and arrows share the SAME frame derived
-      from the CSV ranges. The curve zero-line is aligned via the mean top-row position.
-    - All texts are BLACK with uniform font size and spacing.
-    - Animate TransformMatchingTex between position and velocity equations on the left.
-    - Slower time animation; visuals are placed slightly lower (SCALE_Y).
+    Extras:
+      - Curve, crosses, particles, arrows share the SAME physical frame, aligned
+        so the top label row average defines the wave midline.
+      - Smooth animation when clearing right visuals: the velocity equation is
+        moved under the top bar with a play() before the following texts fade in.
+      - All text is BLACK with uniform font size and spacing.
     """
-
     # ----------------------------- imports and layout
     import csv
 
     import numpy as np
-    from manim import (BLACK, ORIGIN, Arrow, Create, Dot, FadeOut, LaggedStart,
-                       Tex, TransformMatchingTex, ValueTracker, VGroup,
-                       VMobject, config)
+    from manim import (BLACK, ORIGIN, Arrow, Create, Dot, FadeIn, FadeOut,
+                       GrowFromCenter, LaggedStart, Tex, TransformMatchingTex,
+                       ValueTracker, VGroup, VMobject, config)
 
     full_w = config.frame_width
     full_h = config.frame_height
@@ -51,13 +52,11 @@ def slide_34(self):
 
     TEXT_FS = 30
     LINE_BUFF = 0.35
-
-    # Place visuals a bit lower in the right column
-    SCALE_Y = 0.82
+    SCALE_Y = 0.82  # place right visuals slightly lower
 
     def place_left_tex(mobj, above=None, buff=LINE_BUFF):
         """
-        Place a Tex in the left column, left-aligned and inside the column.
+        Left-column placement helper: left align and keep within column.
         """
         if above is None:
             mobj.to_edge(LEFT, buff=0.0)
@@ -90,15 +89,15 @@ def slide_34(self):
             ]
         )
 
-    # ----------------------------- intro text
+    # ----------------------------- intro text (ensure at least one animation before pause)
     intro = Tex(
         "Version lagrangienne d'Airy :", color=BLACK, font_size=TEXT_FS
     )
     intro.to_edge(LEFT, buff=0.4)
     dy_intro = top_y - intro.get_top()[1]
     intro.shift(np.array([0.0, dy_intro, 0.0]))
-    self.add(intro)
-
+    self.play(Create(intro), run_time=0.2)
+    self.wait(0.3)
     self.next_slide()
 
     # ----------------------------- CSV load
@@ -187,7 +186,7 @@ def slide_34(self):
         a = 0.0 if t2 == t1 else (t - t1) / (t2 - t1)
         return (1.0 - a) * y1 + a * y2
 
-    # Identify top label row indices (max label_y at t0)
+    # Identify indices of the top label row at t0
     t0 = float(times_all[0])
     label_y_at_t0 = []
     for idx, d in rows_by_index.items():
@@ -201,8 +200,7 @@ def slide_34(self):
         <= top_eps
     ]
 
-    # ----------------------------- right-column visuals: curve and crosses
-    # Wave parameters for visual curve alignment
+    # ----------------------------- right visuals: curve and crosses
     A = 0.2
     k_val = 1.25
     omega_val = 3.51
@@ -211,7 +209,7 @@ def slide_34(self):
 
     def compute_y0(t):
         """
-        Mean y of the top label row at time t, to align the curve midline.
+        Mean pos_y of the top label row at time t, used as wave midline.
         """
         if not top_indices:
             return 0.0
@@ -223,7 +221,7 @@ def slide_34(self):
 
     def make_wave_curve():
         """
-        y(x,t) = y0(t) + A*cos(k*x - omega*t) plotted in the CSV physical x-range.
+        y(x,t) = y0(t) + A*cos(k*x - omega*t) over [X_MIN, X_MAX].
         """
         n = 400
         pts = []
@@ -268,7 +266,6 @@ def slide_34(self):
         )
         return VGroup(l1, l2)
 
-    # Unique label positions at t0 for staging by rows
     labels_once = []
     for idx, d in rows_by_index.items():
         lx0 = d["label_x"][0]
@@ -289,7 +286,7 @@ def slide_34(self):
 
     crosses_group = VGroup(*crosses)
 
-    # Left "labels" vector
+    # Left labels vector
     ab_tex = Tex(
         r"$\begin{pmatrix} a \\ b \end{pmatrix}$",
         color=BLACK,
@@ -313,7 +310,6 @@ def slide_34(self):
     self.next_slide()
 
     # ----------------------------- particles only (no arrows yet)
-    # Create particle dots and their updater; add after this pause so they appear alone.
     ordered_indices = sorted(rows_by_index.keys())
     particles = VGroup()
     for _ in ordered_indices:
@@ -321,17 +317,7 @@ def slide_34(self):
     self.add(particles)
     self.add_foreground_mobject(particles)
 
-    # Position equation on the left (animate from labels vector)
-    mapping_tex = Tex(
-        r"$\begin{cases} x(a,b,t) = a + \xi(a,b,t), \\ y(a,b,t) = b + \eta(a,b,t) \end{cases}$",
-        color=BLACK,
-        font_size=TEXT_FS,
-    )
-    place_left_tex(mapping_tex, above=eq_h, buff=LINE_BUFF)
-    self.play(TransformMatchingTex(ab_tex, mapping_tex, run_time=0.8))
-    ab_tex = mapping_tex
-
-    # Updater for curve and particles
+    # Updaters: curve and particles
     def wave_updater(mobj):
         mobj.become(make_wave_curve())
 
@@ -349,7 +335,23 @@ def slide_34(self):
 
     particles.add_updater(particles_updater)
 
-    # Slower animation over one period
+    # Position equation (transform) REVEALED IN PARALLEL with particles appearance
+    mapping_tex = Tex(
+        r"$\begin{cases} x(a,b,t) = a + \xi(a,b,t), \\ y(a,b,t) = b + \eta(a,b,t) \end{cases}$",
+        color=BLACK,
+        font_size=TEXT_FS,
+    )
+    place_left_tex(mapping_tex, above=eq_h, buff=LINE_BUFF)
+
+    # Animate both: equation transform AND particles grow, in a single play()
+    self.play(
+        TransformMatchingTex(ab_tex, mapping_tex),
+        LaggedStart(*[GrowFromCenter(p) for p in particles], lag_ratio=0.02),
+        run_time=0.9,
+    )
+    ab_tex = mapping_tex
+
+    # Slower animation over one period with particles visible
     SLOW_RT = 4.0
     self.play(
         t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
@@ -387,7 +389,6 @@ def slide_34(self):
             py = lerp_series(d["time"], d["pos_y"], t)
             vx = lerp_series(d["time"], d["vel_x"], t)
             vy = lerp_series(d["time"], d["vel_y"], t)
-
             p_world = map_to_right(xn_from_xphys(px), yn_from_yphys(py))
             end_world = p_world + np.array(
                 [
@@ -409,11 +410,12 @@ def slide_34(self):
 
     arrows.add_updater(arrows_updater)
 
-    # Animate transform of left text: position -> velocity equations
+    # Animate transform to velocity equations (second line split to avoid overlap)
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
-        r"v_y(a,b,t) = A e^{kb} \sin\left(ka - \omega t + k\xi(a,b,t)\right)\left(\omega - k v_x(a,b,t)\right)"
+        r"v_y(a,b,t) = A e^{kb} \sin\left(ka - \omega t + k\xi(a,b,t)\right) \\"
+        r"\qquad\qquad\times \left(\omega - k v_x(a,b,t)\right)"
         r"\end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
@@ -437,7 +439,7 @@ def slide_34(self):
         t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
     )
 
-    # ----------------------------- clear right column, keep velocity eq
+    # ----------------------------- clear right visuals; smoothly move velocity eq
     wave_curve.clear_updaters()
     particles.clear_updaters()
     arrows.clear_updaters()
@@ -449,15 +451,15 @@ def slide_34(self):
         FadeOut(eq_h, run_time=0.6),
     )
 
-    # Move velocity block to top-left
+    # Smooth move: slide velocity equations under the bar (no jump)
     vel_left_margin = -full_w * 0.5 + 0.4
     dx = vel_left_margin - ab_tex.get_left()[0]
     dy = top_y - ab_tex.get_top()[1]
-    ab_tex.shift(np.array([dx, dy, 0.0]))
+    self.play(ab_tex.animate.shift(np.array([dx, dy, 0.0])), run_time=0.6)
 
     self.next_slide()
 
-    # Newton-Raphson text and equations
+    # Newton-Raphson texts fade in smoothly
     missing_labels_tex = Tex(
         "Mais, on ne possede pas les labels.", color=BLACK, font_size=TEXT_FS
     )
@@ -467,7 +469,7 @@ def slide_34(self):
         buff=LINE_BUFF,
         aligned_edge=LEFT,
     )
-    self.add(missing_labels_tex)
+    self.play(FadeIn(missing_labels_tex), run_time=0.3)
 
     self.next_slide()
 
@@ -482,7 +484,7 @@ def slide_34(self):
         buff=LINE_BUFF,
         aligned_edge=LEFT,
     )
-    self.add(nr_title_tex)
+    self.play(FadeIn(nr_title_tex), run_time=0.3)
 
     nr_goal_tex = Tex(
         "A partir d'une position donnee determiner $a$ et $b$",
@@ -495,7 +497,7 @@ def slide_34(self):
         buff=LINE_BUFF,
         aligned_edge=LEFT,
     )
-    self.add(nr_goal_tex)
+    self.play(FadeIn(nr_goal_tex), run_time=0.3)
 
     inv_start_tex = Tex(
         r"$\begin{cases} x = a + \xi(a,b,t), \\ y = b + \eta(a,b,t) \end{cases}$",
@@ -508,7 +510,7 @@ def slide_34(self):
         buff=LINE_BUFF,
         aligned_edge=LEFT,
     )
-    self.add(inv_start_tex)
+    self.play(FadeIn(inv_start_tex), run_time=0.3)
 
     self.next_slide()
 
