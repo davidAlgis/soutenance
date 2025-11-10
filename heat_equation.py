@@ -28,6 +28,7 @@ import os
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 
 
 def _apply_neumann_bc(u: np.ndarray) -> None:
@@ -120,7 +121,7 @@ def simulate_heat(
     for t in range(1, n_steps + 1):
         u_new = u.copy()
         # diffusion
-        u_new[1:-1, 1:-1] = u[1:-1, 1:-1] + alpha * dt * (
+        u_new[1:-1, 1:-1] = u[1:-1, 1:-1] + alpha * (dt) * (
             (u[2:, 1:-1] - 2.0 * u[1:-1, 1:-1] + u[:-2, 1:-1]) / (dx * dx)
             + (u[1:-1, 2:] - 2.0 * u[1:-1, 1:-1] + u[1:-1, :-2]) / (dy * dy)
         )
@@ -160,6 +161,75 @@ def simulate_heat(
     return u_time
 
 
+# ---------- NEW: export N frames as images with custom 3-color colormap --------- #
+def _build_heat_colormap() -> LinearSegmentedColormap:
+    """
+    Custom 3-stop colormap:
+      oxfordBlue (min)  -> jellyBean (mid/high) -> uclaGold (max)
+    """
+    oxfordBlue = (0.00, 0.18, 0.27)
+    jellyBean = (0.85, 0.31, 0.29)
+    uclaGold = (1.00, 0.71, 0.00)
+    # Slight bias toward showing warm tones sooner (mid at ~0.65)
+    return LinearSegmentedColormap.from_list(
+        "studio_nyx_heat",
+        [(0.0, oxfordBlue), (0.65, jellyBean), (1.0, uclaGold)],
+        N=256,
+    )
+
+
+def export_heat_images(
+    u_time: np.ndarray,
+    initial_temp: float,
+    out_dir: str = "Figures/heat_pictures",
+    prefix: str = "heat_sim_",
+    N: int = 20,
+    dpi: int = 150,
+) -> None:
+    """
+    Save N evenly-spaced simulation frames as JPEG images without axes/legends.
+
+    Files:
+      <out_dir>/<prefix><t>.jpeg  (t is zero-padded time-step index)
+
+    The colormap is:
+      oxfordBlue (ambient/initial) -> jellyBean (higher) -> uclaGold (max)
+    """
+    if N <= 0:
+        return
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Consistent normalization across all images
+    vmin = float(initial_temp)
+    vmax = float(np.max(u_time))
+    if not np.isfinite(vmax) or vmax <= vmin:
+        vmax = vmin + 1e-6
+
+    cmap = _build_heat_colormap()
+
+    # Choose N evenly spaced indices across [0 .. T]
+    total = u_time.shape[0]
+    idxs = np.unique(np.linspace(0, total - 1, N, dtype=int))
+
+    for k in idxs:
+        fig = plt.figure(figsize=(6, 6), dpi=dpi)
+        # Fill the whole figure with the image (no axes, no margins)
+        ax = plt.axes([0, 0, 1, 1])
+        ax.axis("off")
+        ax.imshow(
+            u_time[k],
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            origin="lower",
+            interpolation="nearest",
+        )
+        out_path = os.path.join(out_dir, f"{prefix}{k:04d}.jpeg")
+        fig.savefig(out_path, bbox_inches="tight", pad_inches=0)
+        plt.close(fig)
+
+
 # ------------------------------- CLI / Demo --------------------------------- #
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -173,8 +243,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--cfl", type=float, default=0.24)
     parser.add_argument("--initial_temp", type=float, default=20.0)
-    parser.add_argument("--circle_intensity", type=float, default=50.0)
-    parser.add_argument("--circle_radius_frac", type=float, default=0.1)
+    parser.add_argument("--circle_intensity", type=float, default=100.0)
+    parser.add_argument("--circle_radius_frac", type=float, default=0.15)
     parser.add_argument("--enable_circle", action="store_true")
     parser.add_argument(
         "--no-circle", dest="enable_circle", action="store_false"
@@ -211,6 +281,12 @@ def _parse_args() -> argparse.Namespace:
         type=float,
         default=0.0,
         help="Global Newton cooling rate k (du/dt -= k*(u-T_amb))",
+    )
+    parser.add_argument(
+        "--export_pics",
+        type=int,
+        default=20,
+        help="Export N frames as JPEGs to Figures/heat_pictures (0=disable)",
     )
     parser.add_argument(
         "--animate", action="store_true", help="Show matplotlib animation"
@@ -282,11 +358,13 @@ def main() -> None:
         circle_radius_frac=args.circle_radius_frac,
         enable_circle=args.enable_circle,
         circle_steps=circle_steps,
+        circle_decay_tau=args.circle_decay_tau,
         enable_curve=args.enable_curve,
         curve_amplitude=args.curve_amplitude,
         curve_base=args.curve_base,
         curve_thickness=args.curve_thickness,
         curve_steps=curve_steps,
+        cooling_rate=args.cooling_rate,
     )
 
     # Compute physical dt from args
@@ -294,12 +372,23 @@ def main() -> None:
     dy = args.ly / (args.ny - 1)
     phys_dt = args.cfl * min(dx * dx, dy * dy) / args.alpha
 
-    # NEW: save CSV with render_dt = 0.05
-    save_heat_csv(u_time, phys_dt, render_dt=0.05, path="states_sph/heat.csv")
+    # Save CSV with render_dt = 0.05
+    # save_heat_csv(u_time, phys_dt, render_dt=0.05, path="states_sph/heat.csv")
 
-    # if args.animate:
-    fig, ani = _animate(u_time, lx=args.lx, ly=args.ly)
-    plt.show()
+    # NEW: export N image frames every run
+    export_heat_images(
+        u_time,
+        initial_temp=args.initial_temp,
+        out_dir="Figures/heat_pictures",
+        prefix="heat_sim_",
+        N=args.export_pics,
+        dpi=150,
+    )
+
+    # Optional preview animation
+    if args.animate:
+        fig, ani = _animate(u_time, lx=args.lx, ly=args.ly)
+        plt.show()
 
 
 def save_heat_csv(
@@ -314,22 +403,7 @@ def save_heat_csv(
 
     CSV columns:
         time, i, j, temperature
-
-    Parameters
-    ----------
-    u_time : np.ndarray
-        Array of shape (n_steps+1, nx, ny), temperature history.
-    phys_dt : float
-        Physical dt used in simulation (returned from caller).
-        (Only used to reconstruct physical time => can be ignored if desired.)
-    render_dt : float
-        Interval (in simulation time units) to save frames. Does NOT change simulation.
-        Example: 0.05 → output every 0.05 s.
-    path : str
-        CSV output path
     """
-
-    # Ensure folder exists
     folder = os.path.dirname(path)
     if folder and not os.path.exists(folder):
         os.makedirs(folder)
@@ -345,18 +419,16 @@ def save_heat_csv(
     t_target = np.arange(0, t_end + 1e-12, render_dt)
 
     # Map target times to nearest simulation step
-    # (You could interpolate, but nearest is simplest and faster)
     frame_ids = np.clip(
         (t_target / phys_dt).round().astype(int), 0, n_steps - 1
     )
 
-    # Write CSV
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["time", "i", "j", "temperature"])
         for tidx, t in enumerate(t_target):
             k = frame_ids[tidx]
-            frame = u_time[k]  # shape (nx,ny)
+            frame = u_time[k]  # shape (nx, ny)
             for i in range(nx):
                 for j in range(ny):
                     writer.writerow([f"{t:.6f}", i, j, float(frame[i, j])])
