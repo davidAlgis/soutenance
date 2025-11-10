@@ -21,7 +21,8 @@ def slide_34(self):
          that first velocity animation, time advances so curve, particles and
          arrows all move.
       4) When clearing the right visuals, fade out particles and arrows too, then
-         smoothly move the velocity block under the top bar before continuing.
+         smoothly convert the velocity cases into the vector form v_i^A and move
+         it under the top bar before continuing.
       5) The final inverse mapping cases are centered (same vertical position kept)
          and rendered with a larger font size; their transforms keep the same Y.
 
@@ -31,9 +32,10 @@ def slide_34(self):
     import csv
 
     import numpy as np
-    from manim import (BLACK, ORIGIN, Arrow, Create, Dot, FadeIn, FadeOut,
-                       GrowFromCenter, LaggedStart, Tex, TransformMatchingTex,
-                       ValueTracker, VGroup, VMobject, config)
+    from manim import (BLACK, LEFT, ORIGIN, Arrow, Create, Dot, FadeIn,
+                       FadeOut, GrowFromCenter, LaggedStart, Tex,
+                       TransformMatchingTex, ValueTracker, VGroup, VMobject,
+                       config)
 
     full_w = config.frame_width
     full_h = config.frame_height
@@ -302,7 +304,7 @@ def slide_34(self):
         LaggedStart(
             *[Create(rows_groups[rid]) for rid in row_ids_sorted],
             lag_ratio=0.15,
-            run_time=1.2
+            run_time=1.2,
         )
     )
     self.add(crosses_group)
@@ -411,7 +413,7 @@ def slide_34(self):
 
     arrows.add_updater(arrows_updater)
 
-    # Animate transform to velocity equations (split earlier; three lines)
+    # Animate transform to velocity equations (split earlier; broken line)
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
@@ -446,11 +448,10 @@ def slide_34(self):
         t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
     )
 
-    # ----------------------------- clear right visuals; smoothly move velocity eq
+    # ----------------------------- clear right visuals; smoothly convert to vector and move under bar
     wave_curve.clear_updaters()
     particles.clear_updaters()
     arrows.clear_updaters()
-    # Explicitly fade out particles and arrows as well
     self.play(
         FadeOut(wave_curve, run_time=0.5),
         FadeOut(crosses_group, run_time=0.5),
@@ -465,7 +466,20 @@ def slide_34(self):
     except Exception:
         pass
 
-    # Smooth move: slide velocity equations under the bar (no jump)
+    # --- NEW: convert velocity cases to vector form BEFORE moving up
+    vel_vector_tex = Tex(
+        r"$v_i^A = \begin{pmatrix}"
+        r"A \omega e^{kb} \cos(ka - \omega t), \\ "
+        r"A e^{kb} \sin\!\left(ka - \omega t + k\xi(a,b,t)\right)\left(\omega - k v_x(a,b,t)\right)"
+        r"\end{pmatrix}$",
+        color=BLACK,
+        font_size=TEXT_FS,
+    )
+    # Transform in place (no re-positioning yet to avoid a jump)
+    self.play(TransformMatchingTex(ab_tex, vel_vector_tex, run_time=0.6))
+    ab_tex = vel_vector_tex
+
+    # Smooth move: slide the vector equation under the bar (no jump)
     vel_left_margin = -full_w * 0.5 + 0.4
     dx = vel_left_margin - ab_tex.get_left()[0]
     dy = top_y - ab_tex.get_top()[1]
