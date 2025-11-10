@@ -13,17 +13,18 @@ def slide_35(self):
     """
     Slide 35: Facteur de modulation.
 
-    Update:
-      - Render only particles inside a world-space box to speed up rendering:
-        X_CENTER = -0.5, Y_CENTER = -1.0, X_WIDTH = 3.0, Y_WIDTH = 2.0
-        (filter is applied on CSV coordinates before mapping to screen).
+    Fixes:
+    - Particles appear in a single 0.5s grow animation.
+    - Particles block moved top-right but lower to avoid overlapping the first sentence.
+    - Removed the rectangle around heat simulation; images positioned with left padding so they are fully on-slide.
+    - Equations anchored to a safe left margin on the right side (no overflow).
     """
     # --- Top bar ---
     bar = self._top_bar("Facteur de modulation")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # --- Big equation (split parts so we can surround only the modulation factor) ---
+    # --- Big equation (split into parts to surround only the modulation factor) ---
     eq = MathTex(
         r"F_i^A(t) = \frac{m}{dt} \cdot \tau_i(t) \cdot",
         r"(1-\phi_i(t))",
@@ -37,7 +38,7 @@ def slide_35(self):
     self.wait(0.1)
     self.next_slide()
 
-    # --- Highlight (1 - phi_i(t)) with a rectangle ---
+    # --- Highlight (1 - phi_i(t)) only ---
     target = eq[1]
     pad = 0.08
     ul = target.get_corner(UL) + (-pad * RIGHT + pad * UP)
@@ -75,7 +76,7 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Keep only objective, move under bar ---
+    # --- Keep only objective, move it under the bar (left aligned with padding) ---
     self.play(
         FadeOut(eq),
         FadeOut(seg_top),
@@ -95,7 +96,7 @@ def slide_35(self):
     self.play(MoveToTarget(explain2))
 
     # -------------------------------------------------------------------------
-    # Particles from CSV (FILTERED BY WORLD-SPACE BOX BEFORE MAPPING)
+    # Particles from CSV (filtered by world-space box BEFORE mapping)
     # -------------------------------------------------------------------------
     body_top = explain2.get_bottom()[1] - 0.25
     left_x = -config.frame_width / 2.0 + 0.3
@@ -103,10 +104,10 @@ def slide_35(self):
     bottom_y = -config.frame_height / 2.0 + 0.3
 
     # Box (world space, CSV coordinates)
-    X_CENTER = -0.5
-    Y_CENTER = -1.0
-    X_WIDTH = 3.0
-    Y_WIDTH = 2.0
+    X_CENTER = -1
+    Y_CENTER = -2.0
+    X_WIDTH = 5.0
+    Y_WIDTH = 5.0
     x_box_min = X_CENTER - X_WIDTH * 0.5
     x_box_max = X_CENTER + X_WIDTH * 0.5
     y_box_min = Y_CENTER - Y_WIDTH * 0.5
@@ -123,7 +124,6 @@ def slide_35(self):
                     yv = float(row["y"])
                     tv = int(row["type"])
                     am = int(float(row.get("airyMod", 0.0)))
-                    # Filter by box BEFORE keeping
                     if (
                         xv >= x_box_min
                         and xv <= x_box_max
@@ -137,7 +137,7 @@ def slide_35(self):
                 except Exception:
                     continue
     else:
-        # Fallback cloud (already small)
+        # Small fallback cloud inside the box
         for i in range(80):
             xv = (i % 20) * 0.1 - 1.0
             yv = (i // 20) * 0.1 - 1.0
@@ -189,36 +189,26 @@ def slide_35(self):
             d.set_stroke(col, opacity=1.0, width=0)
             dots.append(d)
 
-        # Appear in 5 batches (guard against tiny sets)
-        batches = 5
-        per = max(1, len(dots) // batches)
-        for k in range(batches):
-            chunk = (
-                dots[k * per : (k + 1) * per]
-                if k < batches - 1
-                else dots[k * per :]
+        # Appear ALL at once in 0.5s
+        self.play(
+            AnimationGroup(
+                *[GrowFromCenter(d) for d in dots], lag_ratio=0.0, run_time=0.5
             )
-            if chunk:
-                self.play(
-                    LaggedStart(
-                        *[GrowFromCenter(d) for d in chunk], lag_ratio=0.05
-                    )
-                )
+        )
 
     self.next_slide()
 
-    # --- Shrink and move particles to top-right; left label ---
+    # --- Shrink and move particles to top-right but lower to avoid overlapping the sentence ---
     dots_group = VGroup(*dots) if dots else VGroup()
     if len(dots_group.submobjects) > 0:
+        # Position to the right, a bit lower than the first sentence bottom
+        safe_top_y = explain2.get_bottom()[1] - 0.8
         target_center = np.array(
-            [
-                config.frame_width / 2.0 - 1.6,
-                config.frame_height / 2.0 - 2.1,
-                0.0,
-            ]
+            [config.frame_width / 2.0 - 1.6, safe_top_y, 0.0]
         )
         self.play(dots_group.animate.scale(0.45).move_to(target_center))
 
+    # Left label under the objective line
     left_label = Tex(
         "Phenomene de diffusion :", color=BLACK, font_size=self.BODY_FONT_SIZE
     )
@@ -228,27 +218,13 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Slideshow in oxfordBlue frame on the left ---
-    frame_w = 5.2
-    frame_h = 3.6
-    frame_center = left_label.get_center() + DOWN * 2.2
-    fr_ul = frame_center + np.array([-frame_w / 2, frame_h / 2, 0.0])
-    fr_ur = frame_center + np.array([frame_w / 2, frame_h / 2, 0.0])
-    fr_lr = frame_center + np.array([frame_w / 2, -frame_h / 2, 0.0])
-    fr_ll = frame_center + np.array([-frame_w / 2, -frame_h / 2, 0.0])
-
-    f_top = Line(fr_ul, fr_ur, color=pc.oxfordBlue, stroke_width=5)
-    f_right = Line(fr_ur, fr_lr, color=pc.oxfordBlue, stroke_width=5)
-    f_bottom = Line(fr_lr, fr_ll, color=pc.oxfordBlue, stroke_width=5)
-    f_left = Line(fr_ll, fr_ul, color=pc.oxfordBlue, stroke_width=5)
-    self.play(
-        LaggedStart(
-            Create(f_top),
-            Create(f_right),
-            Create(f_bottom),
-            Create(f_left),
-            lag_ratio=0.1,
-        )
+    # --- Heat simulation on the left WITHOUT any border; ensure visible with padding ---
+    max_w = 5.2
+    max_h = 3.6
+    # Safe left padding so images are fully on-slide
+    safe_left = -config.frame_width / 2.0 + 1.2
+    img_center = np.array(
+        [safe_left + max_w * 0.5, left_label.get_center()[1] - 2.2, 0.0]
     )
 
     imgs = sorted(
@@ -258,11 +234,9 @@ def slide_35(self):
     for p in imgs[:20]:
         try:
             im = ImageMobject(p)
-            scale = min(
-                (frame_w - 0.2) / im.width, (frame_h - 0.2) / im.height
-            )
+            scale = min(max_w / im.width, max_h / im.height)
             im.scale(scale)
-            im.move_to(frame_center)
+            im.move_to(img_center)
             self.play(FadeIn(im))
             shown.append(im)
         except Exception:
@@ -270,12 +244,11 @@ def slide_35(self):
 
     self.next_slide()
 
-    # Remove frame and images
-    # Remove frame and images (use Group, not VGroup, because ImageMobject != VMobject)
-    frame_items = [f_top, f_right, f_bottom, f_left, *shown]
-    self.play(FadeOut(Group(*frame_items)))
+    # Remove the slideshow images
+    if shown:
+        self.play(FadeOut(Group(*shown)))
 
-    # --- PDE system ---
+    # --- PDE system: place with safe left margin so it is on the right and fully visible ---
     eq_pde = Tex(
         r"$\begin{cases}"
         r"\dfrac{\partial \phi(\mathbf{p},t)}{\partial t} = D\nabla^2 \phi(\mathbf{p},t) \\ "
@@ -285,12 +258,17 @@ def slide_35(self):
         font_size=44,
         color=BLACK,
     )
-    eq_pde.next_to(left_label, DOWN, buff=0.6).align_to(left_label, LEFT)
+    eq_pde.next_to(left_label, DOWN, buff=0.6)
+
+    # Anchor to a safe left position (slightly right from the slide's left edge)
+    safe_left_equ = -config.frame_width / 2.0 + 1.0
+    dx_equ = safe_left_equ - eq_pde.get_left()[0]
+    eq_pde.shift(RIGHT * dx_equ)
     self.add(eq_pde)
 
     self.next_slide()
 
-    # SPH form
+    # SPH form (transform in place)
     eq_sph = MathTex(
         r"\frac{d\phi_i(t)}{dt} = \sum_{j} \frac{m}{\rho_j(t)} D \big( \phi_j(t) - \phi_i(t) \big)"
         r"\frac{\mathbf{p}_{ij}(t) \cdot \nabla_i W_{ij}} {\lVert \mathbf{p}_{ij}(t) \rVert^2 + h^2}",
@@ -302,7 +280,7 @@ def slide_35(self):
 
     self.next_slide()
 
-    # Discrete update
+    # Discrete update (transform in place)
     eq_disc = MathTex(
         r"\phi_i(t+dt) = (1-\tilde{s_i})\phi_i(t) + \frac{\tilde{s_i}}{s_i}dt\sum_{j}\xi_{ij}\phi_j(t)",
         font_size=44,
@@ -313,28 +291,28 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Keep only bar + particles; center and scale particles to fill ---
+    # --- Keep only bar + particles; center and scale particles to fill the body ---
     self.play(FadeOut(VGroup(explain2, left_label, eq_disc)))
     if len(dots) > 0:
         body_top2 = bar.submobjects[0].get_bottom()[1] - 0.25
         body_bottom2 = -config.frame_height / 2.0 + 0.3
         body_left2 = -config.frame_width / 2.0 + 0.3
         body_right2 = config.frame_width / 2.0 - 0.3
-        target_center = np.array(
+        target_center2 = np.array(
             [
                 (body_left2 + body_right2) * 0.5,
                 (body_top2 + body_bottom2) * 0.5,
                 0.0,
             ]
         )
-        dots_group = VGroup(*dots)
-        current_w = max(1e-6, dots_group.width)
-        current_h = max(1e-6, dots_group.height)
+        dots_group2 = VGroup(*dots)
+        current_w = max(1e-6, dots_group2.width)
+        current_h = max(1e-6, dots_group2.height)
         desired_w = (body_right2 - body_left2) * 0.92
         desired_h = (body_top2 - body_bottom2) * 0.85
         scale_factor = min(desired_w / current_w, desired_h / current_h)
         self.play(
-            dots_group.animate.scale(scale_factor).move_to(target_center)
+            dots_group2.animate.scale(scale_factor).move_to(target_center2)
         )
 
     self.next_slide()
