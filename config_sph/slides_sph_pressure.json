@@ -4,12 +4,12 @@
     "stiffnessCoefficient": 3.0,
     "gridOrigin": [
         -1.0,
-        -0.7,
+        -0.9,
         -1.0
     ],
     "gridSize": [
         2.0,
-        2.5,
+        5.5,
         2.0
     ],
     "gridCellSize": [
@@ -26,8 +26,8 @@
     ],
     "sizeBoxFluidParticles": [
         [
-            1.6,
-            0.9,
+            0.6,
+            2.2,
             0.25
         ]
     ],
