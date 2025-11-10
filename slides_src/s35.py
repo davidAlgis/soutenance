@@ -1,6 +1,7 @@
 import csv
 import glob
 import os
+import re
 
 import numpy as np
 import palette_colors as pc
@@ -13,18 +14,18 @@ def slide_35(self):
     """
     Slide 35: Facteur de modulation.
 
-    Fixes:
-    - Particles appear in a single 0.5s grow animation.
-    - Particles block moved top-right but lower to avoid overlapping the first sentence.
-    - Removed the rectangle around heat simulation; images positioned with left padding so they are fully on-slide.
-    - Equations anchored to a safe left margin on the right side (no overflow).
+    Updates in this revision:
+    - Heat frames: strictly load existing 'heat_sim_*.jpeg' with numeric suffix <= 1000,
+      no frames/rectangles/placeholders -> only the images are shown.
+    - AiryMod recolor: continuous interpolation between pc.jellyBean and pc.blueGreen,
+      applied only to fluid particles (type==0), fast run_time.
     """
     # --- Top bar ---
     bar = self._top_bar("Facteur de modulation")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # --- Big equation (split into parts to surround only the modulation factor) ---
+    # --- Big equation, split to frame only (1 - phi_i) ---
     eq = MathTex(
         r"F_i^A(t) = \frac{m}{dt} \cdot \tau_i(t) \cdot",
         r"(1-\phi_i(t))",
@@ -38,7 +39,7 @@ def slide_35(self):
     self.wait(0.1)
     self.next_slide()
 
-    # --- Highlight (1 - phi_i(t)) only ---
+    # --- Surround only the modulation factor (1 - phi_i) ---
     target = eq[1]
     pad = 0.08
     ul = target.get_corner(UL) + (-pad * RIGHT + pad * UP)
@@ -76,7 +77,7 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Keep only objective, move it under the bar (left aligned with padding) ---
+    # --- Keep only objective; move it under the bar, left-aligned with padding ---
     self.play(
         FadeOut(eq),
         FadeOut(seg_top),
@@ -96,18 +97,16 @@ def slide_35(self):
     self.play(MoveToTarget(explain2))
 
     # -------------------------------------------------------------------------
-    # Particles from CSV (filtered by world-space box BEFORE mapping)
+    # Particles from CSV (filtered to box to speed up)
     # -------------------------------------------------------------------------
     body_top = explain2.get_bottom()[1] - 0.25
     left_x = -config.frame_width / 2.0 + 0.3
     right_x = config.frame_width / 2.0 - 0.3
     bottom_y = -config.frame_height / 2.0 + 0.3
 
-    # Box (world space, CSV coordinates)
-    X_CENTER = -1
-    Y_CENTER = -2.0
-    X_WIDTH = 5.0
-    Y_WIDTH = 5.0
+    # Filter box in world space (CSV coords)
+    X_CENTER, Y_CENTER = -0.5, -1.0
+    X_WIDTH, Y_WIDTH = 3.0, 2.0
     x_box_min = X_CENTER - X_WIDTH * 0.5
     x_box_max = X_CENTER + X_WIDTH * 0.5
     y_box_min = Y_CENTER - Y_WIDTH * 0.5
@@ -123,7 +122,7 @@ def slide_35(self):
                     xv = float(row["x"])
                     yv = float(row["y"])
                     tv = int(row["type"])
-                    am = int(float(row.get("airyMod", 0.0)))
+                    am = float(row.get("airyMod", 0.0))
                     if (
                         xv >= x_box_min
                         and xv <= x_box_max
@@ -137,25 +136,22 @@ def slide_35(self):
                 except Exception:
                     continue
     else:
-        # Small fallback cloud inside the box
-        for i in range(80):
-            xv = (i % 20) * 0.1 - 1.0
-            yv = (i // 20) * 0.1 - 1.0
-            if (
-                xv >= x_box_min
-                and xv <= x_box_max
-                and yv >= y_box_min
-                and yv <= y_box_max
-            ):
-                xs_all.append(xv)
-                ys_all.append(yv)
-                types_all.append(0 if i % 3 else 1)
-                airy_all.append(0)
+        # Small fallback inside the box
+        rng = np.random.default_rng(1234)
+        for _ in range(80):
+            xv = X_CENTER + (rng.random() - 0.5) * X_WIDTH
+            yv = Y_CENTER + (rng.random() - 0.5) * Y_WIDTH
+            xs_all.append(xv)
+            ys_all.append(yv)
+            # Mostly fluid, some negative "solid"
+            tv = 0 if rng.random() < 0.7 else (-1 if rng.random() < 0.5 else 1)
+            types_all.append(tv)
+            airy_all.append(float(rng.random()))
 
-    xs = np.array(xs_all, dtype=float)
-    ys = np.array(ys_all, dtype=float)
-    types_arr = np.array(types_all, dtype=int)
-    airy_arr = np.array(airy_all, dtype=int)
+    xs = np.asarray(xs_all, dtype=float)
+    ys = np.asarray(ys_all, dtype=float)
+    types_arr = np.asarray(types_all, dtype=int)
+    airy_arr = np.asarray(airy_all, dtype=float)
 
     dots = []
     if len(xs) > 0:
@@ -182,14 +178,21 @@ def slide_35(self):
             return np.array([x_m, y_m, 0.0])
 
         for i in range(len(xs)):
+            tv = types_arr[i]
+            # Draw fluids (type==0) in blueGreen, negative types in uclaGold; skip positive non-zero types
+            if tv == 0:
+                col = pc.blueGreen
+            elif tv < 0:
+                col = pc.uclaGold
+            else:
+                continue
             pos = map_pos(xs[i], ys[i])
-            col = pc.blueGreen if types_arr[i] == 0 else pc.uclaGold
             d = Dot(pos, radius=0.05, color=col)
             d.set_fill(col, opacity=1.0)
             d.set_stroke(col, opacity=1.0, width=0)
             dots.append(d)
 
-        # Appear ALL at once in 0.5s
+        # All particles appear together quickly (0.5s total)
         self.play(
             AnimationGroup(
                 *[GrowFromCenter(d) for d in dots], lag_ratio=0.0, run_time=0.5
@@ -198,17 +201,16 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Shrink and move particles to top-right but lower to avoid overlapping the sentence ---
+    # --- Move particles block to top-right but lower to avoid overlapping the objective
     dots_group = VGroup(*dots) if dots else VGroup()
     if len(dots_group.submobjects) > 0:
-        # Position to the right, a bit lower than the first sentence bottom
         safe_top_y = explain2.get_bottom()[1] - 0.8
         target_center = np.array(
             [config.frame_width / 2.0 - 1.6, safe_top_y, 0.0]
         )
         self.play(dots_group.animate.scale(0.45).move_to(target_center))
 
-    # Left label under the objective line
+    # Left label
     left_label = Tex(
         "Phenomene de diffusion :", color=BLACK, font_size=self.BODY_FONT_SIZE
     )
@@ -218,37 +220,50 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Heat simulation on the left WITHOUT any border; ensure visible with padding ---
-    max_w = 5.2
-    max_h = 3.6
-    # Safe left padding so images are fully on-slide
-    safe_left = -config.frame_width / 2.0 + 1.2
+    # --- Heat simulation on the left (NO border), shift right so fully visible
+    max_w, max_h = 5.2, 3.6
+    safe_left = -config.frame_width / 2.0 + 1.2  # padding from left edge
     img_center = np.array(
         [safe_left + max_w * 0.5, left_label.get_center()[1] - 2.2, 0.0]
     )
 
-    imgs = sorted(
-        glob.glob(os.path.join("Figures", "heat_pictures", "heat_sim_*.jpeg"))
+    # Strictly gather existing files heat_sim_*.jpeg with numeric suffix <= 1000
+    frame_pat = re.compile(r".*[/\\]heat_sim_(\d+)\.jpeg$", re.IGNORECASE)
+    all_candidates = glob.glob(
+        os.path.join("Figures", "heat_pictures", "heat_sim_*.jpeg")
     )
-    shown = []
-    for p in imgs[:20]:
+    pairs = []
+    for p in all_candidates:
+        m = frame_pat.match(p)
+        if not m:
+            continue
+        try:
+            idx = int(m.group(1))
+        except Exception:
+            continue
+        if idx <= 1000 and os.path.isfile(p):
+            pairs.append((idx, p))
+    pairs.sort(key=lambda t: t[0])
+
+    shown_imgs = []
+    for _, p in pairs[:20]:
         try:
             im = ImageMobject(p)
             scale = min(max_w / im.width, max_h / im.height)
-            im.scale(scale)
-            im.move_to(img_center)
+            im.scale(scale).move_to(img_center)
+            # Show only the image (no extra shapes), then keep for cleanup
             self.play(FadeIn(im))
-            shown.append(im)
+            shown_imgs.append(im)
         except Exception:
             continue
 
     self.next_slide()
 
-    # Remove the slideshow images
-    if shown:
-        self.play(FadeOut(Group(*shown)))
+    # Remove only the images (no rectangle exists)
+    if shown_imgs:
+        self.play(FadeOut(Group(*shown_imgs)))
 
-    # --- PDE system: place with safe left margin so it is on the right and fully visible ---
+    # --- PDE system (ensure fully in-frame)
     eq_pde = Tex(
         r"$\begin{cases}"
         r"\dfrac{\partial \phi(\mathbf{p},t)}{\partial t} = D\nabla^2 \phi(\mathbf{p},t) \\ "
@@ -259,16 +274,13 @@ def slide_35(self):
         color=BLACK,
     )
     eq_pde.next_to(left_label, DOWN, buff=0.6)
-
-    # Anchor to a safe left position (slightly right from the slide's left edge)
     safe_left_equ = -config.frame_width / 2.0 + 1.0
-    dx_equ = safe_left_equ - eq_pde.get_left()[0]
-    eq_pde.shift(RIGHT * dx_equ)
+    eq_pde.shift(RIGHT * (safe_left_equ - eq_pde.get_left()[0]))
     self.add(eq_pde)
 
     self.next_slide()
 
-    # SPH form (transform in place)
+    # SPH form
     eq_sph = MathTex(
         r"\frac{d\phi_i(t)}{dt} = \sum_{j} \frac{m}{\rho_j(t)} D \big( \phi_j(t) - \phi_i(t) \big)"
         r"\frac{\mathbf{p}_{ij}(t) \cdot \nabla_i W_{ij}} {\lVert \mathbf{p}_{ij}(t) \rVert^2 + h^2}",
@@ -277,10 +289,13 @@ def slide_35(self):
     )
     eq_sph.move_to(eq_pde.get_center())
     self.play(TransformMatchingTex(eq_pde, eq_sph))
+    eq_sph.shift(
+        RIGHT * (safe_left_equ - eq_sph.get_left()[0])
+    )  # keep inside slide
 
     self.next_slide()
 
-    # Discrete update (transform in place)
+    # Discrete update
     eq_disc = MathTex(
         r"\phi_i(t+dt) = (1-\tilde{s_i})\phi_i(t) + \frac{\tilde{s_i}}{s_i}dt\sum_{j}\xi_{ij}\phi_j(t)",
         font_size=44,
@@ -288,11 +303,15 @@ def slide_35(self):
     )
     eq_disc.move_to(eq_sph.get_center())
     self.play(TransformMatchingTex(eq_sph, eq_disc))
+    eq_disc.shift(
+        RIGHT * (safe_left_equ - eq_disc.get_left()[0])
+    )  # keep inside slide
 
     self.next_slide()
 
-    # --- Keep only bar + particles; center and scale particles to fill the body ---
+    # --- Keep only bar + particles; center and scale particles to fill body for airyMod coloring ---
     self.play(FadeOut(VGroup(explain2, left_label, eq_disc)))
+
     if len(dots) > 0:
         body_top2 = bar.submobjects[0].get_bottom()[1] - 0.25
         body_bottom2 = -config.frame_height / 2.0 + 0.3
@@ -305,6 +324,7 @@ def slide_35(self):
                 0.0,
             ]
         )
+
         dots_group2 = VGroup(*dots)
         current_w = max(1e-6, dots_group2.width)
         current_h = max(1e-6, dots_group2.height)
@@ -317,15 +337,20 @@ def slide_35(self):
 
     self.next_slide()
 
-    # --- Recolor type-0 particles by airyMod (0 -> jellyBean, 1 -> blueGreen) ---
+    # --- Continuous colormap recolor for fluid particles (type==0)
+    # Map airy_mod in [0,1] to colors along jellyBean -> blueGreen
     if len(dots) > 0:
         recolor_anims = []
         for i, d in enumerate(dots):
+            # Only recolor fluid particles, emulating the "mask" logic from matplotlib
             if types_arr[i] == 0:
-                recolor_anims.append(
-                    d.animate.set_color(
-                        pc.jellyBean if airy_arr[i] == 0 else pc.blueGreen
-                    )
-                )
+                a = float(airy_arr[i])
+                # Clamp to [0,1]
+                a = 0.0 if a < 0.0 else (1.0 if a > 1.0 else a)
+                tgt_col = interpolate_color(pc.jellyBean, pc.blueGreen, a)
+                recolor_anims.append(d.animate.set_color(tgt_col))
         if recolor_anims:
-            self.play(LaggedStart(*recolor_anims, lag_ratio=0.02))
+            # Faster and simultaneous
+            self.play(
+                AnimationGroup(*recolor_anims, lag_ratio=0.0, run_time=0.35)
+            )
