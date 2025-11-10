@@ -17,14 +17,15 @@ def slide_34(self):
       2) Next slide -> reveal particles ONLY (no arrows) WHILE transforming the
          left equation from labels (a,b) to positions (x,y) in a single play().
       3) Next slide -> add velocity arrows and transform the left equation to
-         velocity. The second velocity line is split in two to avoid overlap.
+         velocity (second velocity line split earlier to avoid overlap). During
+         that first velocity animation, time advances so curve, particles and
+         arrows all move.
+      4) When clearing the right visuals, fade out particles and arrows too, then
+         smoothly move the velocity block under the top bar before continuing.
+      5) The final inverse mapping cases are centered (same vertical position kept)
+         and rendered with a larger font size; their transforms keep the same Y.
 
-    Extras:
-      - Curve, crosses, particles, arrows share the SAME physical frame, aligned
-        so the top label row average defines the wave midline.
-      - Smooth animation when clearing right visuals: the velocity equation is
-        moved under the top bar with a play() before the following texts fade in.
-      - All text is BLACK with uniform font size and spacing.
+    All texts are BLACK with uniform base font size, unless noted.
     """
     # ----------------------------- imports and layout
     import csv
@@ -301,7 +302,7 @@ def slide_34(self):
         LaggedStart(
             *[Create(rows_groups[rid]) for rid in row_ids_sorted],
             lag_ratio=0.15,
-            run_time=1.2,
+            run_time=1.2
         )
     )
     self.add(crosses_group)
@@ -410,18 +411,24 @@ def slide_34(self):
 
     arrows.add_updater(arrows_updater)
 
-    # Animate transform to velocity equations (second line split to avoid overlap)
+    # Animate transform to velocity equations (split earlier; three lines)
     vel_tex = Tex(
         r"$\begin{cases}"
         r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
-        r"v_y(a,b,t) = A e^{kb} \sin\left(ka - \omega t + k\xi(a,b,t)\right) \\"
-        r"\qquad\qquad\times \left(\omega - k v_x(a,b,t)\right)"
+        r"v_y(a,b,t) = A e^{kb} \sin\left(ka - \omega t + k\xi(a,b,t)\right), \\"
+        r"\cdot \left(\omega - k v_x(a,b,t)\right)"
         r"\end{cases}$",
         color=BLACK,
         font_size=TEXT_FS,
     )
     place_left_tex(vel_tex, above=eq_h, buff=LINE_BUFF)
-    self.play(TransformMatchingTex(ab_tex, vel_tex, run_time=0.8))
+
+    # During this first velocity reveal, advance time so curve, particles AND arrows move
+    self.play(
+        TransformMatchingTex(ab_tex, vel_tex),
+        t_tracker.animate.set_value(T_MIN + 0.25 * (T_MAX - T_MIN)),
+        run_time=0.9,
+    )
     ab_tex = vel_tex
 
     # Animate one more period with arrows visible
@@ -443,13 +450,20 @@ def slide_34(self):
     wave_curve.clear_updaters()
     particles.clear_updaters()
     arrows.clear_updaters()
+    # Explicitly fade out particles and arrows as well
     self.play(
-        FadeOut(
-            VGroup(wave_curve, crosses_group, particles, arrows), run_time=0.6
-        ),
-        FadeOut(intro, run_time=0.6),
-        FadeOut(eq_h, run_time=0.6),
+        FadeOut(wave_curve, run_time=0.5),
+        FadeOut(crosses_group, run_time=0.5),
+        FadeOut(particles, run_time=0.5),
+        FadeOut(arrows, run_time=0.5),
+        FadeOut(intro, run_time=0.5),
+        FadeOut(eq_h, run_time=0.5),
     )
+    try:
+        self.remove_foreground_mobject(particles)
+        self.remove_foreground_mobject(arrows)
+    except Exception:
+        pass
 
     # Smooth move: slide velocity equations under the bar (no jump)
     vel_left_margin = -full_w * 0.5 + 0.4
@@ -499,17 +513,18 @@ def slide_34(self):
     )
     self.play(FadeIn(nr_goal_tex), run_time=0.3)
 
+    # Final inverse mapping cases: BIGGER and CENTERED; keep same Y across transforms
+    BIG_FS = 38
+    inv_y_ref = (
+        nr_goal_tex.get_bottom()[1] - LINE_BUFF - BIG_FS * 0.012
+    )  # reference Y
+
     inv_start_tex = Tex(
         r"$\begin{cases} x = a + \xi(a,b,t), \\ y = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=BIG_FS,
     )
-    inv_start_tex.next_to(
-        nr_goal_tex,
-        direction=np.array([0.0, -1.0, 0.0]),
-        buff=LINE_BUFF,
-        aligned_edge=LEFT,
-    )
+    inv_start_tex.move_to(np.array([0.0, inv_y_ref, 0.0]))  # center X, keep Y
     self.play(FadeIn(inv_start_tex), run_time=0.3)
 
     self.next_slide()
@@ -517,33 +532,23 @@ def slide_34(self):
     inv_FG_tex = Tex(
         r"$\begin{cases} x = F(a) = a + \xi(a,b,t), \\ y = G(b) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=BIG_FS,
     )
-    inv_FG_tex.next_to(
-        nr_goal_tex,
-        direction=np.array([0.0, -1.0, 0.0]),
-        buff=LINE_BUFF,
-        aligned_edge=LEFT,
-    )
+    inv_FG_tex.move_to(np.array([0.0, inv_start_tex.get_center()[1], 0.0]))
     self.play(TransformMatchingTex(inv_start_tex, inv_FG_tex, run_time=1.0))
-    inv_start_tex = inv_FG_tex
+    inv_start_tex = inv_FG_tex  # reuse variable for next transform
 
     self.next_slide()
 
     inv_final_tex = Tex(
         r"$\begin{cases} a = F^{-1}(x,y,t), \\ b = G^{-1}(x,y,t) \end{cases}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=BIG_FS,
     )
-    inv_final_tex.next_to(
-        nr_goal_tex,
-        direction=np.array([0.0, -1.0, 0.0]),
-        buff=LINE_BUFF,
-        aligned_edge=LEFT,
-    )
+    inv_final_tex.move_to(np.array([0.0, inv_start_tex.get_center()[1], 0.0]))
     self.play(TransformMatchingTex(inv_start_tex, inv_final_tex, run_time=1.0))
 
     # End
-    self.pause()
+    self.wait(0.2)
     self.clear()
     self.next_slide()
