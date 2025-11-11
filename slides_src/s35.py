@@ -325,21 +325,22 @@ def slide_35(self):
         )
 
     self.next_slide()
-
-    # --- Continuous colormap recolor for fluid particles (type==0)
-    # Map airy_mod in [0,1] to colors along jellyBean -> blueGreen
     if len(dots) > 0:
-        recolor_anims = []
+        def make_color_anim(mob, start_col, target_col):
+            def updater(m, alpha):
+                col = interpolate_color(start_col, target_col, alpha)
+                m.set_fill(col, opacity=1.0)
+                m.set_stroke(col, width=0, opacity=1.0)
+            return UpdateFromAlphaFunc(mob, updater)
+
+        anims = []
         for i, d in enumerate(dots):
-            # Only recolor fluid particles, emulating the "mask" logic from matplotlib
             if types_arr[i] == 0:
                 a = float(airy_arr[i])
-                # Clamp to [0,1]
                 a = 0.0 if a < 0.0 else (1.0 if a > 1.0 else a)
-                tgt_col = interpolate_color(pc.jellyBean, pc.blueGreen, a)
-                recolor_anims.append(d.animate.set_color(tgt_col))
-        if recolor_anims:
-            # Faster and simultaneous
-            self.play(
-                AnimationGroup(*recolor_anims, lag_ratio=0.0, run_time=0.35)
-            )
+                target_col = interpolate_color(pc.jellyBean, pc.blueGreen, a)
+                start_col = d.get_fill_color()
+                anims.append(make_color_anim(d, start_col, target_col))
+
+        if anims:
+            self.play(AnimationGroup(*anims, lag_ratio=0.0), run_time=0.35)
