@@ -74,7 +74,7 @@ def slide_35(self):
     explain1.next_to(eq, DOWN, buff=0.5)
     explain2.next_to(explain1, DOWN, buff=0.25)
     self.add(explain1, explain2)
-
+    self.wait(0.1)
     self.next_slide()
 
     # --- Keep only objective; move it under the bar, left-aligned with padding ---
@@ -135,18 +135,7 @@ def slide_35(self):
                         airy_all.append(am)
                 except Exception:
                     continue
-    else:
-        # Small fallback inside the box
-        rng = np.random.default_rng(1234)
-        for _ in range(80):
-            xv = X_CENTER + (rng.random() - 0.5) * X_WIDTH
-            yv = Y_CENTER + (rng.random() - 0.5) * Y_WIDTH
-            xs_all.append(xv)
-            ys_all.append(yv)
-            # Mostly fluid, some negative "solid"
-            tv = 0 if rng.random() < 0.7 else (-1 if rng.random() < 0.5 else 1)
-            types_all.append(tv)
-            airy_all.append(float(rng.random()))
+
 
     xs = np.asarray(xs_all, dtype=float)
     ys = np.asarray(ys_all, dtype=float)
@@ -208,7 +197,7 @@ def slide_35(self):
         target_center = np.array(
             [config.frame_width / 2.0 - 1.6, safe_top_y, 0.0]
         )
-        self.play(dots_group.animate.scale(0.45).move_to(target_center))
+        self.play(dots_group.animate.scale(0.3).move_to(target_center))
 
     # Left label
     left_label = Tex(
@@ -288,10 +277,10 @@ def slide_35(self):
         color=BLACK,
     )
     eq_sph.move_to(eq_pde.get_center())
-    self.play(TransformMatchingTex(eq_pde, eq_sph))
     eq_sph.shift(
         RIGHT * (safe_left_equ - eq_sph.get_left()[0])
     )  # keep inside slide
+    self.play(TransformMatchingTex(eq_pde, eq_sph))
 
     self.next_slide()
 
