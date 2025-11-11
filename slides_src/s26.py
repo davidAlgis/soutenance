@@ -39,6 +39,9 @@ def slide_26(self):
     )  # small extra pad to match your usual rhythm
     self.play(FadeIn(lead, run_time=0.25))
 
+    self.wait(0.1)
+    self.next_slide()
+
     # 1.
     l1 = Tex(
         r"1. Calculer la densité : $\rho_i=\sum_j m_j W_{ij}$",
@@ -46,8 +49,10 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l1.next_to(lead, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l1.shift(RIGHT * (dx + 0.6))
+
+    l1.shift(RIGHT * (dx + 0.6) + DOWN * 0.1)
     self.add(l1)
+    self.wait(0.1)
     self.next_slide()
 
     # 2.
@@ -57,8 +62,8 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l2.shift(RIGHT * (dx + 0.6))
     self.add(l2)
+    self.wait(0.1)
     self.next_slide()
 
     # 3. + 4.
@@ -68,15 +73,14 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l3.shift(RIGHT * (dx + 0.6))
     l4 = Tex(
         r"4. Solveur de « volume constante » : $F^p_1$ pour vérifier $\nabla \cdot v\rightarrow 0$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     l4.next_to(l3, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l4.shift(RIGHT * (dx + 0.6))
     self.add(l3, l4)
+    self.wait(0.1)
     self.next_slide()
 
     # 5. + centered integration formulas
@@ -86,7 +90,6 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l5.next_to(l4, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l5.shift(RIGHT * (dx + 0.6))
     self.add(l5)
 
     # Centered equations (below)
@@ -100,13 +103,10 @@ def slide_26(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 2,
     )
-    # Place centered in free body area
-    y_anchor = (
-        self._current_bar.get_bottom()[1] - 0.8
-    )  # slightly lower than bar
-    eq1.move_to(np.array([0.0, y_anchor - 1.2, 0.0]))
+    eq1.next_to(l5, DOWN, buff=0.35)
     eq2.next_to(eq1, DOWN, buff=0.35)
     self.add(eq1, eq2)
+    self.wait(0.1)
     self.next_slide()
 
     # --- Clear enumerate text (keep bar) ---
@@ -119,11 +119,11 @@ def slide_26(self):
     #   rect origin (-1.0, -0.9), size (2.0, 5.5)  -> top y = 4.6
     # Use ROI: origin (-2.0, -2.0), size (4.0, 7.0), so top = 5.0 (> 4.6)
     roi_origin = (-2.0, -2.0)
-    roi_size = (4.0, 7.0)
+    roi_size = (4.0, 3.0)
 
     # Map ROI width to ~11 units on screen and center a bit lower for room under the bar
     fit_w = 11.0
-    target_center = (0.0, -0.8)
+    target_center = (0.0, -3)
     dot_radius = 0.06
 
     # Pre-compute the SAME linear mapping the helper uses (world -> screen)
@@ -165,6 +165,8 @@ def slide_26(self):
         rect.move_to(rect_center_screen)
         scene.play(Create(rect, run_time=0.35))
         scene.add_foreground_mobject(rect)
+        self.wait(0.1)
+        self.next_slide()
 
     # Launch the SPH visual (note: show_sph_simulation introduces a click before playback)
     show_sph_simulation(
