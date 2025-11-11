@@ -14,14 +14,17 @@ def slide_26(self):
     - Centered integration equations with pause
     - Clear list, then show SPH playback (only fluid/type==0) from
       'states_sph/particles_sph_all_forces.csv'
-    - Draw an uclaGold rectangle at world coords:
+    - Draw uclaGold guide lines in the same world frame:
+        * bottom horizontal line at rectangle bottom
+        * two vertical side lines cropped just under the top bar
+      for the world-rectangle:
         origin=(-1.0, -0.9), size=(2.0, 5.5)
-      using the same ROI mapping as the particles.
     """
     # --- Top bar ---
     bar = self._top_bar("Récapitulatif SPH")
     self.add(bar)
     self.add_foreground_mobject(bar)
+    bar_rect = bar.submobjects[0]
 
     # --- Body text (enumerate) ---
     self.start_body()
@@ -34,11 +37,8 @@ def slide_26(self):
         self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
     )
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - lead.get_left()[0]
-    lead.shift(
-        RIGHT * (dx + 0.6)
-    )  # small extra pad to match your usual rhythm
+    lead.shift(RIGHT * (dx + 0.6))  # small extra pad to match your usual rhythm
     self.play(FadeIn(lead, run_time=0.25))
-
     self.wait(0.1)
     self.next_slide()
 
@@ -49,7 +49,6 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l1.next_to(lead, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-
     l1.shift(RIGHT * (dx + 0.6) + DOWN * 0.1)
     self.add(l1)
     self.wait(0.1)
@@ -92,7 +91,7 @@ def slide_26(self):
     l5.next_to(l4, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     self.add(l5)
 
-    # Centered equations (below)
+    # Centered equations (keep the vertical you already set via next_to)
     eq1 = Tex(
         r"$v_i(t+dt) = v_i(t) + \frac{dt}{m_i}\left(F^v + F^p_0 + F^p_1 + m_i g\right)$",
         color=BLACK,
@@ -105,66 +104,86 @@ def slide_26(self):
     )
     eq1.next_to(l5, DOWN, buff=0.35)
     eq2.next_to(eq1, DOWN, buff=0.35)
+    # Center horizontally while preserving current Y positions
+    y1 = eq1.get_center()[1]
+    y2 = eq2.get_center()[1]
+    eq1.move_to(np.array([0.0, y1, 0.0]))
+    eq2.move_to(np.array([0.0, y2, 0.0]))
     self.add(eq1, eq2)
     self.wait(0.1)
     self.next_slide()
 
     # --- Clear enumerate text (keep bar) ---
-    self.play(
-        FadeOut(VGroup(lead, l1, l2, l3, l4, l5, eq1, eq2), run_time=0.35)
-    )
+    self.play(FadeOut(VGroup(lead, l1, l2, l3, l4, l5, eq1, eq2), run_time=0.35))
 
-    # --- SPH playback (only fluid) + world-rect annotation ---
-    # We choose an ROI that comfortably includes the requested rectangle:
-    #   rect origin (-1.0, -0.9), size (2.0, 5.5)  -> top y = 4.6
-    # Use ROI: origin (-2.0, -2.0), size (4.0, 7.0), so top = 5.0 (> 4.6)
+    # --- SPH playback (only fluid) + world-guide lines annotation ---
+    # NOTE: Using your updated ROI/fit mapping exactly as provided
     roi_origin = (-2.0, -2.0)
-    roi_size = (4.0, 3.0)
+    roi_size   = (4.0, 3.0)
 
-    # Map ROI width to ~11 units on screen and center a bit lower for room under the bar
+    # Map ROI width to ~11 units on screen and center lower for room under the bar
     fit_w = 11.0
-    target_center = (0.0, -3)
+    target_center = (0.0, -2.5)
     dot_radius = 0.06
 
-    # Pre-compute the SAME linear mapping the helper uses (world -> screen)
+    # Compute the SAME linear mapping as show_sph_simulation (world -> screen)
     ox, oy = roi_origin
     sx, sy = roi_size
     world_cx = ox + sx * 0.5
     world_cy = oy + sy * 0.5
     tx, ty = target_center
-    s = (
-        fit_w / sx
-    )  # we only fit to width here (same as show_sph_simulation when only width given)
+    s = fit_w / sx  # only width fitting
 
-    # Rectangle in world coords
+    # World rectangle specs
     rect_ox, rect_oy = -1.0, -0.9
-    rect_w, rect_h = 2.0, 5.5
+    rect_w, rect_h   =  2.0,  5.5
 
-    # Convert to screen coords (center + size)
-    rect_center_world = np.array(
-        [rect_ox + rect_w * 0.5, rect_oy + rect_h * 0.5]
-    )
-    rect_center_screen = np.array(
-        [
-            (rect_center_world[0] - world_cx) * s + tx,
-            (rect_center_world[1] - world_cy) * s + ty,
-            0.0,
-        ]
-    )
-    rect_w_screen = rect_w * s
-    rect_h_screen = rect_h * s
+    # Convert to screen coords (edges)
+    rect_left_x  = (rect_ox - world_cx) * s + tx
+    rect_right_x = (rect_ox + rect_w - world_cx) * s + tx
+    rect_bottom_y = (rect_oy - world_cy) * s + ty
+    rect_top_y    = (rect_oy + rect_h - world_cy) * s + ty
 
-    # Callback to draw the rectangle just before CSV playback starts
+    # Crop just under the top bar (a small margin below bar bottom)
+    top_limit_y = bar_rect.get_bottom()[1] - 0.12
+    vline_top_y = min(rect_top_y, top_limit_y)
+
+    # Callback to draw the guide lines just before CSV playback starts
     def draw_world_rect(scene, dots_group: VGroup):
-        rect = Rectangle(
-            width=rect_w_screen,
-            height=rect_h_screen,
+        stroke_w = 8
+
+        # 1) Bottom horizontal line (exactly at rectangle bottom)
+        bottom_line = Line(
+            start=np.array([rect_left_x, rect_bottom_y, 0.0]),
+            end=np.array([rect_right_x, rect_bottom_y, 0.0]),
             stroke_color=pc.uclaGold,
-            stroke_width=6,
+            stroke_width=stroke_w,
         )
-        rect.move_to(rect_center_screen)
-        scene.play(Create(rect, run_time=0.35))
-        scene.add_foreground_mobject(rect)
+
+        # 2) Left vertical line (cropped under the top bar)
+        left_vline = Line(
+            start=np.array([rect_left_x, rect_bottom_y, 0.0]),
+            end=np.array([rect_left_x, vline_top_y, 0.0]),
+            stroke_color=pc.uclaGold,
+            stroke_width=stroke_w,
+        )
+
+        # 3) Right vertical line (cropped under the top bar)
+        right_vline = Line(
+            start=np.array([rect_right_x, rect_bottom_y, 0.0]),
+            end=np.array([rect_right_x, vline_top_y, 0.0]),
+            stroke_color=pc.uclaGold,
+            stroke_width=stroke_w,
+        )
+
+        scene.play(
+            Create(bottom_line, run_time=0.25),
+            Create(left_vline, run_time=0.25),
+            Create(right_vline, run_time=0.25),
+        )
+        scene.add_foreground_mobject(bottom_line)
+        scene.add_foreground_mobject(left_vline)
+        scene.add_foreground_mobject(right_vline)
         self.wait(0.1)
         self.next_slide()
 
@@ -172,9 +191,9 @@ def slide_26(self):
     show_sph_simulation(
         self,
         "states_sph/particles_sph_all_forces.csv",
-        only_fluid=True,  # type == 0
+        only_fluid=True,           # type == 0
         dot_radius=dot_radius,
-        manim_seconds=3.5,  # quick preview; adjust if you want longer
+        manim_seconds=10,         # quick preview; adjust if you want longer
         roi_origin=roi_origin,
         roi_size=roi_size,
         clip_outside=True,
