@@ -211,10 +211,9 @@ def slide_16(self):
     boat = Polygon(
         *[np.array(p) for p in boat_local],
         fill_color=pc.uclaGold,
-        fill_opacity=0.2,
+        fill_opacity=1.0,
         stroke_color=pc.uclaGold,
         stroke_width=3,
-        stroke_opacity=0.2
     )
     boat.scale(0.9)
     boat_center = [0.0, y0 + 0.35, 0.0]
@@ -270,7 +269,7 @@ def slide_16(self):
         end=a_arrow_end,
         color=pc.jellyBean,
         stroke_width=6,
-        stroke_opacity=0.7,
+        stroke_opacity=1.0,
         tip_length=0.18,
     ).set_z_index(15)
     a_lbl = (
