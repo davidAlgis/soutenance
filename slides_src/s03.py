@@ -154,57 +154,57 @@ def slide_03(self):
     )
 
     # ===================== TRIANGLE SEQUENCE =====================
-    # ===================== TRIANGLE SEQUENCE =====================
 
-    # 1) Fade out the ellipse, keep "Précision" as the top vertex label
+    # 1) Fade out the ellipse, keep the existing "Précision" text object
     self.play(FadeOut(ell, run_time=0.35))
     self.next_slide()
 
-    # ---- Safe drawing area (inside the frame, below the bar) ----
-    SAFE_PAD_X = 0.8
-    SAFE_PAD_Y = 0.7
+    # ---- Safe drawing area (inside the frame, under top bar) ----
+    SAFE_PAD_X = 0.7
+    SAFE_PAD_Y = 0.65
     safe_left = -full_w * 0.5 + SAFE_PAD_X
     safe_right = full_w * 0.5 - SAFE_PAD_X
     safe_bottom = y_bot + SAFE_PAD_Y
     safe_top = bar_rect.get_bottom()[1] - SAFE_PAD_Y
-
     safe_w = max(0.1, safe_right - safe_left)
     safe_h = max(0.1, safe_top - safe_bottom)
 
-    # Size the equilateral triangle to fit both width and height
-    # For an equilateral triangle: height h = (√3/2)*side
-    side_from_w = safe_w * 0.78
-    side_from_h = (safe_h * 0.78) * 2.0 / np.sqrt(3.0)
-    side = min(side_from_w, side_from_h)
+    # --- Reserve room for labels so lines don't overlap text ---
+    TOP_LABEL_GAP = 0.55  # space above the top vertex for "Précision"
+    BOT_LABEL_GAP = 0.55  # space below bottom vertices for labels
+    H_USABLE = max(0.1, safe_h - (TOP_LABEL_GAP + BOT_LABEL_GAP))
+
+    # Equilateral height h = (√3/2)*side  -> side from height
+    side_from_h = (H_USABLE) * 2.0 / np.sqrt(3.0)
+    side_from_w = safe_w * 0.88
+    side = min(side_from_h, side_from_w)
     h = np.sqrt(3.0) * 0.5 * side
 
-    # Center the triangle a bit above the middle of the safe area
+    # Place the top vertex high, bottoms low (use the reserved gaps)
+    V_top_y = safe_top - TOP_LABEL_GAP
+    V_bl_y = V_top_y - h
+    V_br_y = V_bl_y
     tri_cx = 0.0
-    tri_cy = safe_bottom + safe_h * 0.56
+    V_top = np.array([tri_cx, V_top_y, 0.0])
+    V_bl = np.array([tri_cx - side * 0.5, V_bl_y, 0.0])
+    V_br = np.array([tri_cx + side * 0.5, V_br_y, 0.0])
 
-    V_top = np.array([tri_cx, tri_cy + h * 0.5, 0.0])
-    V_bl = np.array([tri_cx - side * 0.5, tri_cy - h * 0.5, 0.0])
-    V_br = np.array([tri_cx + side * 0.5, tri_cy - h * 0.5, 0.0])
-
-    # Helper to clamp a text inside the safe rect (keeps slight margins)
+    # Helper to keep any text inside the safe rect if needed
     def clamp_text(
         m: Mobject,
         left=safe_left,
         right=safe_right,
         bottom=safe_bottom,
         top=safe_top,
-        pad=0.08,
+        pad=0.01,
     ):
-        # Shift horizontally if overflowing
         dx = 0.0
         if m.get_left()[0] < left + pad:
             dx = (left + pad) - m.get_left()[0]
         if m.get_right()[0] > right - pad:
             dx = (right - pad) - m.get_right()[0]
-        # Apply X
         if abs(dx) > 1e-6:
             m.shift(RIGHT * dx)
-        # Shift vertically if overflowing
         dy = 0.0
         if m.get_bottom()[1] < bottom + pad:
             dy = (bottom + pad) - m.get_bottom()[1]
@@ -213,36 +213,34 @@ def slide_03(self):
         if abs(dy) > 1e-6:
             m.shift(UP * dy)
 
-    # Move the existing "Précision" near the top vertex, then clamp
-    title_target = V_top + np.array([0.0, 0.35, 0.0])
-    title.move_to(title_target)
+    # Move existing "Précision" label above the top vertex (no line overlap)
+    title.move_to(V_top + np.array([0.0, 1.0, 0.0]))
     clamp_text(title)
-    self.play(FadeTransformPieces(VGroup(), title), run_time=0.35)
+    self.play(FadeTransformPieces(VGroup(), title), run_time=0.25)
 
-    # 2) Bottom-left "Performances"
+    # Bottom labels (kept clear of edges)
     perf = Text("Performances", color=BLACK, font_size=44, weight=BOLD)
-    perf.move_to(V_bl + np.array([-0.8, -0.18, 0.0]))  # slightly outside
+    perf.move_to(V_bl + np.array([-1.5, -1.5, 0.0]))  # left & below
     clamp_text(perf)
     self.play(FadeIn(perf, run_time=0.25))
     self.next_slide()
 
-    # 3) Bottom-right "Échelle"
     echelle = Text("Échelle", color=BLACK, font_size=44, weight=BOLD)
-    echelle.move_to(V_br + np.array([0.8, -0.18, 0.0]))  # slightly outside
+    echelle.move_to(V_br + np.array([1.5, -1.5, 0.0]))  # right & below
     clamp_text(echelle)
     self.play(FadeIn(echelle, run_time=0.25))
     self.next_slide()
 
-    # 4) Triangle edges (blueGreen), guaranteed to fit
+    # Triangle edges (blueGreen)
     edge1 = Line(V_top, V_br, color=pc.blueGreen, stroke_width=8)
     edge2 = Line(V_br, V_bl, color=pc.blueGreen, stroke_width=8)
     edge3 = Line(V_bl, V_top, color=pc.blueGreen, stroke_width=8)
-    self.play(Create(edge1, run_time=0.35))
-    self.play(Create(edge2, run_time=0.35))
-    self.play(Create(edge3, run_time=0.35))
+    self.play(Create(edge1, run_time=0.30))
+    self.play(Create(edge2, run_time=0.30))
+    self.play(Create(edge3, run_time=0.30))
     self.next_slide()
 
-    # 5) Small jellyBean cross at triangle centroid
+    # JellyBean cross at centroid
     center = (V_top + V_bl + V_br) / 3.0
     cross_size = 0.25
     c1 = Line(
@@ -258,12 +256,12 @@ def slide_03(self):
         stroke_width=10,
     )
     cross = VGroup(c1, c2)
-    self.play(Create(c1, run_time=0.22), Create(c2, run_time=0.22))
+    self.play(Create(c1, run_time=0.20), Create(c2, run_time=0.20))
     self.next_slide()
 
-    # Helper for dotted, semi-opaque ellipse centered on a point
+    # Helper: dotted, semi-opaque ellipse centered on a point
     def dotted_filled_ellipse(
-        center_pt, w=1.2, h=2.2, color=pc.uclaGold, alpha=0.35
+        center_pt, w=1.2, h=2.0, color=pc.uclaGold, alpha=0.35
     ):
         fill = Ellipse(width=w, height=h).move_to(center_pt)
         fill.set_fill(color=color, opacity=alpha).set_stroke(opacity=0)
@@ -275,32 +273,31 @@ def slide_03(self):
         dash.set_color(BLACK).set_stroke(width=2)
         return VGroup(fill, dash)
 
-    # 6) Move cross along top-right edge, closer to Précision
+    # Move cross toward the top-right edge (closer to "Précision")
     target1 = V_top * 0.72 + V_br * 0.28
-    self.play(cross.animate.move_to(target1), run_time=0.6)
+    self.play(cross.animate.move_to(target1), run_time=0.55)
     ell_gold = dotted_filled_ellipse(
         cross.get_center(), w=1.1, h=2.1, color=pc.uclaGold, alpha=0.35
     )
     self.play(FadeIn(ell_gold, run_time=0.25))
     self.next_slide()
 
-    # 7) Move cross to bottom-left area
-    target2 = V_bl + np.array([0.4, 0.48, 0.0])
-    self.play(cross.animate.move_to(target2), run_time=0.6)
+    # Move cross to bottom-left area
+    target2 = V_bl + np.array([0.45, 0.50, 0.0])
+    self.play(cross.animate.move_to(target2), run_time=0.55)
     ell_green = dotted_filled_ellipse(
         cross.get_center(), w=2.2, h=1.2, color=pc.apple, alpha=0.35
     )
     self.play(FadeIn(ell_green, run_time=0.25))
     self.next_slide()
-
-    # 8) Nudge cross further left
-    target3 = cross.get_center() + np.array([-0.6, 0.0, 0.0])
-    self.play(cross.animate.move_to(target3), run_time=0.5)
+    target3 = 0.5 * (V_bl + V_top) + np.array([0.5, 0.1, 0.0])
+    target4 = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
+    # Nudge further left
+    self.play(cross.animate.move_to(target4), run_time=0.55)
     self.next_slide()
 
-    # 9) Nudge cross further down
-    target4 = cross.get_center() + np.array([0.0, -0.6, 0.0])
-    self.play(cross.animate.move_to(target4), run_time=0.5)
+    # Nudge further down
+    self.play(cross.animate.move_to(target3), run_time=0.55)
 
     # End slide
     self.pause()
