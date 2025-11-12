@@ -119,11 +119,10 @@ def slide_03(self):
     col1_img = build_image_under_title(
         col1_title.saved_state, "Figures/goal/goal_surface.png"
     )
+    col1_img.shift(DOWN * 0.35)
 
-    # Add title tiny at center; restore (grow+move)
     self.add(col1_title)
     self.play(Restore(col1_title), run_time=0.6)
-    # Image: pure FadeIn at its final place
     self.play(FadeIn(col1_img, run_time=0.35))
     revealed += [col1_title, col1_img]
     self.next_slide()
@@ -156,6 +155,8 @@ def slide_03(self):
     collapse_group = Group(*revealed)
     self.play(
         collapse_group.animate.scale(0).move_to(ell.get_center()),
+        FadeOut(line_left),
+        FadeOut(line_right),
         run_time=0.8,
     )
 

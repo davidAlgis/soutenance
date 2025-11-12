@@ -7,10 +7,12 @@ import os
 
 import numpy as np
 import palette_colors as pc
+import slides_src  # triggers registration via decorators
 from manim import *
 from manim import logger
 from manim_slides import Slide
 from manim_tikz import Tikz
+from slide_registry import all_numbers, get
 from sph_vis import show_sph_simulation
 from utils import (make_bullet_list, make_pro_cons, parse_selection,
                    tikz_from_file)
@@ -19,9 +21,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "35"
-import slides_src  # triggers registration via decorators
-from slide_registry import all_numbers, get
+SLIDES_SELECTION = "3"
 
 
 class Presentation(Slide):
