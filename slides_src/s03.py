@@ -10,13 +10,8 @@ from slide_registry import slide
 def slide_03(self):
     """
     Objectifs (slide 3):
-    - Top bar "Objectifs"
-    - Smaller ellipse (fully visible) with 'Précision'
-    - 3 columns revealed one by one:
-        * titles grow+translate from ellipse center (scale 0 -> 1 + move)
-        * images simply FadeIn at their final place under the title
-    - Two vertical guide lines mark the middle column
-    - Final collapse: only revealed elements collapse back to ellipse
+    - (kept) ellipse + 3 staged columns as per your latest version
+    - After collapse: triangle sequence inspired by the provided figure
     """
 
     # --- Top bar ---
@@ -87,18 +82,16 @@ def slide_03(self):
     self.add(line_left, line_right)
 
     def build_title_at_column(s: str, x_center: float) -> Text:
-        """Create a title with saved final state; initial tiny at ellipse center."""
         t = Text(s, color=BLACK, font_size=COL_FS, weight=BOLD)
         t.move_to(np.array([x_center, col_top_y, 0.0]))
         t.save_state()  # final state
         t.scale(0.01)  # initial tiny
-        t.move_to(ell.get_center())  # initial position (ellipse center)
+        t.move_to(ell.get_center())  # initial at ellipse center
         return t
 
     def build_image_under_title(
         title_saved: Mobject, img_path: str
     ) -> Mobject:
-        """Create the image positioned under the saved (final) title."""
         if os.path.isfile(img_path):
             im = ImageMobject(img_path)
             if im.width > 0:
@@ -112,14 +105,14 @@ def slide_03(self):
         im.next_to(title_saved, DOWN, buff=0.3, aligned_edge=UP)
         return im
 
-    revealed = []  # collect revealed mobjects for the final collapse
+    revealed = []
 
     # -------- Column 1 --------
     col1_title = build_title_at_column("Surface", cols_x[0])
     col1_img = build_image_under_title(
         col1_title.saved_state, "Figures/goal/goal_surface.png"
     )
-    col1_img.shift(DOWN * 0.35)
+    col1_img.shift(DOWN * 0.35)  # only this image a bit lower
 
     self.add(col1_title)
     self.play(Restore(col1_title), run_time=0.6)
@@ -151,7 +144,7 @@ def slide_03(self):
     revealed += [col3_title, col3_img]
     self.next_slide()
 
-    # --- Final collapse (only revealed elements) ---
+    # --- Final collapse + remove guides ---
     collapse_group = Group(*revealed)
     self.play(
         collapse_group.animate.scale(0).move_to(ell.get_center()),
@@ -160,6 +153,156 @@ def slide_03(self):
         run_time=0.8,
     )
 
+    # ===================== TRIANGLE SEQUENCE =====================
+    # ===================== TRIANGLE SEQUENCE =====================
+
+    # 1) Fade out the ellipse, keep "Précision" as the top vertex label
+    self.play(FadeOut(ell, run_time=0.35))
+    self.next_slide()
+
+    # ---- Safe drawing area (inside the frame, below the bar) ----
+    SAFE_PAD_X = 0.8
+    SAFE_PAD_Y = 0.7
+    safe_left = -full_w * 0.5 + SAFE_PAD_X
+    safe_right = full_w * 0.5 - SAFE_PAD_X
+    safe_bottom = y_bot + SAFE_PAD_Y
+    safe_top = bar_rect.get_bottom()[1] - SAFE_PAD_Y
+
+    safe_w = max(0.1, safe_right - safe_left)
+    safe_h = max(0.1, safe_top - safe_bottom)
+
+    # Size the equilateral triangle to fit both width and height
+    # For an equilateral triangle: height h = (√3/2)*side
+    side_from_w = safe_w * 0.78
+    side_from_h = (safe_h * 0.78) * 2.0 / np.sqrt(3.0)
+    side = min(side_from_w, side_from_h)
+    h = np.sqrt(3.0) * 0.5 * side
+
+    # Center the triangle a bit above the middle of the safe area
+    tri_cx = 0.0
+    tri_cy = safe_bottom + safe_h * 0.56
+
+    V_top = np.array([tri_cx, tri_cy + h * 0.5, 0.0])
+    V_bl = np.array([tri_cx - side * 0.5, tri_cy - h * 0.5, 0.0])
+    V_br = np.array([tri_cx + side * 0.5, tri_cy - h * 0.5, 0.0])
+
+    # Helper to clamp a text inside the safe rect (keeps slight margins)
+    def clamp_text(
+        m: Mobject,
+        left=safe_left,
+        right=safe_right,
+        bottom=safe_bottom,
+        top=safe_top,
+        pad=0.08,
+    ):
+        # Shift horizontally if overflowing
+        dx = 0.0
+        if m.get_left()[0] < left + pad:
+            dx = (left + pad) - m.get_left()[0]
+        if m.get_right()[0] > right - pad:
+            dx = (right - pad) - m.get_right()[0]
+        # Apply X
+        if abs(dx) > 1e-6:
+            m.shift(RIGHT * dx)
+        # Shift vertically if overflowing
+        dy = 0.0
+        if m.get_bottom()[1] < bottom + pad:
+            dy = (bottom + pad) - m.get_bottom()[1]
+        if m.get_top()[1] > top - pad:
+            dy = (top - pad) - m.get_top()[1]
+        if abs(dy) > 1e-6:
+            m.shift(UP * dy)
+
+    # Move the existing "Précision" near the top vertex, then clamp
+    title_target = V_top + np.array([0.0, 0.35, 0.0])
+    title.move_to(title_target)
+    clamp_text(title)
+    self.play(FadeTransformPieces(VGroup(), title), run_time=0.35)
+
+    # 2) Bottom-left "Performances"
+    perf = Text("Performances", color=BLACK, font_size=44, weight=BOLD)
+    perf.move_to(V_bl + np.array([-0.8, -0.18, 0.0]))  # slightly outside
+    clamp_text(perf)
+    self.play(FadeIn(perf, run_time=0.25))
+    self.next_slide()
+
+    # 3) Bottom-right "Échelle"
+    echelle = Text("Échelle", color=BLACK, font_size=44, weight=BOLD)
+    echelle.move_to(V_br + np.array([0.8, -0.18, 0.0]))  # slightly outside
+    clamp_text(echelle)
+    self.play(FadeIn(echelle, run_time=0.25))
+    self.next_slide()
+
+    # 4) Triangle edges (blueGreen), guaranteed to fit
+    edge1 = Line(V_top, V_br, color=pc.blueGreen, stroke_width=8)
+    edge2 = Line(V_br, V_bl, color=pc.blueGreen, stroke_width=8)
+    edge3 = Line(V_bl, V_top, color=pc.blueGreen, stroke_width=8)
+    self.play(Create(edge1, run_time=0.35))
+    self.play(Create(edge2, run_time=0.35))
+    self.play(Create(edge3, run_time=0.35))
+    self.next_slide()
+
+    # 5) Small jellyBean cross at triangle centroid
+    center = (V_top + V_bl + V_br) / 3.0
+    cross_size = 0.25
+    c1 = Line(
+        center + np.array([-cross_size, -cross_size, 0.0]),
+        center + np.array([cross_size, cross_size, 0.0]),
+        color=pc.jellyBean,
+        stroke_width=10,
+    )
+    c2 = Line(
+        center + np.array([-cross_size, cross_size, 0.0]),
+        center + np.array([cross_size, -cross_size, 0.0]),
+        color=pc.jellyBean,
+        stroke_width=10,
+    )
+    cross = VGroup(c1, c2)
+    self.play(Create(c1, run_time=0.22), Create(c2, run_time=0.22))
+    self.next_slide()
+
+    # Helper for dotted, semi-opaque ellipse centered on a point
+    def dotted_filled_ellipse(
+        center_pt, w=1.2, h=2.2, color=pc.uclaGold, alpha=0.35
+    ):
+        fill = Ellipse(width=w, height=h).move_to(center_pt)
+        fill.set_fill(color=color, opacity=alpha).set_stroke(opacity=0)
+        dash = DashedVMobject(
+            Ellipse(width=w, height=h).move_to(center_pt),
+            num_dashes=24,
+            dashed_ratio=0.5,
+        )
+        dash.set_color(BLACK).set_stroke(width=2)
+        return VGroup(fill, dash)
+
+    # 6) Move cross along top-right edge, closer to Précision
+    target1 = V_top * 0.72 + V_br * 0.28
+    self.play(cross.animate.move_to(target1), run_time=0.6)
+    ell_gold = dotted_filled_ellipse(
+        cross.get_center(), w=1.1, h=2.1, color=pc.uclaGold, alpha=0.35
+    )
+    self.play(FadeIn(ell_gold, run_time=0.25))
+    self.next_slide()
+
+    # 7) Move cross to bottom-left area
+    target2 = V_bl + np.array([0.4, 0.48, 0.0])
+    self.play(cross.animate.move_to(target2), run_time=0.6)
+    ell_green = dotted_filled_ellipse(
+        cross.get_center(), w=2.2, h=1.2, color=pc.apple, alpha=0.35
+    )
+    self.play(FadeIn(ell_green, run_time=0.25))
+    self.next_slide()
+
+    # 8) Nudge cross further left
+    target3 = cross.get_center() + np.array([-0.6, 0.0, 0.0])
+    self.play(cross.animate.move_to(target3), run_time=0.5)
+    self.next_slide()
+
+    # 9) Nudge cross further down
+    target4 = cross.get_center() + np.array([0.0, -0.6, 0.0])
+    self.play(cross.animate.move_to(target4), run_time=0.5)
+
+    # End slide
     self.pause()
     self.clear()
     self.next_slide()
