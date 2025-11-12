@@ -86,7 +86,7 @@ def make_bullet_list(
     rows = []
     for s in items:
         bullet = make_triangle_bullet(bullet_color)
-        txt = Text(s, color=BLACK, font_size=font_size)
+        txt = Tex(s, color=BLACK, font_size=font_size)
         row = VGroup(bullet, txt)
         txt.next_to(bullet, RIGHT, buff=left_pad)
         rows.append(row)
@@ -122,7 +122,7 @@ def make_pro_cons(
             icon = Text(
                 icon_char, color=color, font_size=icon_size, weight=BOLD
             )
-            txt = Text(s, color=BLACK, font_size=font_size)
+            txt = Tex(s, color=BLACK, font_size=font_size)
             row = VGroup(icon, txt)
             txt.next_to(icon, RIGHT, buff=left_pad)
             rows.append(row)
