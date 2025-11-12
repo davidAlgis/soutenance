@@ -39,34 +39,24 @@ def slide_16(self):
     y_bottom = -config.frame_height / 2 + 0.6
     area_w = x_right - x_left
 
-    # ========= 3 intro lines (Tex) =========
-    self.start_body()
-    local_top_buff = 0.38  # margin below the bar
     l1 = Tex(
-        r"L'action du fluide sur le solide est approximée comme",
+        r"\mbox{L'action du fluide sur le solide est approximée par des forces sur le maillage du solide.}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
+    local_top_buff = 0.38  # margin below the bar
     l1.next_to(self._current_bar, DOWN, buff=local_top_buff, aligned_edge=LEFT)
     l1.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l1.get_left()[0]))
 
     l2 = Tex(
-        r"des forces appliquées sur le maillage du solide.",
+        r"Découpage en 4 forces :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     l2.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l2.get_left()[0]))
 
-    l3 = Tex(
-        r"Découpage en 4 forces :",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
-    )
-    l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l3.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l3.get_left()[0]))
-
-    intro_group = VGroup(l1, l2, l3)
+    intro_group = VGroup(l1, l2)
     self.play(FadeIn(intro_group, run_time=0.35))
 
     # ========= 4 forces layout (Tex only) =========
@@ -88,12 +78,12 @@ def slide_16(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
-    title2.set_color_by_tex("Poussée", pc.uclaGold)
+    title2.set_color_by_tex("Poussée", pc.tiffanyBlue)
     eq2 = MathTex(
         r"\mathbf{F}_b = V_w\,\rho_w\,\mathbf{g}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 6,
-        tex_to_color_map={r"\mathbf{F}_b": pc.uclaGold},
+        tex_to_color_map={r"\mathbf{F}_b": pc.tiffanyBlue},
     )
     left_block2 = VGroup(title2, eq2).arrange(
         DOWN, buff=0.22, center=False, aligned_edge=LEFT
@@ -146,8 +136,8 @@ def slide_16(self):
         RIGHT, buff=col_gap, aligned_edge=UP
     )
 
-    # --- Center in the remaining space below l3 (both horizontally & vertically)
-    rem_top = l3.get_bottom()[1] - 0.40
+    # --- Center in the remaining space below l2 (both horizontally & vertically)
+    rem_top = l2.get_bottom()[1] - 0.40
     rem_bot = y_bottom + 0.60
     rem_h = max(1.5, rem_top - rem_bot)
     rem_y_center = (rem_top + rem_bot) * 0.5
@@ -162,7 +152,7 @@ def slide_16(self):
     # Recompute the available area when the intro text is gone (use almost full body)
     new_top = y_top
     new_bot = y_bottom + 0.60
-    new_center_y = (new_top + new_bot) * 0.5
+    new_center_y = (new_top + new_bot) * 0.5 + 1.0
 
     self.play(
         forces_group.animate.move_to([x_center, new_center_y, 0.0]),
@@ -176,7 +166,7 @@ def slide_16(self):
         min(left_col.get_bottom()[1], right_col.get_bottom()[1])
         - gap_below_forces
     )
-    sea_bot = y_bottom + 0.60
+    sea_bot = y_bottom
     sea_h = sea_top - sea_bot
     if sea_h < min_sea_height:
         sea_bot = sea_top - min_sea_height
@@ -221,12 +211,14 @@ def slide_16(self):
     boat = Polygon(
         *[np.array(p) for p in boat_local],
         fill_color=pc.uclaGold,
-        fill_opacity=1.0,
-        stroke_color=BLACK,
+        fill_opacity=0.2,
+        stroke_color=pc.uclaGold,
         stroke_width=3,
+        stroke_opacity=0.2
     )
     boat.scale(0.9)
-    boat.move_to([0.0, y0 + 0.35, 0.0])  # slightly above the wave baseline
+    boat_center = [0.0, y0 + 0.35, 0.0]
+    boat.move_to(boat_center)  # slightly above the wave baseline
     boat.set_z_index(10)
     self.add(boat)
     self.add_foreground_mobject(boat)
@@ -243,51 +235,55 @@ def slide_16(self):
     deck = boat.get_top()
 
     g_arrow = Arrow(
-        start=[deck[0], deck[1] + 0.6, 0],
-        end=[deck[0], deck[1] - 0.4, 0],
+        start=[boat_center[0], boat_center[1] - 0.1, 0],
+        end=[boat_center[0], boat_center[1] - 2.0, 0],
         color=pc.apple,
         stroke_width=6,
         tip_length=0.18,
     ).set_z_index(15)
     g_lbl = (
         MathTex(r"\mathbf{F}_g", color=pc.apple, font_size=self.BODY_FONT_SIZE)
-        .next_to(g_arrow, UP, buff=0.10)
+        .next_to(g_arrow, RIGHT, buff=0.10)
         .set_z_index(15)
     )
 
     b_arrow = Arrow(
-        start=[keel[0], keel[1] - 0.6, 0],
-        end=[keel[0], keel[1] + 0.45, 0],
-        color=pc.uclaGold,
+        start=[boat_center[0] - 0.3, boat_center[1] - 0.6, 0],
+        end=[boat_center[0] - 0.5, boat_center[1] + 1.3, 0],
+        color=pc.tiffanyBlue,
         stroke_width=6,
         tip_length=0.18,
     ).set_z_index(15)
     b_lbl = (
         MathTex(
-            r"\mathbf{F}_b", color=pc.uclaGold, font_size=self.BODY_FONT_SIZE
+            r"\mathbf{F}_b",
+            color=pc.tiffanyBlue,
+            font_size=self.BODY_FONT_SIZE,
         )
-        .next_to(b_arrow, DOWN, buff=0.10)
+        .next_to(b_arrow, LEFT, buff=0.10)
         .set_z_index(15)
     )
 
+    a_arrow_end = [boat_center[0] - 1.7, boat_center[1] - 0.6, 0]
     a_arrow = Arrow(
-        start=[deck[0] + 1.2, deck[1] + 0.15, 0],
-        end=[deck[0] - 0.3, deck[1] + 0.15, 0],
+        start=[boat_center[0] + 0.5, boat_center[1] + 0.1, 0],
+        end=a_arrow_end,
         color=pc.jellyBean,
         stroke_width=6,
+        stroke_opacity=0.7,
         tip_length=0.18,
     ).set_z_index(15)
     a_lbl = (
         MathTex(
             r"\mathbf{F}_a", color=pc.jellyBean, font_size=self.BODY_FONT_SIZE
         )
-        .next_to(a_arrow, UP, buff=0.10)
+        .next_to(a_arrow_end, LEFT, buff=0.10)
         .set_z_index(15)
     )
-
+    w_arrow_end = [boat_center[0] + 0.7, boat_center[1] + 0.7, 0]
     w_arrow = Arrow(
-        start=[keel[0] - 1.0, keel[1] - 0.15, 0],
-        end=[keel[0] + 0.6, keel[1] - 0.15, 0],
+        start=[boat_center[0] - 0.5, boat_center[1] - 0.6, 0],
+        end=w_arrow_end,
         color=pc.heliotropeMagenta,
         stroke_width=6,
         tip_length=0.18,
@@ -298,7 +294,7 @@ def slide_16(self):
             color=pc.heliotropeMagenta,
             font_size=self.BODY_FONT_SIZE,
         )
-        .next_to(w_arrow, DOWN, buff=0.10)
+        .next_to(w_arrow_end, RIGHT, buff=0.10)
         .set_z_index(15)
     )
 
