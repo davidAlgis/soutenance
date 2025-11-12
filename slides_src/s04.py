@@ -11,6 +11,7 @@ def slide_04(self):
     - Top bar + intro
     - 'I) Couplages 3 méthodes grandes échelles'
     - Left column: miniature of slide 16 WITH animations, boxed (wave+boat stay inside)
+      (colors and directions synced with your updated slide 16: buoyancy in pc.tiffanyBlue)
     - Right column: triangle + labels ('Préc.', 'Perf.', 'Éch.')
     - Then draw a jellyBean cross at center, then move it toward bottom side
       while the mini-wave is animating.
@@ -20,7 +21,6 @@ def slide_04(self):
     try:
         bar = self._top_bar("Sommaires")
     except Exception:
-        # Manual fallback reproducing _top_bar visuals/cache but with Tex
         h = config.frame_height / 10.0
         w = config.frame_width
         bar_rect = Rectangle(
@@ -43,7 +43,6 @@ def slide_04(self):
         title.align_to(bar_rect, LEFT)
         title.shift(RIGHT * DEFAULT_PAD)
         title.set_y(bar_rect.get_center()[1])
-        # cache like _top_bar()
         self._current_bar = group
         self._body_last = None
         self._text_left_x = bar_rect.get_left()[0] + DEFAULT_PAD
@@ -103,7 +102,7 @@ def slide_04(self):
     )
 
     # -------------------------------------------------------------------------
-    # LEFT COLUMN: Miniature of slide 16 with animations (boxed)
+    # LEFT COLUMN: Miniature of slide 16 with animations (boxed) - synced colors
     # -------------------------------------------------------------------------
     mini_fs = self.BODY_FONT_SIZE - 6
     mini_fs_eq = mini_fs + 2
@@ -120,12 +119,12 @@ def slide_04(self):
     bL1 = VGroup(t1, e1).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
 
     t2 = Tex(r"2.\; Poussée d'Archimède :", color=BLACK, font_size=mini_fs)
-    t2.set_color_by_tex("Pouss{\\'e}e", pc.uclaGold)
+    t2.set_color_by_tex("Pouss{\\'e}e", pc.tiffanyBlue)
     e2 = MathTex(
         r"\mathbf{F}_b=V_w\rho_w\mathbf{g}",
         color=BLACK,
         font_size=mini_fs_eq,
-        tex_to_color_map={r"\mathbf{F}_b": pc.uclaGold},
+        tex_to_color_map={r"\mathbf{F}_b": pc.tiffanyBlue},
     )
     bL2 = VGroup(t2, e2).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
     left_forces = VGroup(bL1, bL2).arrange(DOWN, buff=0.20, aligned_edge=LEFT)
@@ -156,13 +155,13 @@ def slide_04(self):
         RIGHT, buff=0.6, aligned_edge=UP
     )
 
-    # Placeholder static wave (for layout)
+    # Placeholder static wave for layout
     mini_wave_w = col_w * 0.9
     xs_static = np.linspace(-mini_wave_w / 2, mini_wave_w / 2, 200)
     amp = 0.06
-    k = 0.9
-    y0 = -0.6
-    ys_static = y0 + amp * np.cos(k * xs_static)
+    k = 1.5
+    y0_base = -0.6
+    ys_static = y0_base + amp * np.cos(k * xs_static)
     pts_static = np.column_stack(
         [xs_static, ys_static, np.zeros_like(xs_static)]
     )
@@ -170,22 +169,22 @@ def slide_04(self):
     mini_wave_placeholder.set_points_smoothly(
         [*map(lambda p: np.array(p), pts_static)]
     )
-
-    # Boat
+    y0_boat = y0_base - 0.5
+    # Mini boat (stroke color synced with your new slide 16)
     boat_pts = [
-        [-0.5, y0 + 0.12, 0.0],
-        [0.5, y0 + 0.12, 0.0],
-        [1.0, y0 + 0.42, 0.0],
-        [0.25, y0 + 0.42, 0.0],
-        [0.0, y0 + 0.70, 0.0],
-        [-0.25, y0 + 0.42, 0.0],
-        [-1.0, y0 + 0.42, 0.0],
+        [-0.25, y0_boat + 0.12, 0.0],
+        [0.25, y0_boat + 0.12, 0.0],
+        [0.5, y0_boat + 0.42, 0.0],
+        [0.125, y0_boat + 0.42, 0.0],
+        [0.0, y0_boat + 0.70, 0.0],
+        [-0.125, y0_boat + 0.42, 0.0],
+        [-0.5, y0_boat + 0.42, 0.0],
     ]
     mini_boat = Polygon(
         *[np.array(p) for p in boat_pts],
         fill_color=pc.uclaGold,
         fill_opacity=1.0,
-        stroke_color=BLACK,
+        stroke_color=pc.uclaGold,
         stroke_width=2,
     ).set_z_index(10)
 
@@ -214,19 +213,26 @@ def slide_04(self):
     if s_left < 1.0:
         left_group.scale(s_left)
     left_group.move_to(left_center)
+    self.play(Create(box, run_time=0.25))
 
-    # Anchor for animated wave
+    # Anchor for animated wave and boat after layout is finalized
     wave_anchor = mini_wave_placeholder.get_center()
-    mini_boat.move_to([wave_anchor[0], wave_anchor[1] + 0.35, 0.0])
+    # Sea baseline inside box
+    y0 = wave_anchor[1]  # keep baseline at the placeholder center Y
+    mini_boat.move_to([wave_anchor[0], y0 - 0.5, 0.0])
 
     # Animated wave (anchored inside the miniature)
     t_tracker = ValueTracker(0.0)
 
     def make_water():
-        ys = y0 + amp * np.cos(k * xs_static + t_tracker.get_value())
-        pts = np.column_stack([xs_static, ys, np.zeros_like(xs_static)])
-        pts[:, 0] += wave_anchor[0]
-        pts[:, 1] += wave_anchor[1]
+        ys = y0_base + amp * np.cos(k * xs_static + t_tracker.get_value())
+        pts = np.column_stack(
+            [
+                xs_static + wave_anchor[0],
+                ys + wave_anchor[1],
+                np.zeros_like(xs_static),
+            ]
+        )
         m = VMobject(stroke_color=pc.blueGreen, stroke_width=3)
         m.set_points_smoothly([*map(lambda p: np.array(p), pts)])
         m.set_z_index(1)
@@ -243,59 +249,65 @@ def slide_04(self):
     self.add(mini_boat)
     self.add_foreground_mobject(mini_boat)
 
-    # Small force arrows
+    # Small force arrows (directions/colors synced with your new slide 16)
+    boat_center = mini_boat.get_center()
     keel = mini_boat.get_bottom()
     deck = mini_boat.get_top()
+
     g_arrow = Arrow(
-        start=[deck[0], deck[1] + 0.45, 0],
-        end=[deck[0], deck[1] - 0.25, 0],
+        start=[boat_center[0], boat_center[1] + 0.2, 0],
+        end=[boat_center[0], boat_center[1] - 0.8, 0],
         color=pc.apple,
         stroke_width=5,
         tip_length=0.16,
     ).set_z_index(15)
     g_lbl = (
         MathTex(r"\mathbf{F}_g", color=pc.apple, font_size=mini_fs)
-        .next_to(g_arrow, UP, buff=0.06)
+        .next_to(g_arrow, RIGHT, buff=0.06)
         .set_z_index(15)
     )
+
     b_arrow = Arrow(
-        start=[keel[0], keel[1] - 0.45, 0],
-        end=[keel[0], keel[1] + 0.25, 0],
-        color=pc.uclaGold,
+        start=[boat_center[0] - 0.2, boat_center[1] - 0.4, 0],
+        end=[boat_center[0] - 0.2, boat_center[1] + 0.6, 0],
+        color=pc.tiffanyBlue,
         stroke_width=5,
         tip_length=0.16,
     ).set_z_index(15)
     b_lbl = (
-        MathTex(r"\mathbf{F}_b", color=pc.uclaGold, font_size=mini_fs)
-        .next_to(b_arrow, DOWN, buff=0.06)
+        MathTex(r"\mathbf{F}_b", color=pc.tiffanyBlue, font_size=mini_fs)
+        .next_to(b_arrow, LEFT, buff=0.06)
         .set_z_index(15)
     )
+
+    a_arrow_end = [boat_center[0] - 0.7, boat_center[1] - 0.4, 0]
     a_arrow = Arrow(
-        start=[deck[0] + 0.9, deck[1] + 0.10, 0],
-        end=[deck[0] - 0.2, deck[1] + 0.10, 0],
+        start=[boat_center[0] + 0.3, boat_center[1] + 0.05, 0],
+        end=a_arrow_end,
         color=pc.jellyBean,
         stroke_width=5,
         tip_length=0.16,
     ).set_z_index(15)
     a_lbl = (
         MathTex(r"\mathbf{F}_a", color=pc.jellyBean, font_size=mini_fs)
-        .next_to(a_arrow, UP, buff=0.06)
+        .next_to(a_arrow_end, LEFT, buff=0.06)
         .set_z_index(15)
     )
+
+    w_arrow_end = [boat_center[0] + 0.7, boat_center[1] + 0.7, 0]
     w_arrow = Arrow(
-        start=[keel[0] - 0.8, keel[1] - 0.10, 0],
-        end=[keel[0] + 0.5, keel[1] - 0.10, 0],
+        start=[boat_center[0] - 0.5, boat_center[1] - 0.3, 0],
+        end=w_arrow_end,
         color=pc.heliotropeMagenta,
         stroke_width=5,
         tip_length=0.16,
     ).set_z_index(15)
     w_lbl = (
         MathTex(r"\mathbf{F}_w", color=pc.heliotropeMagenta, font_size=mini_fs)
-        .next_to(w_arrow, DOWN, buff=0.06)
+        .next_to(w_arrow_end, RIGHT, buff=0.06)
         .set_z_index(15)
     )
 
-    self.play(Create(box, run_time=0.25))
     self.add_foreground_mobjects(
         g_arrow, b_arrow, a_arrow, w_arrow, g_lbl, b_lbl, a_lbl, w_lbl
     )
@@ -314,14 +326,20 @@ def slide_04(self):
         )
     )
 
+    self.play(
+        t_tracker.animate.increment_value(2 * PI),
+        run_time=3.5,
+        rate_func=linear,
+    )
+
     # -------------------------------------------------------------------------
     # RIGHT COLUMN: triangle + labels (wave keeps animating concurrently)
     # -------------------------------------------------------------------------
     tri_size = min(col_w * 0.9, usable_h * 0.9)
-    h = np.sqrt(3) / 2 * tri_size
-    V_top = right_center + np.array([0.0, h / 2, 0.0])
-    V_bl = right_center + np.array([-tri_size / 2, -h / 2, 0.0])
-    V_br = right_center + np.array([tri_size / 2, -h / 2, 0.0])
+    htri = np.sqrt(3) / 2 * tri_size
+    V_top = right_center + np.array([0.0, htri / 2, 0.0])
+    V_bl = right_center + np.array([-tri_size / 2, -htri / 2, 0.0])
+    V_br = right_center + np.array([tri_size / 2, -htri / 2, 0.0])
 
     tri = Polygon(V_top, V_br, V_bl, stroke_color=pc.blueGreen, stroke_width=6)
 
@@ -340,7 +358,7 @@ def slide_04(self):
 
     self.play(
         FadeIn(right_group, run_time=0.6),
-        t_tracker.animate.increment_value(2 * PI),  # keep water moving
+        # t_tracker.animate.increment_value(2 * PI),
         rate_func=linear,
     )
 
@@ -364,7 +382,7 @@ def slide_04(self):
     )
     self.play(
         Create(cross, run_time=0.35),
-        t_tracker.animate.increment_value(2 * PI),
+        # t_tracker.animate.increment_value(2 * PI),
         rate_func=linear,
     )
 
@@ -373,7 +391,7 @@ def slide_04(self):
     target = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
     self.play(
         cross.animate.move_to(target),
-        t_tracker.animate.increment_value(2 * PI),
+        # t_tracker.animate.increment_value(2 * PI),
         run_time=0.8,
         rate_func=linear,
     )
