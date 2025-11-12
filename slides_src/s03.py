@@ -216,7 +216,6 @@ def slide_03(self):
     # Move existing "Précision" label above the top vertex (no line overlap)
     title.move_to(V_top + np.array([0.0, 1.0, 0.0]))
     clamp_text(title)
-    self.play(FadeTransformPieces(VGroup(), title), run_time=0.25)
 
     # Bottom labels (kept clear of edges)
     perf = Text("Performances", color=BLACK, font_size=44, weight=BOLD)
@@ -257,6 +256,7 @@ def slide_03(self):
     )
     cross = VGroup(c1, c2)
     self.play(Create(c1, run_time=0.20), Create(c2, run_time=0.20))
+    self.wait(0.1)
     self.next_slide()
 
     # Helper: dotted, semi-opaque ellipse centered on a point
