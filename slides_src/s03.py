@@ -9,15 +9,13 @@ from slide_registry import slide
 @slide(3)
 def slide_03(self):
     """
-    Objectifs (slide 3)
-
+    Objectifs (slide 3):
     - Top bar "Objectifs"
-    - Center ellipse with "Précision" (large)
-    - 3 columns below the ellipse:
-        * each column title emerges from the ellipse center (scale 0 -> 1 + move)
-        * the image below fades in
-      Columns are revealed one-by-one with self.next_slide() in between.
-    - Finally, all three columns collapse back into the ellipse center while shrinking.
+    - Ellipse with 'Précision' centered below the bar (fully visible)
+    - 3 columns revealed one by one, each title emerging from the ellipse center
+      (scale 0 -> 1 while translating), then image fades in while moving to place
+    - Two vertical lines mark the middle column boundaries
+    - Final collapse: all three columns shrink back into the ellipse center
     """
     # --- Top bar ---
     bar = self._top_bar("Objectifs")
@@ -29,19 +27,22 @@ def slide_03(self):
     full_h = config.frame_height
     left_x = -full_w * 0.5 + 0.6
     right_x = full_w * 0.5 - 0.6
+    y_bot = -full_h * 0.5 + 0.6
 
-    # --- Central ellipse with "Précision" ---
+    # --- Central ellipse with "Précision" (keep fully visible) ---
     ellipse_w = min(10.0, full_w * 0.75)
     ellipse_h = 2.2
-    ellipse_y = bar_rect.get_bottom()[1] - 0.7  # a bit under the bar
+    # Place so ellipse TOP is just under the bar with a small gap
+    top_gap = 0.20
+    ellipse_center_y = bar_rect.get_bottom()[1] - (ellipse_h * 0.5) - top_gap
 
     ell = Ellipse(
         width=ellipse_w, height=ellipse_h, color=pc.blueGreen, stroke_width=6
     )
-    ell.move_to(np.array([0.0, ellipse_y, 0.0]))
+    ell.move_to(np.array([0.0, ellipse_center_y, 0.0]))
 
-    title = Text("Précision", color=BLACK, font_size=52, weight=BOLD)
-    # Fit title inside ellipse
+    title = Text("Précision", color=BLACK, font_size=48, weight=BOLD)
+    # Fit inside ellipse nicely
     inner_w = ellipse_w * 0.8
     inner_h = ellipse_h * 0.65
     if title.width > 0 and title.height > 0:
@@ -52,74 +53,115 @@ def slide_03(self):
             title.scale(s)
     title.move_to(ell.get_center())
 
-    # At least one animation before first pause
     self.play(DrawBorderThenFill(ell, run_time=0.45))
     self.play(FadeIn(title, run_time=0.25))
     self.next_slide()
 
     # --- Columns layout (under the ellipse) ---
     cols_x = np.linspace(left_x + 2.0, right_x - 2.0, 3)
+    col_span = cols_x[1] - cols_x[0]
     col_top_y = ell.get_bottom()[1] - 0.7
-    COL_FS = 36
-    col_max_w = (cols_x[1] - cols_x[0]) * 0.9
-    col_max_h = 3.8
+
+    COL_FS = 30  # reduced font size
+    col_max_w = col_span * 0.9  # max image width per column
+    col_max_h = 3.6
+
+    # --- Middle column boundary lines ---
+    mid_left_x = cols_x[1] - 0.5 * col_span
+    mid_right_x = cols_x[1] + 0.5 * col_span
+    line_top_y = col_top_y + 0.2  # start a bit above title zone
+    line_bot_y = y_bot  # to bottom safe margin
+
+    line_left = Line(
+        np.array([mid_left_x, line_top_y, 0.0]),
+        np.array([mid_left_x, line_bot_y, 0.0]),
+        color=pc.oxfordBlue,
+        stroke_width=3,
+    )
+    line_right = Line(
+        np.array([mid_right_x, line_top_y, 0.0]),
+        np.array([mid_right_x, line_bot_y, 0.0]),
+        color=pc.oxfordBlue,
+        stroke_width=3,
+    )
+    self.add(line_left, line_right)
 
     def make_column(title_str: str, img_path: str, x_center: float):
-        # Title final pose
+        """
+        Prepare one column:
+        - Title final position saved; initial state: tiny at ellipse center
+        - Image's final center precomputed; initial state: at ellipse center with 0 opacity
+        """
+        # Title (final pose)
         t = Text(title_str, color=BLACK, font_size=COL_FS, weight=BOLD)
         t.move_to(np.array([x_center, col_top_y, 0.0]))
         t.save_state()  # final (target) state
-        # Prepare emerge pose: tiny at ellipse center
+
+        # Set initial "emerge" pose (scale ~ 0) at ellipse center
         t.scale(0.01)
         t.move_to(ell.get_center())
 
-        # Image below title
+        # Image (final pose computed under title)
         if os.path.isfile(img_path):
             im = ImageMobject(img_path)
+            # Scale to fit
             if im.width > 0:
                 im.scale(col_max_w / im.width)
             if im.height > col_max_h:
                 im.scale(col_max_h / im.height)
-            im.next_to(t, DOWN, buff=0.3, aligned_edge=UP)
+            im.next_to(
+                t.saved_state, DOWN, buff=0.3, aligned_edge=UP
+            )  # place under final title
         else:
             im = Tex(
                 f"Fichier manquant : {img_path}", font_size=28, color=BLACK
             )
-            im.next_to(t, DOWN, buff=0.3, aligned_edge=UP)
+            im.next_to(t.saved_state, DOWN, buff=0.3, aligned_edge=UP)
 
-        im.set_opacity(0.0)  # will fade in later
+        # Record final center for animation target
+        im_final_center = im.get_center()
 
-        group = Group(
-            t, im
-        )  # Group accepts both VMobject/Mobject (ImageMobject)
-        return group, t, im
+        # Initial state for image: at ellipse center, invisible
+        im.move_to(ell.get_center())
+        im.set_opacity(0.0)
 
-    # Build columns
-    col1_group, col1_title, col1_img = make_column(
+        group = Group(t, im)  # Group accepts ImageMobject
+        return group, t, im, im_final_center
+
+    # Build the three columns
+    col1_group, col1_title, col1_img, col1_img_final = make_column(
         "Surface", "Figures/goal/goal_surface.png", cols_x[0]
     )
-    col2_group, col2_title, col2_img = make_column(
+    col2_group, col2_title, col2_img, col2_img_final = make_column(
         "Fluide vers solide", "Figures/goal/goal_coupling_f2s.png", cols_x[1]
     )
-    col3_group, col3_title, col3_img = make_column(
+    col3_group, col3_title, col3_img, col3_img_final = make_column(
         "Solide vers fluide", "Figures/goal/goal_coupling_s2f.png", cols_x[2]
     )
-
     self.add(col1_group, col2_group, col3_group)
 
     # --- Reveal Column 1 ---
     self.play(Restore(col1_title), run_time=0.6)  # move + scale together
-    self.play(FadeIn(col1_img, run_time=0.35))
+    self.play(
+        FadeIn(col1_img, run_time=0.35),
+        col1_img.animate.move_to(col1_img_final),
+    )
     self.next_slide()
 
     # --- Reveal Column 2 ---
     self.play(Restore(col2_title), run_time=0.6)
-    self.play(FadeIn(col2_img, run_time=0.35))
+    self.play(
+        FadeIn(col2_img, run_time=0.35),
+        col2_img.animate.move_to(col2_img_final),
+    )
     self.next_slide()
 
     # --- Reveal Column 3 ---
     self.play(Restore(col3_title), run_time=0.6)
-    self.play(FadeIn(col3_img, run_time=0.35))
+    self.play(
+        FadeIn(col3_img, run_time=0.35),
+        col3_img.animate.move_to(col3_img_final),
+    )
     self.next_slide()
 
     # --- Collapse everything back into the ellipse center while shrinking ---
