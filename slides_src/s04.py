@@ -19,37 +19,7 @@ def slide_04(self):
       while the mini-wave is animating.
     """
 
-    # ==== Top bar with robust fallback (Tex instead of Text) ====
-    try:
-        bar = self._top_bar("Sommaires")
-    except Exception:
-        h = config.frame_height / 10.0
-        w = config.frame_width
-        bar_rect = Rectangle(
-            width=w,
-            height=h,
-            fill_color=pc.blueGreen,
-            fill_opacity=1.0,
-            stroke_opacity=0.0,
-        )
-        title = Tex("Sommaires", color=WHITE, font_size=48)
-        DEFAULT_PAD = getattr(self, "DEFAULT_PAD", 0.3)
-        inner_w = w - 2.0 * DEFAULT_PAD
-        inner_h = h * 0.82
-        if title.width > 0 and title.height > 0:
-            s = min(1.0, inner_w / title.width, inner_h / title.height)
-            if s < 1.0:
-                title.scale(s)
-        group = VGroup(bar_rect, title)
-        group.to_edge(UP, buff=0)
-        title.align_to(bar_rect, LEFT)
-        title.shift(RIGHT * DEFAULT_PAD)
-        title.set_y(bar_rect.get_center()[1])
-        self._current_bar = group
-        self._body_last = None
-        self._text_left_x = bar_rect.get_left()[0] + DEFAULT_PAD
-        bar = group
-
+    bar = self._top_bar("Sommaires")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
