@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import palette_colors as pc
 from manim import *
@@ -54,7 +56,7 @@ def slide_04(self):
     # ==== Intro line ====
     self.start_body()
     intro = Tex(
-        r"Pour r{\'e}pondre {\'a} nos objectifs :",
+        r"Pour r{\'e}pondre à nos objectifs :",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
@@ -294,9 +296,9 @@ def slide_04(self):
         .set_z_index(15)
     )
 
-    w_arrow_end = [boat_center[0] + 0.7, boat_center[1] + 0.7, 0]
+    w_arrow_end = [boat_center[0] + 0.6, boat_center[1] + 0.6, 0]
     w_arrow = Arrow(
-        start=[boat_center[0] - 0.5, boat_center[1] - 0.3, 0],
+        start=[boat_center[0] - 0.4, boat_center[1] - 0.3, 0],
         end=w_arrow_end,
         color=pc.heliotropeMagenta,
         stroke_width=5,
@@ -358,7 +360,6 @@ def slide_04(self):
 
     self.play(
         FadeIn(right_group, run_time=0.6),
-        # t_tracker.animate.increment_value(2 * PI),
         rate_func=linear,
     )
 
@@ -380,20 +381,267 @@ def slide_04(self):
             stroke_width=6,
         ),
     )
-    self.play(
-        Create(cross, run_time=0.35),
-        # t_tracker.animate.increment_value(2 * PI),
-        rate_func=linear,
-    )
+    self.play(Create(cross, run_time=0.35), rate_func=linear)
 
     # ==== Move cross toward bottom side (with concurrent wave motion) ====
     self.next_slide()
     target = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
+    self.play(cross.animate.move_to(target), run_time=0.8, rate_func=linear)
+
+    self.next_slide()
+
+    # ======================= CLEAR MINIATURE CONTENTS (keep the box) =======================
+    to_clear_left = VGroup(
+        forces_grid,
+        mini_boat,
+        g_arrow,
+        b_arrow,
+        a_arrow,
+        w_arrow,
+        g_lbl,
+        b_lbl,
+        a_lbl,
+        w_lbl,
+    )
+
+    # Stop and remove the always_redraw water first
+    if mini_wave:
+        mini_wave.clear_updaters()
+        self.remove(mini_wave)
+
+    # Fade out the miniature content
+    self.play(FadeOut(forces_grid, run_time=0.3))
+
+    # IMPORTANT: also remove foreground registrations
+    self.remove_foreground_mobjects(
+        mini_boat,
+        g_arrow,
+        b_arrow,
+        a_arrow,
+        w_arrow,
+        g_lbl,
+        b_lbl,
+        a_lbl,
+        w_lbl,
+    )
+
+    self.remove(
+        mini_boat,
+        g_arrow,
+        b_arrow,
+        a_arrow,
+        w_arrow,
+        g_lbl,
+        b_lbl,
+        a_lbl,
+        w_lbl,
+    )
+
+    # ==== Section title II) under I) ====
+    sec2 = Tex(
+        r"II) Hybridation SPH et champs de hauteur",
+        font_size=self.BODY_FONT_SIZE,
+        color=BLACK,
+    )
+    sec2.next_to(sec, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+    # sec2.shift(RIGHT * (dx + 0.6))
+    self.play(FadeIn(sec2, run_time=0.3))
+
+    # ---------------- Miniature of slide 37 INSIDE the existing box ----------------
+    inner_pad = 0.20
+    inner_w = box.width - 2 * inner_pad
+    inner_h = box.height - 2 * inner_pad
+    inner_center = box.get_center()
+
+    # Local miniature frame
+    y_top_local = inner_h / 2 - 0.15
+    y_bot_local = -inner_h / 2 + 0.15
+
+    x_fern_local = -inner_w / 2 + 0.14 * inner_w
+    x_gold_local = -inner_w / 2 + 0.80 * inner_w
+
+    fern_line = Line(
+        [inner_center[0] + x_fern_local, inner_center[1] + y_bot_local, 0],
+        [inner_center[0] + x_fern_local, inner_center[1] + y_top_local, 0],
+        color=pc.fernGreen,
+        stroke_width=4,
+    )
+    gold_line = Line(
+        [inner_center[0] + x_gold_local, inner_center[1] + y_bot_local, 0],
+        [inner_center[0] + x_gold_local, inner_center[1] + y_top_local, 0],
+        color=pc.uclaGold,
+        stroke_width=4,
+    )
+    fern_line.save_state()
+    gold_line.save_state()
+    fern_line.become(
+        Line(
+            fern_line.get_start(),
+            fern_line.get_start(),
+            color=pc.fernGreen,
+            stroke_width=4,
+        )
+    )
+    gold_line.become(
+        Line(
+            gold_line.get_start(),
+            gold_line.get_start(),
+            color=pc.uclaGold,
+            stroke_width=4,
+        )
+    )
+    self.play(Transform(fern_line, fern_line.saved_state, run_time=0.25))
+    self.play(Transform(gold_line, gold_line.saved_state, run_time=0.25))
+
+    x_min_local = -inner_w / 2
+    x_max_local = inner_w / 2
+    y_center_local = y_bot_local + 0.75 * (y_top_local - y_bot_local)
+    X = np.linspace(x_min_local, x_max_local, 350)
+    Y = y_center_local + 0.22 * np.cos(0.9 * X)
+    curve = VMobject().set_points_smoothly(
+        np.column_stack(
+            [X + inner_center[0], Y + inner_center[1], np.zeros_like(X)]
+        )
+    )
+    curve.set_stroke(color=pc.oxfordBlue, width=3)
+    self.add(curve)
+
+    rng = random.Random(1)
+    N = 30
+    x_lo = x_fern_local + 0.06 * inner_w
+    x_hi = x_gold_local - 0.06 * inner_w
+
+    def mkdot(x, y, color, r=0.05):
+        d = Dot([x, y, 0.0], radius=r, color=color)
+        d.set_fill(color, opacity=1.0)
+        d.set_stroke(color, opacity=1.0, width=0)
+        return d
+
+    dots = []
+    for i in range(N):
+        t = (i + 0.5) / N
+        x = (
+            x_lo
+            + t * (x_hi - x_lo)
+            + rng.uniform(-0.04 * inner_w, 0.04 * inner_w)
+        )
+        y_curve = y_center_local + 0.22 * np.cos(0.9 * x)
+        y = y_curve + rng.uniform(y_bot_local - y_center_local, 0.18)
+        y = np.clip(y, y_bot_local, y_top_local - 0.04)
+        dots.append(
+            mkdot(
+                inner_center[0] + x, inner_center[1] + y, pc.blueGreen, r=0.05
+            )
+        )
+
+    dense_dots = []
+    for _ in range(8):
+        x = rng.uniform(
+            x_fern_local + 0.08 * inner_w, x_fern_local + 0.28 * inner_w
+        )
+        y_curve = y_center_local + 0.22 * np.cos(0.9 * x)
+        y = y_curve - rng.uniform(0.10, 0.22)
+        y = np.clip(y, y_bot_local, y_top_local - 0.04)
+        dense_dots.append(
+            mkdot(
+                inner_center[0] + x, inner_center[1] + y, pc.blueGreen, r=0.05
+            )
+        )
+
+    all_dots = dots + dense_dots
     self.play(
-        cross.animate.move_to(target),
-        # t_tracker.animate.increment_value(2 * PI),
-        run_time=0.8,
-        rate_func=linear,
+        LaggedStart(
+            *[GrowFromCenter(d) for d in all_dots],
+            lag_ratio=0.05,
+            run_time=0.6,
+        )
+    )
+
+    right_candidates = [
+        d
+        for d in dots
+        if d.get_center()[0] > inner_center[0] + (x_lo + 0.6 * (x_hi - x_lo))
+    ]
+    hole_dots = []
+    for d in right_candidates:
+        if len(hole_dots) >= 6:
+            break
+        x, y, _ = d.get_center()
+        xl = x - inner_center[0]
+        yc = inner_center[1] + y_center_local + 0.22 * np.cos(0.9 * xl)
+        if y < yc:
+            hole_dots.append(d)
+    for d in hole_dots:
+        d.set_fill(opacity=0.0)
+        d.set_stroke(opacity=0.0)
+
+    above = []
+    for d in all_dots:
+        if d.get_fill_opacity() <= 0 and d.get_stroke_opacity() <= 0:
+            continue
+        x, y, _ = d.get_center()
+        xl = x - inner_center[0]
+        yc = inner_center[1] + y_center_local + 0.22 * np.cos(0.9 * xl)
+        if y > yc:
+            above.append(d)
+    if above:
+        self.play(
+            LaggedStart(
+                *[d.animate.set_color(pc.jellyBean) for d in above],
+                lag_ratio=0.05,
+                run_time=0.5,
+            )
+        )
+
+    pops = [
+        AnimationGroup(
+            d.animate.scale(1.2),
+            FadeOut(d, scale=0.3),
+            lag_ratio=0.0,
+            run_time=0.22,
+        )
+        for d in above
+    ]
+    if pops:
+        self.play(LaggedStart(*pops, lag_ratio=0.05))
+
+    if dense_dots:
+        self.play(
+            LaggedStart(
+                *[d.animate.set_color(pc.jellyBean) for d in dense_dots],
+                lag_ratio=0.05,
+                run_time=0.5,
+            )
+        )
+        pops2 = [
+            AnimationGroup(
+                d.animate.scale(1.2),
+                FadeOut(d, scale=0.3),
+                lag_ratio=0.0,
+                run_time=0.22,
+            )
+            for d in dense_dots
+        ]
+        self.play(LaggedStart(*pops2, lag_ratio=0.05))
+
+    apples = []
+    for d in hole_dots:
+        x, y, _ = d.get_center()
+        apples.append(mkdot(x, y, pc.apple, r=0.05))
+    if apples:
+        self.play(
+            LaggedStart(
+                *[GrowFromCenter(nd) for nd in apples],
+                lag_ratio=0.05,
+                run_time=0.5,
+            )
+        )
+
+    # ===================== Final: move the triangle cross again =====================
+    self.next_slide()
+    target_again = 0.5 * (V_bl + V_top) + np.array([0.5, 0.1, 0.0])
+    self.play(
+        cross.animate.move_to(target_again), run_time=0.6, rate_func=linear
     )
 
     # End slide
