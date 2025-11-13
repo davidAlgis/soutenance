@@ -8,15 +8,19 @@ from slide_registry import slide
 @slide(42)
 def slide_42(self):
     """
-    Decaying wave around the boat with oscillating motion.
-    Phases:
-      1) Show a base sinus water curve A*cos(k*x + omega*t) (A=0.3, k=2.0, omega=1.0) in blue-green [Create].
-      2) Wait for user input, then make a boat fall through while the base water animates.
-      3) Wait for user input, then remove the boat and fade out the base water.
-      4) Fade in the boat together with two symmetric decaying waves:
-           left:  A*exp(-|x-x_c|/T)*cos(k*(x-x_c) + omega*t)
-           right: A*exp(-|x-x_c|/T)*cos(k*(x-x_c) - omega*t)
-         and play the animation (boat oscillates with the local wave at x=0).
+    Couplage avec des solides — scenario updated:
+
+      1) Show a base sinus water curve A*cos(k*x + omega*t) in blue-green [Create].
+         (A=0.3, k=2.0, omega=1.0)
+      2) Wait (self.next_slide).
+      3) Create a boat that falls through while the base water animates.
+      4) Wait (self.next_slide).
+      5) Remove the boat.
+      6) Add a new boat that falls until it reaches the base curve height (x=0).
+      7) Then make it oscillate while the base water animates.
+      8) Wait (self.next_slide).
+      9) Transform the base water curve into two symmetric decaying curves
+         (left uses +t, right uses -t) and keep animating like before.
     """
     # --- Top bar ---
     bar = self._top_bar("Couplage avec des solides")
@@ -60,14 +64,14 @@ def slide_42(self):
     sx = plot_w / x_span
     sy = (plot_h / 2.0) / y_vis
 
-    # --- Time tracker (shared by all phases) ---
+    # --- Time tracker (shared) ---
     t = ValueTracker(0.0)
 
     # =========================
     # Phase 1: base sinus water
     # =========================
     A0 = 0.1
-    k0 = 0.3
+    k0 = 0.5
     omega0 = 1.0
 
     def make_water_base():
@@ -89,7 +93,7 @@ def slide_42(self):
     self.play(Create(water_base), run_time=1.0)
 
     # =========================
-    # Phase 2: boat falls while base water animates
+    # Phase 2: boat falls through while base water animates
     # =========================
     self.next_slide()
 
@@ -102,23 +106,23 @@ def slide_42(self):
         [-0.5, 1.0, 0.0],
         [-2.0, 1.0, 0.0],
     ]
-    boat = Polygon(
+    boat1 = Polygon(
         *[np.array(p) for p in boat_shape],
         fill_color=pc.uclaGold,
         fill_opacity=1.0,
         stroke_color=pc.uclaGold,
     ).scale(0.9)
     start_y = y_center + 2.2
-    boat.move_to([0.0, start_y, 0.0])
-    boat.set_z_index(10)
-    self.add(boat)
-    self.add_foreground_mobject(boat)
+    boat1.move_to([0.0, start_y, 0.0])
+    boat1.set_z_index(10)
+    self.add(boat1)
+    self.add_foreground_mobject(boat1)
 
-    # Animate time and falling together
+    # Animate time and falling together (constant speed)
     self.play(
         AnimationGroup(
             t.animate.set_rate_func(linear).increment_value(2.0 * np.pi),
-            boat.animate.set_rate_func(linear).move_to(
+            boat1.animate.set_rate_func(linear).move_to(
                 [0.0, y_bottom - 1.5, 0.0]
             ),
             lag_ratio=0.0,
@@ -127,15 +131,55 @@ def slide_42(self):
     )
 
     # =========================
-    # Phase 3: remove boat and fade out base water
+    # Phase 3: remove boat1
     # =========================
     self.next_slide()
-    self.play(FadeOut(boat, run_time=0.1), FadeOut(water_base, run_time=0.6))
+    self.play(FadeOut(boat1, run_time=0.25))
 
-    # ==========================================================
-    # Phase 4: fade in boat + two symmetric decaying-wave curves
-    # ==========================================================
-    # Decaying cosine parameters (center x_c = 0)
+    # =========================
+    # Phase 4: add a new boat that falls until it reaches base curve height
+    # =========================
+    boat2 = Polygon(
+        *[np.array(p) for p in boat_shape],
+        fill_color=pc.uclaGold,
+        fill_opacity=1.0,
+        stroke_color=pc.uclaGold,
+    ).scale(0.9)
+    boat2.move_to([0.0, start_y, 0.0])
+    boat2.set_z_index(10)
+    self.add(boat2)
+    self.add_foreground_mobject(boat2)
+
+    # Freeze time while the boat falls to the current base curve height at x=0
+    tv_now = t.get_value()
+    base_y_at_x0 = plot_center[1] + sy * (
+        A0 * np.cos(omega0 * tv_now)
+    )  # k0*0 = 0
+    self.play(
+        boat2.animate.set_rate_func(linear).move_to([0.0, base_y_at_x0, 0.0]),
+        t.animate.set_rate_func(linear).increment_value(1.5),
+        run_time=1.2,
+    )
+
+    # Then make it oscillate following the local base wave at x=0, while base water animates
+    def boat2_updater(mob: Mobject):
+        tv = t.get_value()
+        y = plot_center[1] + sy * (A0 * np.cos(omega0 * tv)) + 0.1
+        mob.move_to([0.0, y, 0.0])
+
+    boat2.add_updater(boat2_updater)
+
+    self.play(
+        t.animate.set_rate_func(linear).increment_value(2.0 * np.pi+1.5),
+        run_time=4.0,
+    )
+
+    # =========================
+    # Phase 5: wait, then transform base curve into two symmetric decaying curves
+    # =========================
+    self.next_slide()
+
+    # Decaying cosine parameters
     x_c = 0.0
     A_env = 0.25
     T_env = 3.0
@@ -158,6 +202,48 @@ def slide_42(self):
             * np.cos(k_env * x_rel - omega_env * t_val)
         )
 
+    # Take a static snapshot of the current base curve to transform from
+    base_static = make_water_base()
+    self.add(base_static)  # layered on top of the redraw temporarily
+    self.remove(water_base)  # hide the redraw version so transform is stable
+
+    # Build static targets (left/right) at current t
+    def build_static_left():
+        X = np.linspace(x_min, 0.0, sample_n // 2 + 1)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(water_left(xv, tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        m = VMobject()
+        m.set_points_smoothly(pts)
+        m.set_stroke(color=pc.blueGreen, width=4)
+        return m
+
+    def build_static_right():
+        X = np.linspace(0.0, x_max, sample_n // 2 + 1)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(water_right(xv, tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        m = VMobject()
+        m.set_points_smoothly(pts)
+        m.set_stroke(color=pc.blueGreen, width=4)
+        return m
+
+    left_static = build_static_left()
+    right_static = build_static_right()
+    target_group = VGroup(left_static, right_static)
+
+    # Transform snapshot into the two-curve group
+    self.play(ReplacementTransform(base_static, target_group), run_time=0.8)
+
+    # Replace static targets with always_redraw animated versions
     def make_water_curve_left():
         X = np.linspace(x_min, 0.0, sample_n // 2 + 1)
         tv = t.get_value()
@@ -188,39 +274,29 @@ def slide_42(self):
 
     water_l = always_redraw(make_water_curve_left)
     water_r = always_redraw(make_water_curve_right)
+    self.add(water_l, water_r)
+    self.remove(target_group)
 
-    # Recreate boat at gentle baseline and make it oscillate with local wave
-    boat = Polygon(
-        *[np.array(p) for p in boat_shape],
-        fill_color=pc.uclaGold,
-        fill_opacity=1.0,
-        stroke_color=pc.uclaGold,
-    ).scale(0.9)
-    base_boat_y = plot_center[1] + 0.12
-    boat.move_to([0.0, base_boat_y, 0.0])
-    boat.set_z_index(10)
+    # Switch boat to follow the decaying-wave local motion at x=0
+    boat2.remove_updater(boat2_updater)
 
-    def boat_updater(mob: Mobject):
+    def boat2_decay_updater(mob: Mobject):
         tv = t.get_value()
-        y_offset = 0.03 * np.cos(omega_env * tv)
-        mob.move_to([0.0, base_boat_y + y_offset * sy, 0.0])
+        y = (
+            plot_center[1] + sy * (0.03 * np.cos(omega_env * tv)) + 0.1
+        )  # at x=0
+        mob.move_to([0.0, y, 0.0])
 
-    boat.add_updater(boat_updater)
+    boat2.add_updater(boat2_decay_updater)
 
-    # Fade in boat + decaying curves together
-    self.add(water_l, water_r, boat)
-    self.add_foreground_mobject(boat)
-    self.play(FadeIn(water_l), FadeIn(water_r), FadeIn(boat), run_time=0.6)
-
-    # Animate the system as before
+    # Animate the system (time continues linearly)
     self.play(
-        t.animate.increment_value(4.0 * np.pi),
-        rate_func=linear,
+        t.animate.set_rate_func(linear).increment_value(4.0 * np.pi),
         run_time=8.0,
     )
 
     # Cleanup
-    boat.remove_updater(boat_updater)
+    boat2.remove_updater(boat2_decay_updater)
     self.pause()
     self.clear()
     self.next_slide()
