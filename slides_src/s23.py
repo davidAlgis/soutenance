@@ -1,7 +1,3 @@
-# thesis_slides.py (now supports selective rendering)
-# 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
-# Texte conservé exactement tel qu'écrit par l'utilisateur.
-
 # flake8: noqa: F405
 import os
 
@@ -43,19 +39,16 @@ def slide_23(self):
     x_right = config.frame_width / 2 - 0.6
     y_bottom = -config.frame_height / 2 + 0.6
     area_w = x_right - x_left
-    area_h = y_top - y_bottom
-
-    # ---- Colors ----
-    blueGreen = getattr(pc, "blueGreen", BLUE_D)
 
     # ---------- Equation (center under bar) ----------
-    eq_center = np.array([x_left + 0.5 * area_w, y_top - 0.35, 0])
+    eq_center = np.array([x_left + 0.5 * area_w, y_top - 0.35, 0.0])
     eq = MathTex(
         r"\left|\hat{\rho}-\rho_0\right| \;=\; ?",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     ).move_to(eq_center)
     self.play(Write(eq), run_time=0.45)
+    self.wait(0.1)
     self.next_slide()
 
     eq2 = MathTex(
@@ -64,38 +57,33 @@ def slide_23(self):
         font_size=self.BODY_FONT_SIZE + 10,
     ).move_to(eq_center)
     self.play(Transform(eq, eq2), run_time=0.45)
-
+    # self.wait(0.1)
+    # self.next_slide()
+    # self.remove(eq, eq2)
     # ---------- Load particles (cap to 30) ----------
     pts, cols, qxqy = [], [], []
-    try:
-        with open(
-            "states_sph/particles.csv", "r", encoding="utf-8", newline=""
-        ) as f:
-            rd = csv.DictReader(f)
-            for row in rd:
-                if len(pts) >= 30:
-                    break
-                x = float(row["X"])
-                y = float(row["Y"])
-                pts.append((x, y))
 
-                cr = float(row.get("color r", "0.0"))
-                cg = float(row.get("color g", "0.0"))
-                cb = float(row.get("color b", "0.0"))
-                if max(cr, cg, cb) > 1.0:
-                    cr, cg, cb = cr / 255.0, cg / 255.0, cb / 255.0
-                cols.append((cr, cg, cb))
+    with open(
+        "states_sph/particles.csv", "r", encoding="utf-8", newline=""
+    ) as f:
+        rd = csv.DictReader(f)
+        for row in rd:
+            if len(pts) >= 30:
+                break
+            x = float(row["X"])
+            y = float(row["Y"])
+            pts.append((x, y))
 
-                qx = float(row.get("X quincunx", x))
-                qy = float(row.get("Y quincunx", y))
-                qxqy.append((qx, qy))
-    except Exception:
-        rng = np.random.default_rng(23)
-        pts = [(float(rng.uniform()), float(rng.uniform())) for _ in range(30)]
-        cols = [
-            (rng.uniform(), rng.uniform(), rng.uniform()) for _ in range(30)
-        ]
-        qxqy = [(p[0], p[1]) for p in pts]
+            cr = float(row.get("color r", "0.0"))
+            cg = float(row.get("color g", "0.0"))
+            cb = float(row.get("color b", "0.0"))
+            if max(cr, cg, cb) > 1.0:
+                cr, cg, cb = cr / 255.0, cg / 255.0, cb / 255.0
+            cols.append((cr, cg, cb))
+
+            qx = float(row.get("X quincunx", x))
+            qy = float(row.get("Y quincunx", y))
+            qxqy.append((qx, qy))
 
     # ---------- Field rect (below equation) ----------
     field_top = eq_center[1] - 0.45
@@ -117,9 +105,8 @@ def slide_23(self):
     Qw = [to_field(p) for p in qxqy]
     r_vis = min(fW, fH) / 70.0
 
-    # Dots
     dots = [
-        Dot(Pw[i], radius=r_vis, color=blueGreen, fill_opacity=1.0)
+        Dot(Pw[i], radius=r_vis, color=pc.blueGreen, fill_opacity=1.0)
         for i in range(len(Pw))
     ]
 
@@ -142,70 +129,88 @@ def slide_23(self):
         run_time=0.6,
     )
 
-    # -> |875-1027| = 152
-    eq3 = MathTex(
-        r"\left|875-1027\right| \;=\; 152",
+    # ---------- Build live equation with Integers (no overlapping MathTex) ---
+    # Start from 875 and |875-1027| = 152
+    left_tex = Tex(
+        r"\left|",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
-    ).move_to(eq_center)
-    self.play(Transform(eq, eq3), run_time=0.5)
+    )
+    minus_tex = Tex(
+        r"-1,027\right| \;=\;",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 10,
+    )
+
+    rho_int = Integer(
+        875,
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 10,
+    )
+    diff_int = Integer(
+        abs(875 - 1027),
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 10,
+    )
+
+    eq_group = VGroup(left_tex, rho_int, minus_tex, diff_int).arrange(
+        RIGHT, buff=0.12, aligned_edge=DOWN
+    )
+    eq_group.move_to(eq_center)
+    rho_int.next_to(left_tex, RIGHT, buff=0.1)
+    minus_tex.next_to(rho_int, RIGHT, buff=0.3)
+    diff_int.next_to(minus_tex, RIGHT, buff=0.1)
+
+    # Clean switch: old MathTex out, new group in
+    self.wait(0.1)
     self.next_slide()
 
-    # ---------- Coupled animation (10s): move to quincunx + recolor to blueGreen + equation to |1027-1027|=0 + F^p arrow ----------
-    from manim import Arrow, Tex, ValueTracker, always_redraw
+    self.remove(eq, eq2)
+    self.add(eq_group)
 
-    # Single progress tracker drives motions/colors
+    # ---------- Coupled animation --------------------------------------------
     progress = ValueTracker(0.0)
-
-    # Density tracker drives the equation numbers
     rho_tracker = ValueTracker(875.0)
 
-    # One live MathTex for the whole equation (no overlapping numbers)
-    def make_live_eq():
-        # Use integers to keep layout stable
-        a = int(round(rho_tracker.get_value()))
-        b = abs(a - 1027)
-        m = MathTex(
-            rf"\left|{a}-1027\right|\;=\;{b}",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE + 10,
-        )
-        m.move_to(eq_center)
-        return m
+    # Updaters only touch the Integer glyphs
+    def update_rho(m: Integer):
+        m.set_value(int(round(rho_tracker.get_value())))
 
-    eq_live = always_redraw(make_live_eq)
-    # Replace the static eq with the live one
-    self.play(FadeTransform(eq3, eq_live), run_time=0.4)
+    def update_diff(m: Integer):
+        v = int(round(rho_tracker.get_value()))
+        m.set_value(abs(v - 1027))
 
-    # Cache start/end + start color for each dot, add updaters
+    rho_int.add_updater(update_rho)
+    diff_int.add_updater(update_diff)
+
+    # Cache start/end + colors for dots
     start_pos = [d.get_center() for d in dots]
     end_pos = Qw
     start_col = [rgb_to_color(cols[i]) for i in range(len(dots))]
-    end_col = [blueGreen for _ in dots]
+    end_col = [pc.blueGreen for _ in dots]
 
     def make_dot_updater(i):
         def _upd(d: Dot):
             t = progress.get_value()
-            d.move_to(start_pos[i] * (1 - t) + end_pos[i] * t)
-            d.set_color(interpolate_color(start_col[i], end_col[i], t))
-            d.set_fill(interpolate_color(start_col[i], end_col[i], t), 1.0)
+            d.move_to(start_pos[i] * (1.0 - t) + end_pos[i] * t)
+            col = interpolate_color(start_col[i], end_col[i], t)
+            d.set_color(col)
+            d.set_fill(col, 1.0)
 
         return _upd
 
     for i, d in enumerate(dots):
         d.add_updater(make_dot_updater(i))
 
-    # Force arrow for one particle (index 0) that shrinks to 0
-    fp_idx = 4 if len(dots) > 0 else None
+    # Force arrow for one particle (index 5) that shrinks to 0
+    fp_idx = 7 if len(dots) > 0 else None
     if fp_idx is not None:
 
         def make_force_arrow():
             t = progress.get_value()
-            start = start_pos[fp_idx] * (1 - t) + end_pos[fp_idx] * t
+            start = start_pos[fp_idx] * (1.0 - t) + end_pos[fp_idx] * t
             target = end_pos[fp_idx]
-            curr_end = start + (target - start) * (
-                1.0 - t
-            )  # length reduces to 0
+            curr_end = start + (target - start) * (1.0 - t)
             arr = Arrow(
                 start,
                 curr_end,
@@ -218,6 +223,7 @@ def slide_23(self):
             return arr
 
         force_arrow = always_redraw(make_force_arrow)
+
         fp_label = Tex(
             r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE
         ).add_updater(
@@ -227,7 +233,7 @@ def slide_23(self):
         )
         self.add(force_arrow, fp_label)
 
-    # Drive everything together for 10 seconds (you can keep your adjusted duration here)
+    # Drive everything together for 10 seconds
     self.play(
         progress.animate.set_value(1.0),
         rho_tracker.animate.set_value(1027.0),
@@ -240,6 +246,8 @@ def slide_23(self):
         d.clear_updaters()
     if fp_idx is not None:
         self.remove(force_arrow, fp_label)
+    rho_int.clear_updaters()
+    diff_int.clear_updaters()
 
     self.pause()
     self.clear()
