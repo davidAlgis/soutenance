@@ -37,7 +37,9 @@ def slide_26(self):
         self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
     )
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - lead.get_left()[0]
-    lead.shift(RIGHT * (dx + 0.6))  # small extra pad to match your usual rhythm
+    lead.shift(
+        RIGHT * (dx + 0.6)
+    )  # small extra pad to match your usual rhythm
     self.play(FadeIn(lead, run_time=0.25))
     self.wait(0.1)
     self.next_slide()
@@ -50,7 +52,7 @@ def slide_26(self):
     )
     l1.next_to(lead, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     l1.shift(RIGHT * (dx + 0.6) + DOWN * 0.1)
-    self.add(l1)
+    self.play(FadeIn(l1), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -61,7 +63,7 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    self.add(l2)
+    self.play(FadeIn(l2), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -71,14 +73,14 @@ def slide_26(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
-    l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+    l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF + 0.1, aligned_edge=LEFT)
     l4 = Tex(
         r"4. Solveur de « volume constante » : $F^p_1$ pour vérifier $\nabla \cdot v\rightarrow 0$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     l4.next_to(l3, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    self.add(l3, l4)
+    self.play(FadeIn(l3, l4), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -89,7 +91,7 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l5.next_to(l4, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    self.add(l5)
+    self.play(FadeIn(l5), run_time=0.25)
 
     # Centered equations (keep the vertical you already set via next_to)
     eq1 = Tex(
@@ -109,17 +111,19 @@ def slide_26(self):
     y2 = eq2.get_center()[1]
     eq1.move_to(np.array([0.0, y1, 0.0]))
     eq2.move_to(np.array([0.0, y2, 0.0]))
-    self.add(eq1, eq2)
+    self.play(FadeIn(eq1, eq2), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
     # --- Clear enumerate text (keep bar) ---
-    self.play(FadeOut(VGroup(lead, l1, l2, l3, l4, l5, eq1, eq2), run_time=0.35))
+    self.play(
+        FadeOut(VGroup(lead, l1, l2, l3, l4, l5, eq1, eq2), run_time=0.35)
+    )
 
     # --- SPH playback (only fluid) + world-guide lines annotation ---
     # NOTE: Using your updated ROI/fit mapping exactly as provided
     roi_origin = (-2.0, -2.0)
-    roi_size   = (4.0, 3.0)
+    roi_size = (4.0, 3.0)
 
     # Map ROI width to ~11 units on screen and center lower for room under the bar
     fit_w = 11.0
@@ -136,13 +140,13 @@ def slide_26(self):
 
     # World rectangle specs
     rect_ox, rect_oy = -1.0, -0.9
-    rect_w, rect_h   =  2.0,  5.5
+    rect_w, rect_h = 2.0, 5.5
 
     # Convert to screen coords (edges)
-    rect_left_x  = (rect_ox - world_cx) * s + tx
+    rect_left_x = (rect_ox - world_cx) * s + tx
     rect_right_x = (rect_ox + rect_w - world_cx) * s + tx
     rect_bottom_y = (rect_oy - world_cy) * s + ty
-    rect_top_y    = (rect_oy + rect_h - world_cy) * s + ty
+    rect_top_y = (rect_oy + rect_h - world_cy) * s + ty
 
     # Crop just under the top bar (a small margin below bar bottom)
     top_limit_y = bar_rect.get_bottom()[1] - 0.12
@@ -191,9 +195,9 @@ def slide_26(self):
     show_sph_simulation(
         self,
         "states_sph/particles_sph_all_forces.csv",
-        only_fluid=True,           # type == 0
+        only_fluid=True,  # type == 0
         dot_radius=dot_radius,
-        manim_seconds=10,         # quick preview; adjust if you want longer
+        manim_seconds=10,  # quick preview; adjust if you want longer
         roi_origin=roi_origin,
         roi_size=roi_size,
         clip_outside=True,
