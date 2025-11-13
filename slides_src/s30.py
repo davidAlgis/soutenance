@@ -63,6 +63,7 @@ def slide_30(self):
         )
     )
 
+    self.wait(0.1)
     self.next_slide()
 
     # ---------------- Rays: start along the aperture edge ------------------
@@ -106,7 +107,7 @@ def slide_30(self):
         grow_and_flash(s, e) for s, e in zip(start_pts, impact_points)
     ]
     self.play(LaggedStart(*ray_sequences, lag_ratio=0.22))
-
+    self.wait(0.1)
     self.next_slide()
 
     # ---------------- Clear (keep bar) -------------------------------------

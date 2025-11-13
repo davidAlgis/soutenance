@@ -119,7 +119,7 @@ def slide_31(self):
             run_time=0.9
         )
     )
-
+    self.wait(0.1)
     self.next_slide()
 
     # --- Recolor: target = 3rd -> jellyBean; others BLACK ---
@@ -146,6 +146,7 @@ def slide_31(self):
     )
     self.play(Create(circle, run_time=0.5))
 
+    self.wait(0.1)
     self.next_slide()
 
     # --- Dashed vertical gates around each particle ---
