@@ -21,7 +21,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "4"
+SLIDES_SELECTION = "42"
 
 
 class Presentation(Slide):
@@ -91,12 +91,10 @@ class Presentation(Slide):
         self._body_top_buff = self.BODY_TOP_BUFF
         self._body_font_size = self.BODY_FONT_SIZE
 
-    def add_body_text(
-        self, s: str, *, color=BLACK, font_size=30, weight=NORMAL
-    ):
+    def add_body_text(self, s: str, *, color=BLACK, font_size=30):
         """Add one line: first goes under the bar, then stack under previous."""
         # Assumes _top_bar() and start_body() have been called and args are not None.
-        t = Text(s, color=color, weight=weight, font_size=font_size)
+        t = Tex(s, color=color, font_size=font_size)
 
         if self._body_last is None:
             t.next_to(
