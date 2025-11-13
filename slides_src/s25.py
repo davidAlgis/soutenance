@@ -21,9 +21,9 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 def slide_25(self):
     """
     Slide 25 — Couplage avec des solides
-    - Draw thick orange frame, then replace by border particles.
+    - Draw thick pc.orange frame, then replace by border particles.
     - Clear and show a full-width orange band (20% height) at the bottom half,
-      with 6 large solid particles and 3 blueGreen fluid particles above.
+      with 6 large solid particles and 3 pc.blueGreen fluid particles above.
     - Draw arrow F^p from a fluid toward a solid, then reverse it.
     - Finish with pause/clear/next_slide.
     """
@@ -48,11 +48,6 @@ def slide_25(self):
     area_h = y_top - y_bottom
 
     # Colors
-    orange = getattr(pc, "orange", ORANGE)
-    temptress = getattr(pc, "temptress", MAROON_D)
-    blueGreen = getattr(pc, "blueGreen", BLUE_D)
-    oxford = getattr(pc, "oxford", BLACK)
-
     # ---------- Intro sentence ----------
     txt = Tex(
         "On considère le solide comme un ensemble de particules",
@@ -75,20 +70,24 @@ def slide_25(self):
     pTL = np.array([r_left, r_top, 0])
 
     stroke_w = 22
-    e_bottom = Line(pBL, pBR, color=orange, stroke_width=stroke_w)
-    e_right = Line(pBR, pTR, color=orange, stroke_width=stroke_w)
-    e_top = Line(pTR, pTL, color=orange, stroke_width=stroke_w)
-    e_left = Line(pTL, pBL, color=orange, stroke_width=stroke_w)
-    edges = VGroup(e_bottom, e_right, e_top, e_left)
+    # Single rectangle instead of 4 separate lines
+    x_vals = [pBL[0], pBR[0], pTR[0], pTL[0]]
+    y_vals = [pBL[1], pBR[1], pTR[1], pTL[1]]
+    x_min, x_max = min(x_vals), max(x_vals)
+    y_min, y_max = min(y_vals), max(y_vals)
 
-    self.play(
-        LaggedStart(
-            *[Create(m) for m in [e_bottom, e_right, e_top, e_left]],
-            lag_ratio=0.12,
-            run_time=1.0,
-            rate_func=linear
-        )
-    )
+    rect_w = x_max - x_min
+    rect_h = y_max - y_min
+    rect_center = [(x_min + x_max) * 0.5, (y_min + y_max) * 0.5, 0.0]
+
+    rect = Rectangle(
+        width=rect_w,
+        height=rect_h,
+        stroke_color=pc.orange,
+        stroke_width=stroke_w,
+    ).move_to(rect_center)
+
+    self.play(Create(rect, run_time=1.0, rate_func=linear))
 
     # ---------- 2) Replace by border particles (keep faint rectangle) ----------
     def sample_segment(a, b, n):
@@ -103,13 +102,13 @@ def slide_25(self):
     chain_pts = pts_bottom + pts_right[:-1] + pts_top[:-1] + pts_left[:-1]
     dot_r = min((r_right - r_left), (r_top - r_bottom)) / 40.0  # larger
     border_dots = [
-        Dot(p, radius=dot_r, color=temptress, fill_opacity=1.0)
+        Dot(p, radius=dot_r, color=pc.temptress, fill_opacity=1.0)
         for p in chain_pts
     ]
-
+    self.wait(0.1)
     self.next_slide()
     self.play(
-        edges.animate.set_opacity(0.5),
+        rect.animate.set_opacity(0.5),
         LaggedStart(
             *[GrowFromCenter(d) for d in border_dots],
             lag_ratio=0.02,
@@ -120,7 +119,7 @@ def slide_25(self):
     # ---------- 3) Clear, then draw filled band + 6 larger solids + 3 fluids ----------
     self.next_slide()
     self.play(
-        FadeOut(VGroup(*border_dots, edges), run_time=0.35),
+        FadeOut(VGroup(*border_dots, rect), run_time=0.35),
         FadeOut(txt, run_time=0.2),
     )
 
@@ -130,8 +129,8 @@ def slide_25(self):
     band = Rectangle(
         width=config.frame_width,
         height=band_h,
-        color=orange,
-        fill_color=orange,
+        color=pc.orange,
+        fill_color=pc.orange,
         fill_opacity=0.55,
         stroke_width=0,
     ).move_to(
@@ -152,7 +151,12 @@ def slide_25(self):
     for i in range(n_solids):
         px = start_x + i * gap
         solids.append(
-            Dot([px, cy, 0], radius=solid_R, color=temptress, fill_opacity=1.0)
+            Dot(
+                [px, cy, 0],
+                radius=solid_R,
+                color=pc.temptress,
+                fill_opacity=1.0,
+            )
         )
 
     # Three fluid particles above the band, spread and bigger
@@ -167,7 +171,7 @@ def slide_25(self):
         Dot(
             [fx, top_half_y, 0],
             radius=fluid_R,
-            color=blueGreen,
+            color=pc.blueGreen,
             fill_opacity=1.0,
         )
         for fx in fluid_xs
@@ -198,11 +202,16 @@ def slide_25(self):
     end = sc - vn * (solid_R * 0.92)  # just inside solid rim toward fluid
 
     arrow = Arrow(
-        start, end, color=oxford, stroke_width=6, buff=0.0, tip_length=0.18
+        start,
+        end,
+        color=pc.oxfordBlue,
+        stroke_width=6,
+        buff=0.0,
+        tip_length=0.18,
     )
-    label = Tex(r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE+10).next_to(
-        arrow, LEFT, buff=0.08
-    )
+    label = Tex(
+        r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
+    ).next_to(arrow, LEFT, buff=0.08)
 
     self.play(
         AnimationGroup(
