@@ -1,11 +1,8 @@
 import numpy as np
 import palette_colors as pc
-from manim import (BLACK, DOWN, LEFT, ORIGIN, RIGHT, UP, AnimationGroup, Arrow,
-                   Create, Dot, FadeOut, GrowArrow, GrowFromCenter,
-                   LaggedStart, Polygon, RoundedRectangle, Tex,
-                   TransformMatchingTex, ValueTracker, VGroup, VMobject,
-                   config)
+from manim import *
 from slide_registry import slide
+from utils import make_bullet_list
 
 
 @slide(32)
@@ -19,8 +16,6 @@ def slide_32(self):
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # ------------------------- "Preuve de concept" and bullet list (Tex only)
-    self.start_body()
     title_tex = Tex(
         r"Preuve de concept :", color=BLACK, font_size=self.BODY_FONT_SIZE
     )
@@ -31,64 +26,69 @@ def slide_32(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - title_tex.get_left()[0]
     title_tex.shift(RIGHT * dx_title)
-    self.add(title_tex)
+    self.play(FadeIn(title_tex), run_time=0.5)
 
     def make_bullets(items):
-        lines = VGroup()
-        for i, s in enumerate(items):
-            t = Tex(
-                r"\(\bullet\)\; " + s,
-                color=BLACK,
-                font_size=self.BODY_FONT_SIZE,
-            )
-            if i == 0:
-                t.next_to(
-                    title_tex,
-                    DOWN,
-                    buff=self.BODY_LINE_BUFF,
-                    aligned_edge=LEFT,
-                )
-            else:
-                t.next_to(
-                    lines[-1],
-                    DOWN,
-                    buff=self.BODY_LINE_BUFF,
-                    aligned_edge=LEFT,
-                )
-            dx = (
-                bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
-            ) - t.get_left()[0]
-            t.shift(RIGHT * dx)
-            lines.add(t)
-        return lines
+        bullet_group = make_bullet_list(
+            items,
+            bullet_color=pc.blueGreen,
+            font_size=self.BODY_FONT_SIZE,
+            line_gap=self.BODY_LINE_BUFF,
+            left_pad=0.25,
+        )
 
-    bullets_v1 = make_bullets(
+        # Place the whole bullet group under the title, aligned with the bar padding
+        bullet_group.next_to(
+            title_tex,
+            DOWN,
+            buff=self.BODY_LINE_BUFF,
+            aligned_edge=LEFT,
+        )
+        dx = (
+            bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
+        ) - bullet_group.get_left()[0]
+        bullet_group.shift(RIGHT * dx)
+
+        # Extract only the Tex objects (index 1 in each row: VGroup(bullet, txt))
+        text_items = [row[1] for row in bullet_group]
+
+        return bullet_group, text_items
+
+    bullets_v1, texts_v1 = make_bullets(
         ["Simulation 3D", "Methode de Tessendorf", "SPH"]
     )
-    self.add(bullets_v1)
+    self.play(FadeIn(bullets_v1), run_time=0.3)
     self.wait(0.1)
     self.next_slide()
 
-    bullets_v2 = make_bullets(
+    bullets_v2, texts_v2 = make_bullets(
         ["Simulation 2D", "Theorie des vagues d'Airy", "SPH"]
     )
+
     self.play(
         AnimationGroup(
             *[
-                TransformMatchingTex(b1, b2)
-                for b1, b2 in zip(bullets_v1, bullets_v2)
+                TransformMatchingTex(t1, t2)
+                for t1, t2 in zip(texts_v1, texts_v2)
             ],
             lag_ratio=0.0,
             run_time=0.8,
-        )
+        ),
     )
-    bullets_v1 = bullets_v2
+    # ------------------------------------------------------------------
+    # IMPORTANT PART: after the transform, keep only ONE bullet group
+    # ------------------------------------------------------------------
+    for t1, t2 in zip(texts_v1, texts_v2):
+        t1.become(t2)
+    self.remove(bullets_v2)
 
     self.next_slide()
 
     # ----------------------------------------- Clear bullets and the subtitle
     self.play(
-        FadeOut(bullets_v1, run_time=0.3), FadeOut(title_tex, run_time=0.3)
+        FadeOut(VGroup(title_tex, bullets_v1)),
+        FadeOut(bullets_v2),
+        run_time=0.3,
     )
 
     # ---------------------------------------------------- Cosine helper maker
@@ -175,6 +175,7 @@ def slide_32(self):
     self.add(center_boat)
     self.add_foreground_mobject(center_boat)
 
+    self.wait(0.1)
     self.next_slide()
 
     # --------------------------------------- Uniform particle field (cornFlower)
@@ -205,7 +206,7 @@ def slide_32(self):
         )
     )
     self.add_foreground_mobject(center_boat)
-
+    self.wait(0.1)
     self.next_slide()
 
     # ---------------------------------------------------- Arrows from top line
@@ -243,6 +244,7 @@ def slide_32(self):
         )
     )
 
+    self.wait(0.1)
     self.next_slide()
 
     # --------------------------------------- Remove arrows and particles (keep boat)
@@ -300,7 +302,8 @@ def slide_32(self):
         stroke_width=6,
     )
     inner2.move_to([0.0, y_offset, 0.0])
-    self.add(inner1, inner2)
+    self.play(Create(inner1), run_time=0.5)
+    self.play(Create(inner2), run_time=0.5)
 
     # End of slide
     self.pause()
