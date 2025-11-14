@@ -34,7 +34,7 @@ def slide_36(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - intro.get_left()[0]
     intro.shift(RIGHT * dx)
-    self.add(intro)
+    self.play(FadeIn(intro))
 
     # Pause
     self.next_slide()
@@ -70,7 +70,8 @@ def slide_36(self):
     boat.move_to(np.array([0.0, 0.2 * np.cos(0.0), 0.0]))
     boat.scale(0.4)  # fix: reduce boat size a bit
     self.add_foreground_mobject(boat)
-    self.add(boat)
+    self.play(FadeIn(boat))
+    self.wait(0.1)
 
     # Pause
     self.next_slide()
@@ -93,6 +94,11 @@ def slide_36(self):
     o_right = Line(outer_ur, outer_lr, color=pc.fernGreen, stroke_width=6)
     o_bottom = Line(outer_lr, outer_ll, color=pc.fernGreen, stroke_width=6)
     o_left = Line(outer_ll, outer_ul, color=pc.fernGreen, stroke_width=6)
+
+    label_static = Tex("Zone statique", color=pc.fernGreen, font_size=36)
+    label_static.next_to(o_top, DOWN, buff=0.18).align_to(o_left, LEFT).shift(
+        RIGHT * 0.18
+    )
     self.play(
         LaggedStart(
             Create(o_top),
@@ -100,14 +106,9 @@ def slide_36(self):
             Create(o_bottom),
             Create(o_left),
             lag_ratio=0.15,
-        )
+        ),
+        FadeIn(label_static),
     )
-
-    label_static = Tex("Zone statique", color=pc.fernGreen, font_size=36)
-    label_static.next_to(o_top, DOWN, buff=0.18).align_to(o_left, LEFT).shift(
-        RIGHT * 0.18
-    )
-    self.add(label_static)
 
     # Pause
     self.next_slide()
@@ -124,6 +125,12 @@ def slide_36(self):
     i_right = Line(in_ur, in_lr, color=pc.blueGreen, stroke_width=6)
     i_bottom = Line(in_lr, in_ll, color=pc.blueGreen, stroke_width=6)
     i_left = Line(in_ll, in_ul, color=pc.blueGreen, stroke_width=6)
+
+    label_sph = Tex("Zone SPH", color=pc.blueGreen, font_size=36)
+    label_sph.next_to(i_top, DOWN, buff=0.14).align_to(i_left, LEFT).shift(
+        RIGHT * 0.14
+    )
+
     self.play(
         LaggedStart(
             Create(i_top),
@@ -131,14 +138,9 @@ def slide_36(self):
             Create(i_bottom),
             Create(i_left),
             lag_ratio=0.15,
-        )
+        ),
+        FadeIn(label_sph),
     )
-
-    label_sph = Tex("Zone SPH", color=pc.blueGreen, font_size=36)
-    label_sph.next_to(i_top, DOWN, buff=0.14).align_to(i_left, LEFT).shift(
-        RIGHT * 0.14
-    )
-    self.add(label_sph)
 
     # Pause
     self.next_slide()
@@ -157,6 +159,12 @@ def slide_36(self):
     g_right = Line(g_ur, g_lr, color=pc.uclaGold, stroke_width=6)
     g_bottom = Line(g_lr, g_ll, color=pc.uclaGold, stroke_width=6)
     g_left = Line(g_ll, g_ul, color=pc.uclaGold, stroke_width=6)
+
+    label_buffer = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
+    label_buffer.next_to(g_top, DOWN, buff=0.16).align_to(g_left, LEFT).shift(
+        RIGHT * 0.16
+    )
+
     self.play(
         LaggedStart(
             Create(g_top),
@@ -164,14 +172,9 @@ def slide_36(self):
             Create(g_bottom),
             Create(g_left),
             lag_ratio=0.15,
-        )
+        ),
+        FadeIn(label_buffer),
     )
-
-    label_buffer = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
-    label_buffer.next_to(g_top, DOWN, buff=0.16).align_to(g_left, LEFT).shift(
-        RIGHT * 0.16
-    )
-    self.add(label_buffer)
 
     # --- End of slide ---
     self.pause()
