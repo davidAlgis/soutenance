@@ -24,8 +24,8 @@ def slide_33(self):
     # --- Objective line ---
     self.start_body()
     objective = Tex(
-        r"Objectif : faire ``tendre'' les particules SPH pour se distribuer "
-        r"uniformement sur~la~surface~des~vagues~d'Airy.",
+        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer uniformement sur la surface des vagues}",
+        # r"~d'Airy.",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
@@ -44,7 +44,7 @@ def slide_33(self):
     # --- Big centered question equation ---
     eq_question = Tex(r"$F_i^A(t) = ?$", font_size=72, color=BLACK)
     eq_question.move_to([0.0, 0.0, 0.0])
-    self.add(eq_question)
+    self.play(FadeIn(eq_question), un_time=0.3)
 
     # --- Wait for input ---
     self.next_slide()
@@ -104,25 +104,23 @@ def slide_33(self):
     arr_vA = Arrow(
         dot_center, a1_end, buff=0.0, stroke_width=6, color=pc.jellyBean
     )
-    self.play(GrowArrow(arr_vA))
     # Label on the arrow body
     mid_vA = (arr_vA.get_start() + arr_vA.get_end()) / 2.0
     label_vA = Tex(r"$v_i^A(t)$", font_size=36, color=BLACK)
     label_vA.move_to(mid_vA + LEFT * 0.7)
-    self.add(label_vA)
 
     # Arrow v_i : right and slightly up, below the first one
     a2_end = dot_center + np.array([3.2, 0.5, 0.0])
     arr_v = Arrow(
         dot_center, a2_end, buff=0.0, stroke_width=6, color=pc.blueGreen
     )
-    self.play(GrowArrow(arr_v))
     # Label on the arrow body
     mid_v = (arr_v.get_start() + arr_v.get_end()) / 2.0
     label_v = Tex(r"$v_i(t)$", font_size=36, color=BLACK)
     label_v.move_to(mid_v + DOWN * 0.4)
-    self.add(label_v)
 
+    self.play(GrowArrow(arr_vA), GrowArrow(arr_v))
+    self.play(FadeIn(label_v), FadeIn(label_vA))
     self.next_slide()
 
     # Resultant arrow v_i^A - v_i : from tip of v_i to tip of v_i^A
@@ -137,7 +135,7 @@ def slide_33(self):
     label_diff = Tex(r"$v_i^A(t) - v_i(t)$", font_size=36, color=pc.apple)
     mid_diff = (arr_v.get_end() + arr_vA.get_end()) / 2.0
     label_diff.move_to(mid_diff + RIGHT * 1.6)
-    self.add(label_diff)
+    self.play(FadeIn(label_diff), run_time=0.3)
 
     self.next_slide()
 
@@ -160,7 +158,7 @@ def slide_33(self):
 
     # Transform label into centered, larger question
     question = Tex(
-        r"Comment d\`eterminer $v_i^A(t)$ ?", font_size=64, color=BLACK
+        r"Comment déterminer $v_i^A(t)$ ?", font_size=64, color=BLACK
     )
     question.move_to(ORIGIN)
     self.play(ReplacementTransform(label_vA, question))
