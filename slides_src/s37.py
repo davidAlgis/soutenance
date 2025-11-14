@@ -35,15 +35,15 @@ def slide_37(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - subtitle.get_left()[0]
     subtitle.shift(RIGHT * dx)
-    self.add(subtitle)
+    self.play(FadeIn(subtitle))
 
     # Layout
     frame_w = config.frame_width
     frame_h = config.frame_height
     body_top = subtitle.get_bottom()[1] - 0.5
     body_bottom = -frame_h / 2.0 + 0.2
-
     # Pause
+    self.wait(0.1)
     self.next_slide()
 
     # --- Vertical lines ---
@@ -63,10 +63,10 @@ def slide_37(self):
             stroke_width=6,
         )
     )
-    self.play(Transform(fern_line, fern_line.saved_state))
     label_fern = Tex("Zone statique", color=pc.fernGreen, font_size=36)
-    label_fern.next_to(fern_line.get_end(), RIGHT, buff=0.2)
-    self.add(label_fern)
+    label_fern.next_to([x_fern, body_top, 0.0], RIGHT, buff=0.2)
+    self.play(Transform(fern_line, fern_line.saved_state))
+    self.play(FadeIn(label_fern))
 
     x_gold = -frame_w / 2.0 + 0.75 * frame_w
     gold_line = Line(
@@ -84,11 +84,11 @@ def slide_37(self):
             stroke_width=6,
         )
     )
-    self.play(Transform(gold_line, gold_line.saved_state))
     label_gold = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
-    label_gold.next_to(gold_line.get_end(), RIGHT, buff=0.2)
-    self.add(label_gold)
+    label_gold.next_to([x_gold, body_top, 0.0], RIGHT, buff=0.2)
 
+    self.play(Transform(gold_line, gold_line.saved_state))
+    self.play(FadeIn(label_gold))
     # --- Cosine curve across width at ~3/4 of body height ---
     x_min = -frame_w / 2.0
     x_max = frame_w / 2.0
@@ -100,8 +100,8 @@ def slide_37(self):
         .set_points_smoothly(np.column_stack([X, Y, np.zeros_like(X)]))
         .set_stroke(color=pc.oxfordBlue, width=4)
     )
-    self.add(curve)
-
+    self.play(Create(curve))
+    self.wait(0.1)
     # Pause
     self.next_slide()
 
@@ -189,18 +189,6 @@ def slide_37(self):
     # Pause
     self.next_slide()
 
-    # Density estimator formula
-    rho_tex = Tex(
-        r"$\tilde{\rho}(\tilde{\mathbf{x}}_l) = \frac{\sum_{j} \rho_{j} W_{lj}}{\sum_{j} W_{lj}}$",
-        font_size=40,
-        color=BLACK,
-    )
-    rho_tex.next_to(VGroup(*all_dots), UP, buff=0.3)
-    self.add(rho_tex)
-
-    # Pause
-    self.next_slide()
-
     # Remove jellyBean (above-curve) particles with a pop effect
     pops = [
         AnimationGroup(
@@ -213,6 +201,18 @@ def slide_37(self):
     ]
     if pops:
         self.play(LaggedStart(*pops, lag_ratio=0.05))
+
+    # Pause
+    self.next_slide()
+
+    # Density estimator formula
+    rho_tex = Tex(
+        r"$\tilde{\rho}(\tilde{\mathbf{x}}_l) = \frac{\sum_{j} \rho_{j} W_{lj}}{\sum_{j} W_{lj}}$",
+        font_size=40,
+        color=BLACK,
+    )
+    rho_tex.next_to(VGroup(*all_dots), UP, buff=0.3)
+    self.play(FadeIn(rho_tex))
 
     # Pause
     self.next_slide()
@@ -255,3 +255,8 @@ def slide_37(self):
         self.play(
             LaggedStart(*[GrowFromCenter(nd) for nd in apples], lag_ratio=0.05)
         )
+
+    # --- End of slide ---
+    self.pause()
+    self.clear()
+    self.next_slide()
