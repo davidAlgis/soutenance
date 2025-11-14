@@ -72,19 +72,6 @@ def slide_19(self):
     self.play(Create(e_s2f), FadeIn(t_s2f), run_time=0.4)
     self.wait(0.1)
 
-    credit = Tex(
-        r"Algis \textit{et al.} (2025), \textit{Arc Blanc...}",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
-
     # --- Arrow builders ----------------------------------------------------
     def _solid_curved_arrow(
         start_pt: np.ndarray, end_pt: np.ndarray, angle: float
@@ -272,7 +259,7 @@ def slide_19(self):
         tbl.get_cell((last_row, c)).set_fill(pc.blueGreen, opacity=0.15)
 
     max_w = config.frame_width * 0.92
-    max_h = (config.frame_height * 0.92) - bar.height - 0.3
+    max_h = (config.frame_height * 0.92) - bar.height - 1.0
     if tbl.width > max_w:
         tbl.scale_to_fit_width(max_w)
     if tbl.height > max_h:
@@ -280,6 +267,20 @@ def slide_19(self):
     tbl.move_to([0.0, -0.1, 0.0])
 
     self.play(FadeIn(tbl, run_time=0.6))
+
+    credit = Tex(
+        r"Algis \textit{et al.} (2025), \textit{Arc Blanc...}",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE - 6,
+    )
+    credit.to_edge(DOWN, buff=0.5)
+    credit.to_edge(RIGHT, buff=0.5)
+
+    dot = Dot(color=pc.blueGreen)
+    dot.next_to(credit, LEFT, buff=0.3)
+    self.play(FadeIn(credit), run_time=0.5)
+    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
+
     self.next_slide()
     self.remove(*[m for m in self.mobjects if m not in to_keep])
 
@@ -288,74 +289,49 @@ def slide_19(self):
     # Ensure we have the bar rect (height is used for available space)
     bar_rect = bar.submobjects[0]
 
-    if not os.path.isfile(gif_path):
-        msg = Tex(
-            "Fichier manquant : Figures/lateral_moving_boat.gif", font_size=36
-        )
-        msg.move_to([0.0, -0.1, 0.0])
-        self.play(FadeIn(msg, run_time=0.3))
-        self.next_slide()
-    else:
-        pil_img = Image.open(gif_path)
-        frames = []
-        durations = []
+    pil_img = Image.open(gif_path)
+    frames = []
+    durations = []
 
-        for frame in ImageSequence.Iterator(pil_img):
-            durations.append(
-                max(0.01, frame.info.get("duration", 100) / 1000.0)
-            )
-            frames.append(frame.convert("RGBA"))
+    for frame in ImageSequence.Iterator(pil_img):
+        durations.append(max(0.01, frame.info.get("duration", 100) / 1000.0))
+        frames.append(frame.convert("RGBA"))
 
-        # Build ImageMobjects scaled like the still image (fit 92% area, same offset)
-        mobs = []
-        for fr in frames:
-            arr = np.array(fr, dtype=np.uint8)
-            mob = ImageMobject(arr)
+    # Build ImageMobjects scaled like the still image (fit 92% area, same offset)
+    mobs = []
+    for fr in frames:
+        arr = np.array(fr, dtype=np.uint8)
+        mob = ImageMobject(arr)
 
-            s = min(
-                (config.frame_width * 0.92) / mob.width,
-                ((config.frame_height * 0.92) - bar_rect.height - 0.2)
-                / mob.height,
-                1.0,
-            )
-            mob.scale(s).move_to([0.0, -0.1, 0.0])
-            mobs.append(mob)
+        mob.scale(2.1).move_to([0.0, -0.1, 0.0])
+        mobs.append(mob)
 
-        if not mobs:
-            msg = Tex(
-                "Impossible de lire : Figures/lateral_moving_boat.gif",
-                font_size=36,
-            )
-            msg.move_to([0.0, -0.1, 0.0])
-            self.play(FadeIn(msg, run_time=0.3))
-            self.next_slide()
-        else:
-            display = mobs[0].copy()
-            self.play(FadeIn(display, run_time=0.3))
+    display = mobs[0].copy()
+    self.play(FadeIn(display, run_time=0.3))
 
-            durations = np.array(durations, dtype=float)
-            cum = np.cumsum(durations)
-            total = float(cum[-1])
-            t = ValueTracker(0.0)
+    durations = np.array(durations, dtype=float)
+    cum = np.cumsum(durations)
+    total = float(cum[-1])
+    t = ValueTracker(0.0)
 
-            def idx_from_time(tt: float) -> int:
-                if total <= 0.0:
-                    return 0
-                x = tt % total
-                i = int(np.searchsorted(cum, x, side="right"))
-                return min(i, len(mobs) - 1)
+    def idx_from_time(tt: float) -> int:
+        if total <= 0.0:
+            return 0
+        x = tt % total
+        i = int(np.searchsorted(cum, x, side="right"))
+        return min(i, len(mobs) - 1)
 
-            def updater(m):
-                m.become(mobs[idx_from_time(t.get_value())])
+    def updater(m):
+        m.become(mobs[idx_from_time(t.get_value())])
 
-            display.add_updater(updater)
+    display.add_updater(updater)
 
-            # Play one full loop of the GIF
-            self.play(t.animate.set_value(total), run_time=total)
-            self.next_slide()
+    # Play one full loop of the GIF
+    self.play(t.animate.set_value(total), run_time=total)
+    self.next_slide()
 
-            display.clear_updaters()
-            self.play(FadeOut(display, run_time=0.25))
+    display.clear_updaters()
+    self.play(FadeOut(display, run_time=0.25))
 
     self.remove(*[m for m in self.mobjects if m not in to_keep])
 
