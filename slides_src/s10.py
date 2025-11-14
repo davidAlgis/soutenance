@@ -46,8 +46,7 @@ def slide_10(self):
     col_omega = pc.uclaGold
 
     # ---------- Intro ----------
-    self.start_body()
-    intro = Text(
+    intro = Tex(
         "Modèle linéaire qui simule l'océan comme une simple vague :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
