@@ -34,7 +34,7 @@ def slide_35(self):
         color=BLACK,
     )
     eq.move_to(ORIGIN + DOWN * 0.2)
-    self.add(eq)
+    self.play(FadeIn(eq))
 
     self.wait(0.1)
     self.next_slide()
@@ -62,18 +62,18 @@ def slide_35(self):
 
     # --- Sentences ---
     explain1 = Tex(
-        r"$\phi_i(t)$ : le facteur de modulation de la i-eme particule",
+        r"$\phi_i(t)$ : le facteur de modulation de la i-ème particule",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     explain2 = Tex(
-        r"Objectif : particules en contact d'un solide devrait moins subir la force d'Airy",
+        r"Objectif : les particules en contact d'un solide devrait moins subir la force d'Airy",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     explain1.next_to(eq, DOWN, buff=0.5)
     explain2.next_to(explain1, DOWN, buff=0.25)
-    self.add(explain1, explain2)
+    self.play(FadeIn(explain1, explain2))
     self.wait(0.1)
     self.next_slide()
 
@@ -135,7 +135,6 @@ def slide_35(self):
                         airy_all.append(am)
                 except Exception:
                     continue
-
 
     xs = np.asarray(xs_all, dtype=float)
     ys = np.asarray(ys_all, dtype=float)
@@ -201,7 +200,7 @@ def slide_35(self):
 
     # Left label
     left_label = Tex(
-        "Phenomene de diffusion :", color=BLACK, font_size=self.BODY_FONT_SIZE
+        "Phénomène de diffusion :", color=BLACK, font_size=self.BODY_FONT_SIZE
     )
     left_label.next_to(explain2, DOWN, buff=0.4)
     left_label.align_to(bar, LEFT).shift(RIGHT * self.DEFAULT_PAD)
@@ -226,31 +225,25 @@ def slide_35(self):
         m = frame_pat.match(p)
         if not m:
             continue
-        try:
-            idx = int(m.group(1))
-        except Exception:
-            continue
+        idx = int(m.group(1))
         if idx <= 1000 and os.path.isfile(p):
             pairs.append((idx, p))
     pairs.sort(key=lambda t: t[0])
 
     shown_imgs = []
     for _, p in pairs[:20]:
-        try:
-            im = ImageMobject(p)
-            scale = min(max_w / im.width, max_h / im.height)
-            im.scale(scale).move_to(img_center)
-            # Show only the image (no extra shapes), then keep for cleanup
-            self.play(FadeIn(im))
-            shown_imgs.append(im)
-        except Exception:
-            continue
-
-    self.next_slide()
+        im = ImageMobject(p)
+        scale = min(max_w / im.width, max_h / im.height)
+        im.scale(scale).move_to(img_center)
+        # Show only the image (no extra shapes), then keep for cleanup
+        self.play(FadeIn(im))
+        shown_imgs.append(im)
 
     # Remove only the images (no rectangle exists)
     if shown_imgs:
         self.play(FadeOut(Group(*shown_imgs)))
+
+    self.next_slide()
 
     # --- PDE system (ensure fully in-frame)
     eq_pde = Tex(
@@ -265,7 +258,7 @@ def slide_35(self):
     eq_pde.next_to(left_label, DOWN, buff=0.6)
     safe_left_equ = -config.frame_width / 2.0 + 1.0
     eq_pde.shift(RIGHT * (safe_left_equ - eq_pde.get_left()[0]))
-    self.add(eq_pde)
+    self.play(FadeIn(eq_pde))
 
     self.next_slide()
 
@@ -326,21 +319,33 @@ def slide_35(self):
 
     self.next_slide()
     if len(dots) > 0:
-        def make_color_anim(mob, start_col, target_col):
-            def updater(m, alpha):
-                col = interpolate_color(start_col, target_col, alpha)
-                m.set_fill(col, opacity=1.0)
-                m.set_stroke(col, width=0, opacity=1.0)
-            return UpdateFromAlphaFunc(mob, updater)
-
         anims = []
         for i, d in enumerate(dots):
             if types_arr[i] == 0:
                 a = float(airy_arr[i])
-                a = 0.0 if a < 0.0 else (1.0 if a > 1.0 else a)
+                # Clamp a in [0, 1]
+                if a < 0.0:
+                    a = 0.0
+                elif a > 1.0:
+                    a = 1.0
+
                 target_col = interpolate_color(pc.jellyBean, pc.blueGreen, a)
-                start_col = d.get_fill_color()
-                anims.append(make_color_anim(d, start_col, target_col))
+
+                # Smoothly animate fill and stroke color
+                anims.append(
+                    d.animate.set_fill(
+                        target_col,
+                        opacity=1.0,
+                    ).set_stroke(
+                        target_col,
+                        width=0,
+                        opacity=1.0,
+                    )
+                )
 
         if anims:
-            self.play(AnimationGroup(*anims, lag_ratio=0.0), run_time=0.35)
+            self.play(*anims, run_time=0.35, rate_func=linear)
+    # --- End of slide ---
+    self.pause()
+    self.clear()
+    self.next_slide()
