@@ -1,5 +1,5 @@
 import palette_colors as pc
-from manim import BLACK, DOWN, LEFT, RIGHT, FadeIn, Text, VGroup, config
+from manim import *
 from slide_registry import slide
 from utils import make_bullet_list
 
@@ -22,7 +22,7 @@ def slide_39(self):
     self.start_body()
 
     # Title sentence
-    title = Text(
+    title = Tex(
         "Cette thèse a mené aux contributions suivantes :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
@@ -37,7 +37,9 @@ def slide_39(self):
     # Align left edge to bar's inner padding
     dx = self._text_left_x - title.get_left()[0]
     title.shift(dx * RIGHT)
-    self.add(title)
+    self.play(FadeIn(title))
+    self.wait(0.1)
+    self.next_slide()
 
     # Bullet items
     items = [
@@ -63,10 +65,10 @@ def slide_39(self):
     # Keep bullets left-aligned to inner padding
     bdx = self._text_left_x - bullets.get_left()[0]
     bullets.shift(bdx * RIGHT)
-    self.add(bullets)
 
     # A tiny animation to satisfy manim-slides before pausing
-    self.play(FadeIn(VGroup(title, bullets), run_time=0.2))
+    self.play(FadeIn(bullets))
+    self.next_slide()
     self.pause()
     self.clear()
     self.next_slide()
