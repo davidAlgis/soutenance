@@ -51,7 +51,7 @@ def slide_08(self):
 
     # ========= Bottom-right credit =========
     credit = Tex(
-        r"Algis \textit{et al.} (2025), \textit{InteropUnityCUDA}",
+        r"Algis \textit{et al.} (2025), \textit{InteropUnityCUDA...}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE - 6,
     )
