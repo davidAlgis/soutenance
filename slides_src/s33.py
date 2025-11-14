@@ -162,3 +162,8 @@ def slide_33(self):
     )
     question.move_to(ORIGIN)
     self.play(ReplacementTransform(label_vA, question))
+
+    # --- End slide ---------------------------------------------------------
+    self.pause()
+    self.clear()
+    self.next_slide()

@@ -288,7 +288,7 @@ def slide_34(self):
     for idx, lx, ly in labels_once:
         xn = xn_from_xphys(lx)
         yn = yn_from_yphys(ly)
-        c = make_cross(map_to_right(xn, yn), size=0.1)
+        c = make_cross(map_to_right(xn, yn), size=0.07)
         crosses.append(c)
         rid = y_to_row[round(ly, 6)]
         rows_groups.setdefault(rid, VGroup()).add(c)

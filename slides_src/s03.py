@@ -146,10 +146,10 @@ def slide_03(self):
 
     # --- Final collapse + remove guides ---
     collapse_group = Group(*revealed)
+    self.play(FadeOut(line_left), FadeOut(line_right), run_time=0.2)
+
     self.play(
         collapse_group.animate.scale(0).move_to(ell.get_center()),
-        FadeOut(line_left),
-        FadeOut(line_right),
         run_time=0.8,
     )
 

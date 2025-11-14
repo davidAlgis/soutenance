@@ -211,4 +211,7 @@ def slide_30(self):
         )
     )
 
+    # --- End slide ---------------------------------------------------------
+    self.pause()
+    self.clear()
     self.next_slide()
