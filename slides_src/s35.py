@@ -67,7 +67,7 @@ def slide_35(self):
         font_size=self.BODY_FONT_SIZE,
     )
     explain2 = Tex(
-        r"Objectif : les particules en contact d'un solide devrait moins subir la force d'Airy",
+        r"\mbox{Objectif : les particules en contact d'un solide devrait moins subir la force d'Airy}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -317,34 +317,67 @@ def slide_35(self):
             dots_group2.animate.scale(scale_factor).move_to(target_center2)
         )
 
-    self.next_slide()
     if len(dots) > 0:
-        anims = []
+        # Precompute start and target colors for each dot
+        start_colors = []
+        target_colors = []
+
         for i, d in enumerate(dots):
-            if types_arr[i] == 0:
-                a = float(airy_arr[i])
-                # Clamp a in [0, 1]
-                if a < 0.0:
-                    a = 0.0
-                elif a > 1.0:
-                    a = 1.0
+            # Safety guards in case arrays are shorter than dots
+            if i >= len(types_arr) or i >= len(airy_arr):
+                start_colors.append(None)
+                target_colors.append(None)
+                continue
 
-                target_col = interpolate_color(pc.jellyBean, pc.blueGreen, a)
+            if types_arr[i] != 0:
+                start_colors.append(None)
+                target_colors.append(None)
+                continue
 
-                # Smoothly animate fill and stroke color
-                anims.append(
-                    d.animate.set_fill(
-                        target_col,
-                        opacity=1.0,
-                    ).set_stroke(
-                        target_col,
-                        width=0,
-                        opacity=1.0,
-                    )
-                )
+            a = float(airy_arr[i])
+            if a < 0.0:
+                a = 0.0
+            elif a > 1.0:
+                a = 1.0
 
-        if anims:
-            self.play(*anims, run_time=0.35, rate_func=linear)
+            target_col = interpolate_color(pc.jellyBean, pc.blueGreen, a)
+            start_col = d.get_fill_color()
+
+            # If there is no actual change, skip interpolation for this dot
+            if start_col == target_col:
+                start_colors.append(None)
+                target_colors.append(None)
+            else:
+                start_colors.append(start_col)
+                target_colors.append(target_col)
+
+        # Check if there is at least one dot to animate
+        if any(c is not None for c in target_colors):
+            alpha_tracker = ValueTracker(0.0)
+            dot_group = VGroup(*dots)
+
+            def update_colors(mob):
+                alpha = alpha_tracker.get_value()
+                for i, d in enumerate(dots):
+                    sc = start_colors[i]
+                    tc = target_colors[i]
+                    if sc is None or tc is None:
+                        continue
+                    col = interpolate_color(sc, tc, alpha)
+                    d.set_fill(col, opacity=1.0)
+                    d.set_stroke(col, width=0, opacity=1.0)
+
+            dot_group.add_updater(update_colors)
+            self.add(dot_group)
+
+            # One single animation for all particles at once
+            self.play(
+                alpha_tracker.animate.set_value(1.0),
+                run_time=2.0,  # keep this reasonably long to avoid tiny clips
+            )
+
+            dot_group.remove_updater(update_colors)
+
     # --- End of slide ---
     self.pause()
     self.clear()
