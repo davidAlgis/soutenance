@@ -53,7 +53,7 @@ def slide_34(self):
     top_y = bar_rect.get_bottom()[1] - 0.2
     bottom_y = -full_h * 0.5 + 0.3
 
-    TEXT_FS = 30
+    self.BODY_FONT_SIZE = self.BODY_FONT_SIZE
     LINE_BUFF = 0.35
     SCALE_Y = 0.82  # place right visuals slightly lower
 
@@ -94,7 +94,9 @@ def slide_34(self):
 
     # ----------------------------- intro text (ensure at least one animation before pause)
     intro = Tex(
-        "Version lagrangienne d'Airy :", color=BLACK, font_size=TEXT_FS
+        "Version lagrangienne d'Airy :",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
     )
     intro.to_edge(LEFT, buff=0.4)
     dy_intro = top_y - intro.get_top()[1]
@@ -245,7 +247,11 @@ def slide_34(self):
     self.add(wave_curve)
 
     # Left equation for h
-    eq_h = Tex(r"$h(x,t)=A\cos(kx-\omega t)$", color=BLACK, font_size=TEXT_FS)
+    eq_h = Tex(
+        r"$h(x,t)=A\cos(kx-\omega t)$",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
     place_left_tex(eq_h, above=intro, buff=LINE_BUFF * 1.2)
     self.add(eq_h)
 
@@ -282,7 +288,7 @@ def slide_34(self):
     for idx, lx, ly in labels_once:
         xn = xn_from_xphys(lx)
         yn = yn_from_yphys(ly)
-        c = make_cross(map_to_right(xn, yn), size=0.03)
+        c = make_cross(map_to_right(xn, yn), size=0.1)
         crosses.append(c)
         rid = y_to_row[round(ly, 6)]
         rows_groups.setdefault(rid, VGroup()).add(c)
@@ -293,7 +299,7 @@ def slide_34(self):
     ab_tex = Tex(
         r"$\begin{pmatrix} a \\ b \end{pmatrix}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=self.BODY_FONT_SIZE,
     )
     place_left_tex(ab_tex, above=eq_h, buff=LINE_BUFF)
     self.add(ab_tex)
@@ -342,7 +348,7 @@ def slide_34(self):
     mapping_tex = Tex(
         r"$\begin{cases} x(a,b,t) = a + \xi(a,b,t), \\ y(a,b,t) = b + \eta(a,b,t) \end{cases}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=self.BODY_FONT_SIZE,
     )
     place_left_tex(mapping_tex, above=eq_h, buff=LINE_BUFF)
 
@@ -421,33 +427,33 @@ def slide_34(self):
         r"~~~~+ k\xi(a,b,t))\left(\omega - k v_x(a,b,t)\right)"
         r"\end{cases}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=self.BODY_FONT_SIZE,
     )
     place_left_tex(vel_cases_tex, above=eq_h, buff=LINE_BUFF)
 
     # During this first velocity reveal, advance time so curve, particles AND arrows move
     self.play(
         TransformMatchingTex(ab_tex, vel_cases_tex),
-        t_tracker.animate.set_value(T_MIN + 0.25 * (T_MAX - T_MIN)),
+        # t_tracker.animate.set_value(T_MIN + 0.25 * (T_MAX - T_MIN)),
         run_time=0.9,
     )
     ab_tex = vel_cases_tex
 
     # Animate one more period with arrows visible
-    self.play(
-        t_tracker.animate.set_value(T_MIN + 2 * (T_MAX - T_MIN)),
-        run_time=SLOW_RT,
-    )
+    # self.play(
+    #     t_tracker.animate.set_value(T_MIN + 2 * (T_MAX - T_MIN)),
+    #     run_time=SLOW_RT,
+    # )
     t_tracker.set_value(
         ((t_tracker.get_value() - T_MIN) % (T_MAX - T_MIN)) + T_MIN
     )
 
     # ----------------------------- extra loop with arrows
-    self.next_slide()
     self.play(
         t_tracker.animate.set_value(T_MIN + (T_MAX - T_MIN)), run_time=SLOW_RT
     )
-
+    self.wait(0.1)
+    self.next_slide()
     # ----------------------------- clear right visuals; smoothly convert to vector and move under bar
     wave_curve.clear_updaters()
     particles.clear_updaters()
@@ -460,11 +466,9 @@ def slide_34(self):
         FadeOut(intro, run_time=0.5),
         FadeOut(eq_h, run_time=0.5),
     )
-    try:
-        self.remove_foreground_mobject(particles)
-        self.remove_foreground_mobject(arrows)
-    except Exception:
-        pass
+
+    self.remove_foreground_mobject(particles)
+    self.remove_foreground_mobject(arrows)
 
     # --- Convert velocity cases to vector form **in place** (no recentre), then animate shift to top
     vel_vector_tex = Tex(
@@ -473,7 +477,7 @@ def slide_34(self):
         r"A e^{kb} \sin\!\left(ka - \omega t + k\xi(a,b,t)\right)\left(\omega - k v_x(a,b,t)\right)"
         r"\end{pmatrix}$",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=self.BODY_FONT_SIZE,
     )
     # Position target exactly where current equation is, so TransformMatchingTex doesn't jump
     vel_vector_tex.move_to(ab_tex.get_center() + np.array([1.5, 0.0, 0.0]))
@@ -491,7 +495,9 @@ def slide_34(self):
 
     # Newton-Raphson texts fade in smoothly
     missing_labels_tex = Tex(
-        "Mais, on ne possède pas les labels.", color=BLACK, font_size=TEXT_FS
+        "Mais, on ne possède pas les labels.",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
     )
     missing_labels_tex.next_to(
         ab_tex,
@@ -504,9 +510,9 @@ def slide_34(self):
     self.next_slide()
 
     nr_title_tex = Tex(
-        "On utilise la méthode de Newton-Raphson :",
+        "\mbox{On utilise la méthode de Newton-Raphson, pour determiner $a$ et $b$ à partir d'une position donnée :}",
         color=BLACK,
-        font_size=TEXT_FS,
+        font_size=self.BODY_FONT_SIZE,
     )
     nr_title_tex.next_to(
         missing_labels_tex,
@@ -514,25 +520,13 @@ def slide_34(self):
         buff=LINE_BUFF,
         aligned_edge=LEFT,
     )
+
     self.play(FadeIn(nr_title_tex), run_time=0.3)
 
-    nr_goal_tex = Tex(
-        "A partir d'une position donnée determiner $a$ et $b$",
-        color=BLACK,
-        font_size=TEXT_FS,
-    )
-    nr_goal_tex.next_to(
-        nr_title_tex,
-        direction=np.array([0.0, -1.0, 0.0]),
-        buff=LINE_BUFF,
-        aligned_edge=LEFT,
-    )
-    self.play(FadeIn(nr_goal_tex), run_time=0.3)
-
     # Final inverse mapping cases: BIGGER and CENTERED; keep same Y across transforms
-    BIG_FS = 38
+    BIG_FS = self.BODY_FONT_SIZE + 15
     inv_y_ref = (
-        nr_goal_tex.get_bottom()[1] - LINE_BUFF - BIG_FS * 0.012 - 1.0
+        nr_title_tex.get_bottom()[1] - LINE_BUFF - BIG_FS * 0.012 - 1.0
     )  # reference Y
 
     inv_start_tex = Tex(
