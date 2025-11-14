@@ -167,10 +167,7 @@ def slide_38(self):
 
     # Play one full pass
     self.play(t.animate.set_value(total), run_time=total)
-    self.next_slide()
-
-    # Cleanup (optional)
-    display.clear_updaters()
-    self.play(FadeOut(display, run_time=0.25))
+    # --- End of slide ---
+    self.pause()
     self.clear()
     self.next_slide()
