@@ -65,7 +65,7 @@ def slide_10(self):
         return m
 
     # ---------- Initial formula ----------
-    formula = MathTex(r"h(x,t)=\cos(x)", color=BLACK)
+    formula = MathTex(r"h(x)=\cos(x)", color=BLACK)
     formula.next_to(intro, DOWN, buff=0.25, aligned_edge=LEFT)
     formula.shift(RIGHT * (anchor_x - formula.get_left()[0]))
     formula_y = formula.get_y()
@@ -102,7 +102,7 @@ def slide_10(self):
 
         xs = np.arange(-2 * PI, 2 * PI + dt, dt)
         ys = A.get_value() * np.cos(
-            k.get_value() * xs + omega.get_value() * t.get_value()
+            k.get_value() * xs - omega.get_value() * t.get_value()
         )
         m.set_points_as_corners([axes.c2p(x, y) for x, y in zip(xs, ys)])
 
@@ -140,7 +140,7 @@ def slide_10(self):
 
     # ===================== Step 2: h = cos(x+t) ==============================
     new_f = MathTex(
-        r"h(x,t)=\cos(x+t)", color=BLACK, tex_to_color_map={"t": col_t}
+        r"h(x,t)=\cos(x-t)", color=BLACK, tex_to_color_map={"t": col_t}
     )
     lock_left(new_f, formula_y)
     self.play(ReplacementTransform(formula, new_f))
@@ -161,7 +161,7 @@ def slide_10(self):
 
     # ===================== Step 3: h = A cos(x+t) ============================
     new_f = MathTex(
-        r"h(x,t)=A\cos(x+t)",
+        r"h(x,t)=A\cos(x-t)",
         color=BLACK,
         tex_to_color_map={"A": col_A, "t": col_t},
     )
@@ -182,7 +182,7 @@ def slide_10(self):
 
     # ===================== Step 4: h = A cos(kx + t) =========================
     new_f = MathTex(
-        r"h(x,t)=A\cos(kx+t)",
+        r"h(x,t)=A\cos(kx-t)",
         color=BLACK,
         tex_to_color_map={"A": col_A, "k": col_k, "t": col_t},
     )
@@ -206,7 +206,7 @@ def slide_10(self):
 
     # ===================== Step 5: h = A cos(kx + ω t) =======================
     new_f = MathTex(
-        r"h(x,t)=A\cos(kx+\omega t)",
+        r"h(x,t)=A\cos(kx-\omega t)",
         color=BLACK,
         tex_to_color_map={
             "A": col_A,

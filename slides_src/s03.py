@@ -289,15 +289,15 @@ def slide_03(self):
         cross.get_center(), w=2.2, h=1.2, color=pc.apple, alpha=0.35
     )
     self.play(FadeIn(ell_green, run_time=0.25))
-    self.next_slide()
-    target3 = 0.5 * (V_bl + V_top) + np.array([0.5, 0.1, 0.0])
-    target4 = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
-    # Nudge further left
-    self.play(cross.animate.move_to(target4), run_time=0.55)
-    self.next_slide()
+    # self.next_slide()
+    # target3 = 0.5 * (V_bl + V_top) + np.array([0.5, 0.1, 0.0])
+    # target4 = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
+    # # Nudge further left
+    # self.play(cross.animate.move_to(target4), run_time=0.55)
+    # self.next_slide()
 
-    # Nudge further down
-    self.play(cross.animate.move_to(target3), run_time=0.55)
+    # # Nudge further down
+    # self.play(cross.animate.move_to(target3), run_time=0.55)
 
     # End slide
     self.pause()

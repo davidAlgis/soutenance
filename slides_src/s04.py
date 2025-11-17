@@ -24,7 +24,6 @@ def slide_04(self):
     self.add_foreground_mobject(bar)
 
     # ==== Intro line ====
-    self.start_body()
     intro = Tex(
         r"Pour r{\'e}pondre à nos objectifs :",
         font_size=self.BODY_FONT_SIZE,

@@ -54,7 +54,7 @@ def slide_06(self):
     h1 = Tex(
         "Unity un moteur de jeu polyvalent :",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 5,
+        font_size=self.BODY_FONT_SIZE,
     )
     h1.next_to(
         self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
@@ -88,7 +88,7 @@ def slide_06(self):
     h2 = Tex(
         r"Les avantages et les inconvénients des \textit{compute shaders}:",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 5,
+        font_size=self.BODY_FONT_SIZE,
     )
     h2.align_to(h1, LEFT)
     h2.next_to(lst, DOWN, buff=1.0, aligned_edge=LEFT)
@@ -116,44 +116,6 @@ def slide_06(self):
     pc_list.align_to(h2, LEFT)
     pc_list.next_to(h2, DOWN, buff=0.22, aligned_edge=LEFT)
     self.play(FadeIn(pc_list), run_time=0.25)
-
-    # Pack left column
-    # left_group = VGroup(h1, lst, h2, pc_list)
-    # self.add(left_group)
-    # ---- Layout box for the left column (avoid overflow) ----
-    # Reserve some spacing from the logo
-    # gap_to_logo = 0.6
-    # max_left_w = (logo.get_left()[0] - gap_to_logo) - x_left
-    # max_left_h = area_h * 0.92
-
-    # Initial position (top-left anchor)
-    # left_group.arrange(DOWN, buff=0.18, center=False, aligned_edge=LEFT)
-    # left_group.move_to(
-    #     [
-    #         x_left + 0.2 + left_group.width * 0.5,
-    #         y_top - 0.2 - left_group.height * 0.5,
-    #         0,
-    #     ]
-    # )
-
-    # # Auto-scale if too wide or too tall
-    # if left_group.width > max_left_w or left_group.height > max_left_h:
-    #     s = min(
-    #         max_left_w / left_group.width,
-    #         max_left_h / left_group.height,
-    #         1.0,
-    #     )
-    #     left_group.scale(s, about_point=left_group.get_top())
-    #     # Re-anchor after scaling to keep inside bounds
-    #     left_group.move_to(
-    #         [
-    #             x_left + 0.2 + left_group.width * 0.5,
-    #             y_top - 0.2 - left_group.height * 0.5,
-    #             0,
-    #         ]
-    #     )
-
-    # self.add(left_group)
 
     # End slide
     self.pause()

@@ -20,7 +20,7 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(8)
 def slide_08(self):
     # --- Top bar ---
-    bar = self._top_bar("InteropUnityCUDA (IUC)")
+    bar = self._top_bar("InteropUnityCUDA")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
@@ -30,38 +30,33 @@ def slide_08(self):
     x_left = -config.frame_width / 2 + 0.6
     x_right = config.frame_width / 2 - 0.6
     y_bottom = -config.frame_height / 2 + 0.6
+    anchor_x = x_left + self.DEFAULT_PAD
 
     area_w = x_right - x_left
     area_h = y_top - y_bottom
     y_center = (y_top + y_bottom) * 0.5
 
-    # ---- Intro texts (fit to bounds, then place) ----
-    self.start_body()
-    self.add_body_text(
-        r"\mbox{Afin d'utiliser CUDA dans Unity à la place des compute shaders : InteropUnityCUDA}",
+    line1 = Tex(
+        r"\mbox{Afin d'utiliser CUDA dans Unity à la place des \textit{compute shaders} : InteropUnityCUDA}",
+        color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
-    self.add_body_text(
-        "Un outil d'interopérabilité entre Unity et CUDA.",
+    line1.next_to(self._current_bar, DOWN, aligned_edge=LEFT)
+    dx = anchor_x - line1.get_left()[0]
+    line1.shift(RIGHT * dx)
+
+    line2 = Tex(
+        r"Un outil d'interopérabilité entre Unity et CUDA.",
+        color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
+    line2.next_to(line1, DOWN, aligned_edge=LEFT)
+    dx2 = anchor_x - line2.get_left()[0]
+    line2.shift(RIGHT * dx2)
+    self.play(FadeIn(line1, line2, shift=RIGHT * 0.15))
 
     self.wait(0.1)
     self.next_slide()
-
-    # ========= Bottom-right credit =========
-    credit = Tex(
-        r"Algis \textit{et al.} (2025), \textit{InteropUnityCUDA...}",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
 
     # ========= Three boxes: Unity (left), IUC (center), C++ lib (right) =========
     gap = area_w * 0.06
@@ -90,7 +85,7 @@ def slide_08(self):
     box_cpp = box("Librairie C++", cx_right)
 
     # Show only UNITY box initially
-    self.add(box_unity)
+    self.play(Create(box_unity), run_time=0.3)
 
     # ========= Image + caption (initial state) =========
     img = ImageMobject("Figures/logo_images.png")
@@ -127,7 +122,7 @@ def slide_08(self):
         stroke_width=6,
         tip_length=0.16,
     )
-    self.play(FadeIn(box_iuc, run_time=0.3), Create(arrow_1, run_time=0.6))
+    self.play(Create(box_iuc, run_time=0.3), Create(arrow_1, run_time=0.6))
 
     target_img_center_2 = img_center_under(box_iuc)
     shift_vec_2 = target_img_center_2 - img.get_center()
@@ -152,7 +147,7 @@ def slide_08(self):
         stroke_width=6,
         tip_length=0.16,
     )
-    self.play(FadeIn(box_cpp, run_time=0.3), Create(arrow_2, run_time=0.6))
+    self.play(Create(box_cpp, run_time=0.3), Create(arrow_2, run_time=0.6))
 
     target_img_center_3 = img_center_under(box_cpp)
     shift_vec_3 = target_img_center_3 - img.get_center()
@@ -164,6 +159,19 @@ def slide_08(self):
     new_cap_3.move_to(cap)
     self.play(Transform(cap, new_cap_3), run_time=0.35)
 
+    # ========= Bottom-right credit =========
+    credit = Tex(
+        r"Algis \textit{et al.} (2025), \textit{InteropUnityCUDA...}",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE - 6,
+    )
+    credit.to_edge(DOWN, buff=0.5)
+    credit.to_edge(RIGHT, buff=0.5)
+
+    dot = Dot(color=pc.blueGreen)
+    dot.next_to(credit, LEFT, buff=0.3)
+    self.play(FadeIn(credit), run_time=0.5)
+    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
     # End slide
     self.pause()
     self.clear()

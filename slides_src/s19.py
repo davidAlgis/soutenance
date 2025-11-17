@@ -53,7 +53,7 @@ def slide_19(self):
         width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7
     )
     t_f2s = Tex(
-        "Fluide vers solide", font_size=self.BODY_FONT_SIZE, color=BLACK
+        "Solide vers fluide", font_size=self.BODY_FONT_SIZE, color=BLACK
     )
     t_f2s.move_to(e_f2s.get_center())
     g_f2s = VGroup(e_f2s, t_f2s).move_to([3.6, -1.7, 0.0])
@@ -62,7 +62,7 @@ def slide_19(self):
         width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7
     )
     t_s2f = Tex(
-        "Solide vers fluide", font_size=self.BODY_FONT_SIZE, color=BLACK
+        "Fluide vers solide", font_size=self.BODY_FONT_SIZE, color=BLACK
     )
     t_s2f.move_to(e_s2f.get_center())
     g_s2f = VGroup(e_s2f, t_s2f).move_to([-3.6, -1.7, 0.0])
@@ -140,27 +140,27 @@ def slide_19(self):
     # (1) Surface -> F->S (unchanged, correct)
     self.next_slide()
     a1 = _solid_curved_arrow(
-        start_pt=_right_of(e_surface, dx=0.10, dy=-0.10),
-        end_pt=_top_of(e_f2s, dx=-0.10, dy=0.10),
-        angle=-1.0,
+        end_pt=_top_of(e_s2f, dx=0.10, dy=0.10),
+        start_pt=_left_of(e_surface, dx=-0.10, dy=-0.10),
+        angle=1.0,
     )
     self.play(Create(a1, run_time=0.6))
 
     # (2) F->S -> S->F : origin ok, now end on RIGHT side of S->F
     self.next_slide()
     a2 = _solid_curved_arrow(
-        start_pt=_left_of(e_f2s, dx=-0.10, dy=0.05),
-        end_pt=_right_of(e_s2f, dx=0.15, dy=0.05),  # moved to right side
-        angle=-1.0,  # under-arc clockwise
+        start_pt=_right_of(e_s2f, dx=0.15, dy=0.05),  # moved to right side
+        end_pt=_left_of(e_f2s, dx=-0.10, dy=0.05),
+        angle=1.0,  # under-arc clockwise
     )
     self.play(Create(a2, run_time=0.6))
 
     # (3) S->F -> Surface (unchanged, correct)
     self.next_slide()
     a3 = _solid_curved_arrow(
-        start_pt=_top_of(e_s2f, dx=0.10, dy=0.10),
-        end_pt=_left_of(e_surface, dx=-0.10, dy=-0.10),
-        angle=-1.0,
+        start_pt=_top_of(e_f2s, dx=-0.10, dy=0.10),
+        end_pt=_right_of(e_surface, dx=0.10, dy=-0.10),
+        angle=1.0,
     )
     self.play(Create(a3, run_time=0.6))
 
@@ -189,9 +189,9 @@ def slide_19(self):
     # (6) F->S -> Surface : inner, shifted left
     self.next_slide()
     d3 = _dotted_curved_arrow(
-        start_pt=_top_of(e_f2s, dx=-1.30, dy=-0.3),  # more to the left
-        end_pt=_right_of(e_surface, dx=-0.30, dy=-1.05),  # more to the left
-        angle=-0.6,
+        start_pt=_right_of(e_surface, dx=-0.30, dy=-1.05),  # more to the left
+        end_pt=_top_of(e_f2s, dx=-1.35, dy=-0.25),  # more to the left
+        angle=+0.6,
         num_dashes=20,
     )
     self.play(Create(d3, run_time=0.6))
