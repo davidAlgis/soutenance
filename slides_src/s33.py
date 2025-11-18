@@ -24,7 +24,7 @@ def slide_33(self):
     # --- Objective line ---
     self.start_body()
     objective = Tex(
-        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer uniformement sur la surface des vagues}",
+        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer uniformement sous la surface des vagues}",
         # r"~d'Airy.",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,

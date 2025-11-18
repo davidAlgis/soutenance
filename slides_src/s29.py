@@ -210,19 +210,6 @@ def slide_29(self):
         )
     )
 
-    credit = Tex(
-        r"Algis \textit{et al.} (2024), \textit{Efficient GPU...}",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
-
     # --- Wait ---------------------------------------------------------------
     self.next_slide()
 
@@ -354,6 +341,19 @@ def slide_29(self):
                 ),
             )
         )
+
+    credit = Tex(
+        r"Algis \textit{et al.} (2024), \textit{Efficient GPU...}",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE - 6,
+    )
+    credit.to_edge(DOWN, buff=0.5)
+    credit.to_edge(RIGHT, buff=0.5)
+
+    dot = Dot(color=pc.blueGreen)
+    dot.next_to(credit, LEFT, buff=0.3)
+    self.play(FadeIn(credit), run_time=0.5)
+    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
 
     # --- End slide ---------------------------------------------------------
     self.pause()

@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import palette_colors as pc
 from manim import *
@@ -37,7 +35,7 @@ def slide_03(self):
     )
     ell.move_to(np.array([0.0, ellipse_center_y, 0.0]))
 
-    title = Text("Précision", color=BLACK, font_size=44, weight=BOLD)
+    title = Text("Précision", color=pc.blueGreen, font_size=44, weight=BOLD)
     inner_w = ellipse_w * 0.8
     inner_h = ellipse_h * 0.65
     if title.width > 0 and title.height > 0:
@@ -48,8 +46,7 @@ def slide_03(self):
             title.scale(s)
     title.move_to(ell.get_center())
 
-    self.play(DrawBorderThenFill(ell, run_time=0.45))
-    self.play(FadeIn(title, run_time=0.25))
+    self.play(DrawBorderThenFill(ell), FadeIn(title, shift=DOWN), run_time=0.5)
     self.next_slide()
 
     # --- Columns layout under the ellipse ---
@@ -79,7 +76,6 @@ def slide_03(self):
         color=pc.oxfordBlue,
         stroke_width=3,
     )
-    self.add(line_left, line_right)
 
     def build_title_at_column(s: str, x_center: float) -> Text:
         t = Text(s, color=BLACK, font_size=COL_FS, weight=BOLD)
@@ -92,16 +88,11 @@ def slide_03(self):
     def build_image_under_title(
         title_saved: Mobject, img_path: str
     ) -> Mobject:
-        if os.path.isfile(img_path):
-            im = ImageMobject(img_path)
-            if im.width > 0:
-                im.scale(col_max_w / im.width)
-            if im.height > col_max_h:
-                im.scale(col_max_h / im.height)
-        else:
-            im = Tex(
-                f"Fichier manquant : {img_path}", font_size=28, color=BLACK
-            )
+        im = ImageMobject(img_path)
+        if im.width > 0:
+            im.scale(col_max_w / im.width)
+        if im.height > col_max_h:
+            im.scale(col_max_h / im.height)
         im.next_to(title_saved, DOWN, buff=0.3, aligned_edge=UP)
         return im
 
@@ -116,9 +107,11 @@ def slide_03(self):
 
     self.add(col1_title)
     self.play(Restore(col1_title), run_time=0.6)
-    self.play(FadeIn(col1_img, run_time=0.35))
+    self.play(FadeIn(col1_img, run_time=0.35, shift=DOWN))
     revealed += [col1_title, col1_img]
     self.next_slide()
+
+    self.play(Create(line_left))
 
     # -------- Column 2 --------
     col2_title = build_title_at_column("Fluide vers solide", cols_x[1])
@@ -128,9 +121,10 @@ def slide_03(self):
 
     self.add(col2_title)
     self.play(Restore(col2_title), run_time=0.6)
-    self.play(FadeIn(col2_img, run_time=0.35))
+    self.play(FadeIn(col2_img, run_time=0.35, shift=DOWN))
     revealed += [col2_title, col2_img]
     self.next_slide()
+    self.play(Create(line_right))
 
     # -------- Column 3 --------
     col3_title = build_title_at_column("Solide vers fluide", cols_x[2])
@@ -140,13 +134,17 @@ def slide_03(self):
 
     self.add(col3_title)
     self.play(Restore(col3_title), run_time=0.6)
-    self.play(FadeIn(col3_img, run_time=0.35))
+    self.play(FadeIn(col3_img, run_time=0.35, shift=DOWN))
     revealed += [col3_title, col3_img]
     self.next_slide()
 
     # --- Final collapse + remove guides ---
     collapse_group = Group(*revealed)
-    self.play(FadeOut(line_left), FadeOut(line_right), run_time=0.2)
+    self.play(
+        FadeOut(line_left, shift=UP),
+        FadeOut(line_right, shift=UP),
+        run_time=0.2,
+    )
 
     self.play(
         collapse_group.animate.scale(0).move_to(ell.get_center()),
@@ -218,16 +216,16 @@ def slide_03(self):
     clamp_text(title)
 
     # Bottom labels (kept clear of edges)
-    perf = Text("Performances", color=BLACK, font_size=44, weight=BOLD)
+    perf = Text("Performances", color=pc.blueGreen, font_size=44, weight=BOLD)
     perf.move_to(V_bl + np.array([-1.5, -1.5, 0.0]))  # left & below
     clamp_text(perf)
-    self.play(FadeIn(perf, run_time=0.25))
+    self.play(FadeIn(perf, run_time=0.25, shift=UP))
     self.next_slide()
 
-    echelle = Text("Échelle", color=BLACK, font_size=44, weight=BOLD)
+    echelle = Text("Échelle", color=pc.blueGreen, font_size=44, weight=BOLD)
     echelle.move_to(V_br + np.array([1.5, -1.5, 0.0]))  # right & below
     clamp_text(echelle)
-    self.play(FadeIn(echelle, run_time=0.25))
+    self.play(FadeIn(echelle, run_time=0.25, shift=UP))
     self.next_slide()
 
     # Triangle edges (blueGreen)

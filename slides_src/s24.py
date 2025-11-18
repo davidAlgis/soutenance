@@ -205,7 +205,7 @@ def slide_24(self):
     eq_sph = MathTex(
         r"\mathbf{F}_i^{v} = 2(d+2)\frac{m_i}{\rho_i}"
         r"\sum_j \frac{m_j}{\rho_j}"
-        r"\frac{\mathbf{A}_{ij}\cdot\mathbf{r}_{ij}}{\lVert\mathbf{r}_{ij}\rVert^{2} + 0.01\,h^{2}}"
+        r"\frac{\mathbf{v}_{ij}\cdot\mathbf{r}_{ij}}{\lVert\mathbf{r}_{ij}\rVert^{2} + 0.01\,h^{2}}"
         r"\,\nabla W_{ij}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 6,

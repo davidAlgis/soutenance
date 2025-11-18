@@ -34,7 +34,7 @@ def slide_02(self):
     )
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - intro.get_left()[0]
     intro.shift(RIGHT * (dx + 0.6))
-    self.play(FadeIn(intro, run_time=0.3))
+    self.play(FadeIn(intro, run_time=0.3, shift=RIGHT))
     self.wait(0.1)
     self.next_slide()
 
@@ -70,7 +70,7 @@ def slide_02(self):
     img_boat_box = SurroundingRectangle(
         img_boat, color=pc.blueGreen, buff=0.0, stroke_width=16
     )
-    self.play(FadeIn(img_boat_box, run_time=0.5))
+    self.play(Create(img_boat_box, run_time=1.5))
 
     # Finally, fade in the image inside the rectangle
     self.play(FadeIn(img_boat, run_time=0.6))

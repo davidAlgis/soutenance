@@ -11,12 +11,17 @@ def slide_30(self):
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # --- Intro line --------------------------------------------------------
-    self.start_body()
-    intro = self.add_body_text(
-        "Le lancer de rayon : une technique de rendu",
+    # ==== Intro line ====
+    intro = Tex(
+        r"Le lancer de rayon : une technique de rendu",
         font_size=self.BODY_FONT_SIZE,
+        color=BLACK,
     )
+    intro.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    )
+    dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - intro.get_left()[0]
+    intro.shift(RIGHT * (dx + 0.6))
 
     # ---------------- Camera + Circle layout -------------------------------
     bar_rect = bar.submobjects[0]
@@ -53,6 +58,7 @@ def slide_30(self):
         radius=circle_r, color=pc.blueGreen, stroke_width=6
     ).move_to(circle_center)
 
+    self.play(FadeIn(intro, shift=RIGHT))
     # Draw geometry
     self.play(
         AnimationGroup(
@@ -60,7 +66,7 @@ def slide_30(self):
             FadeIn(camera_label, run_time=0.3),
             Create(obj_circle, run_time=0.6),
             lag_ratio=0.15,
-        )
+        ),
     )
 
     self.wait(0.1)
