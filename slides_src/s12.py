@@ -45,7 +45,7 @@ def slide_12(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     intro = Tex(
-        r"Comment calculer les $k_i$ et $A_i$ ?",
+        r"Comment calculer les $\omega_i$, $k_i$ et $A_i$ ?",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -61,6 +61,7 @@ def slide_12(self):
     # --- Bullet points with LaTeX symbols --------------------------------
     items = [
         r"$k_i$ : sont échantillonnés sur un intervalle",
+        r"$\omega_i$ : sont déterminés à partir des $k_i$ avec la relation de dispersion",
         r"$A_i$ : sont définis par un spectre d'océan",
     ]
     bullets = make_bullet_list(
@@ -96,7 +97,7 @@ def slide_12(self):
     )
     shape = VGroup(left_tri)
     # Center the shape roughly in the middle of the free area
-    cy = (y_top + y_bottom) * 0.5
+    cy = (y_top + y_bottom) * 0.5 - 0.2
     shape.move_to([0.0, cy, 0.0])
 
     shape_title = Tex(
@@ -104,7 +105,7 @@ def slide_12(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
-    shape_title.next_to(shape, UP, buff=0.2)
+    shape_title.next_to(shape, UP, buff=0.1)
 
     self.play(FadeIn(shape), FadeIn(shape_title), run_time=0.5)
 
@@ -160,6 +161,43 @@ def slide_12(self):
     ai.move_to([ai_x, cy, 0.0])
     self.play(FadeIn(ai, run_time=0.3))
     self.play(ai.animate.shift(RIGHT * 1.0), run_time=0.4)
+    self.next_slide()
+
+    to_fade = VGroup(*[obj for obj in self.mobjects if obj not in [bar, ai]])
+    self.play(FadeOut(to_fade))
+    # --- Transform into full formula (MathTex split into parts) ---
+    eq_tessendorf_1 = MathTex(
+        r"h(x,t) = \sum_i^N A_i\cos(kx-\omega t)",
+        font_size=self.BODY_FONT_SIZE + 10,
+        color=BLACK,
+    )
+    eq_tessendorf_1.move_to(ORIGIN)
+
+    self.play(
+        ai.animate.move_to(ORIGIN),
+    )
+    self.play(
+        TransformMatchingTex(ai, eq_tessendorf_1),
+    )
+
+    self.next_slide()
+
+    eq_tessendorf_2 = MathTex(
+        r"h(x,t)=\sum_k \tilde{h}(t, k) \exp\left(i k x\right)",
+        font_size=self.BODY_FONT_SIZE + 10,
+        color=BLACK,
+    )
+    eq_tessendorf_2.move_to(ORIGIN)
+
+    self.play(
+        ReplacementTransform(eq_tessendorf_1, eq_tessendorf_2),
+    )
+    self.wait(0.1)
+    self.next_slide()
+
+    self.play(eq_tessendorf_2.animate.shift(UP * 2.0), run_time=0.4)
+
+    # TODO continue from here
 
     # End slide
     self.pause()
