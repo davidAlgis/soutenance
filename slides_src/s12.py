@@ -286,8 +286,28 @@ def slide_12(self):
     graph.set_points_smoothly(points)
 
     self.play(Create(graph))
-
     self.next_slide()
+
+    # New 2D vector notation equation
+    eq_tessendorf_3 = MathTex(
+        r"h(\mathbf x,t)=\sum_{\mathbf{k}} \tilde{h}(t, \mathbf{k}) "
+        r"\exp\left( i \mathbf{k}\cdot \mathbf x\right)",
+        font_size=self.BODY_FONT_SIZE + 10,
+        color=BLACK,
+    )
+    eq_tessendorf_3.move_to(eq_tessendorf_2.get_center())
+
+    # Second image
+    img2 = ImageMobject("Figures/wave_surface_rendered.jpeg")
+    img2.scale(0.6)
+    img2.next_to(eq_tessendorf_3, DOWN, buff=0.4)
+    self.play(
+        FadeOut(axes),
+        FadeOut(graph),
+        FadeIn(img2),
+        ReplacementTransform(eq_tessendorf_2, eq_tessendorf_3),
+        run_time=0.6,
+    )
 
     # End slide
     self.pause()
