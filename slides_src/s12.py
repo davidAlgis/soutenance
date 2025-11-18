@@ -54,7 +54,7 @@ def slide_12(self):
     )
     dx = anchor_x - intro.get_left()[0]
     intro.shift(RIGHT * dx)
-    self.play(FadeIn(intro), run_time=0.25)
+    self.play(FadeIn(intro, shift=RIGHT), run_time=0.25)
     # Wait for user
     self.next_slide()
 
@@ -75,7 +75,7 @@ def slide_12(self):
     bullets.next_to(intro, DOWN, buff=0.28, aligned_edge=LEFT)
     dx_b = anchor_x - bullets.get_left()[0]
     bullets.shift(RIGHT * dx_b)
-    self.play(FadeIn(bullets), run_time=0.25)
+    self.play(FadeIn(bullets, shift=RIGHT), run_time=0.25)
 
     # Wait for user
     self.next_slide()
@@ -83,14 +83,18 @@ def slide_12(self):
     # --- Central "bow-tie" shape -----------------------------------------
     # Coordinates chosen to resemble the provided figure.
     left_tri = Polygon(
-        [-2.0, -4, 0.0],
-        [-1.0, -3.5, 0.0],
-        [1.0, -3.5, 0.0],
-        [2.0, -4, 0.0],
-        [2.0, -2, 0.0],
-        [1.0, -2.5, 0.0],
-        [-1.0, -2.5, 0.0],
-        [-2.0, -2, 0.0],
+        [-1.5, 1.0, 0.0],
+        [-1.0, 0.5, 0.0],
+        [-1.0, 1.0, 0.0],
+        [1.0, 1.0, 0.0],
+        [1.0, 0.5, 0.0],
+        [1.5, 1.0, 0.0],
+        [1.5, -1.0, 0.0],
+        [1.0, -0.5, 0.0],
+        [1.0, -1.0, 0.0],
+        [-1.0, -1.0, 0.0],
+        [-1.0, -0.5, 0.0],
+        [-1.5, -1, 0.0],
         fill_color=pc.blueGreen,
         fill_opacity=0.95,
         stroke_opacity=0.0,
@@ -130,7 +134,7 @@ def slide_12(self):
     lbl_th.move_to([left_x, y_bot_lbl, 0.0])
 
     labels_left = VGroup(lbl_f, lbl_u10, lbl_th)
-    self.play(FadeIn(labels_left, run_time=0.4))
+    self.play(FadeIn(labels_left, run_time=0.4, shift=LEFT))
 
     # Wait for user
     self.next_slide()
@@ -164,7 +168,7 @@ def slide_12(self):
     self.next_slide()
 
     to_fade = VGroup(*[obj for obj in self.mobjects if obj not in [bar, ai]])
-    self.play(FadeOut(to_fade))
+    self.play(FadeOut(to_fade, shift=LEFT))
     # --- Transform into full formula (MathTex split into parts) ---
     eq_tessendorf_1 = MathTex(
         r"h(x,t) = \sum_i^N A_i\cos(kx-\omega t)",
@@ -197,7 +201,93 @@ def slide_12(self):
 
     self.play(eq_tessendorf_2.animate.shift(UP * 2.0), run_time=0.4)
 
-    # TODO continue from here
+    def load_height_data(csv_rel_path="states_sph/tessendorf_height.csv"):
+        """
+        Load the CSV file and return:
+        - xs_slice: x values along the line z = -1 at time t0
+        - ys_slice: corresponding heights
+        - xs_grid: sorted unique x values for the full grid
+        - zs_grid: sorted unique z values for the full grid
+        - height_grid: 2D array H[z_index, x_index] = height
+        - t0: time of the slice (smallest t in the file)
+        """
+        csv_path = os.path.join(csv_rel_path)
+        data = np.genfromtxt(csv_path, delimiter=";", names=True)
+
+        t_vals = data["t"]
+        t0 = float(np.min(t_vals))
+        mask_t0 = np.isclose(t_vals, t0)
+        data_t0 = data[mask_t0]
+
+        xs_all = data_t0["x"]
+        ys_all = data_t0["y"]
+        zs_all = data_t0["z"]
+
+        xs_grid = np.unique(xs_all)
+        zs_grid = np.unique(zs_all)
+        xs_grid.sort()
+        zs_grid.sort()
+
+        # Build the height grid H[z_index, x_index]
+        x_index = {float(x): i for i, x in enumerate(xs_grid)}
+        z_index = {float(z): j for j, z in enumerate(zs_grid)}
+        H = np.zeros((len(zs_grid), len(xs_grid)))
+
+        for row in data_t0:
+            i = x_index[float(row["x"])]
+            j = z_index[float(row["z"])]
+            H[j, i] = float(row["y"])
+
+        # Take the slice z = -1 (or the closest available z)
+        j_slice = int(np.argmin(np.abs(zs_grid - (-1.0))))
+        xs_slice = xs_grid.copy()
+        ys_slice = H[j_slice, :].copy()
+
+        return xs_slice, ys_slice, xs_grid, zs_grid, H, t0
+
+    # Load data from CSV
+    (
+        xs_slice,
+        ys_slice,
+        xs_grid,
+        zs_grid,
+        height_grid,
+        self.t0,
+    ) = load_height_data()
+
+    # Draw the 2D graph y = h(x, z = -1, t0).
+    y_min_axis = float(np.min(ys_slice))
+    y_max_axis = float(np.max(ys_slice))
+    x_min_axis = float(np.min(xs_slice))
+    x_max_axis = float(np.max(xs_slice))
+    if np.isclose(y_min_axis, y_max_axis):
+        y_min_axis -= 1.0
+        y_max_axis += 1.0
+    y_margin_axis = 0.1 * (y_max_axis - y_min_axis)
+    scale_4_screen = 5
+    axes = Axes(
+        x_range=[float(xs_slice[0]), float(xs_slice[-1]), 0.5],
+        y_range=[
+            y_min_axis - y_margin_axis,
+            y_max_axis + y_margin_axis,
+            (y_max_axis - y_min_axis) / 4.0,
+        ],
+        x_length=scale_4_screen * (x_max_axis - x_min_axis),
+        y_length=scale_4_screen * (y_max_axis - y_min_axis),
+        tips=True,
+        axis_config={"stroke_width": 2},
+    )
+    axes.next_to(eq_tessendorf_2, DOWN, buff=2.0)
+
+    # Build the graph from discrete points
+    graph = VMobject()
+    graph.set_stroke(pc.blueGreen, 3)
+    points = [axes.c2p(float(x), float(y)) for x, y in zip(xs_slice, ys_slice)]
+    graph.set_points_smoothly(points)
+
+    self.play(Create(graph))
+
+    self.next_slide()
 
     # End slide
     self.pause()
