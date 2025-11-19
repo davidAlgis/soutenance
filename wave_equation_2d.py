@@ -172,16 +172,18 @@ if __name__ == "__main__":
     C_VAL = 0.5  # Wave Speed
     A_VAL = 1.0  # Source Height
     RADIUS = 0.05
-    N_VAL = 301  # Grid Size
+    N_VAL = 151  # Grid Size
     T_VAL = 3.0  # Duration
-    DT_VAL = 0.007  # Output dt
+    DT_VAL = 0.015  # Output dt
 
-    VEL_X = -0.8
-    VEL_Y = 0.8
+    # Velocity setup: Source moves Bottom -> Top
+    # VEL_Y < 0 shifts the "world" down, making the source appear to move Up.
+    VEL_X = 0.0
+    VEL_Y = -0.8
 
     scenarios = [
         {"d": 1.0, "label": "no_damping"},
-        {"d": 0.95, "label": "with_damping"},
+        {"d": 0.99, "label": "with_damping"},
     ]
 
     # --- Visualization Colors ---
