@@ -21,7 +21,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "12"
+SLIDES_SELECTION = "18"
 
 
 class Presentation(Slide):
@@ -36,11 +36,10 @@ class Presentation(Slide):
 
     def _top_bar(self, label: str, *, font_size: int = 48):
         """
-        Create a top bar with a left-aligned title that auto-scales to fit.
-        The text is reduced in size if it would exceed the bar's inner width
-        (accounting for horizontal padding) or height.
+        Create a top bar with a left-aligned title.
+        Also adds a slide counter (X/Y) to the bottom left.
         """
-        # Bar geometry
+        # --- Existing Top Bar Logic ---
         h = config.frame_height / 10.0
         w = config.frame_width
 
@@ -52,15 +51,11 @@ class Presentation(Slide):
             stroke_opacity=0.0,
         )
 
-        # Create text at requested size
         txt = Text(label, color=WHITE, weight=BOLD, font_size=font_size)
 
-        # Available inner space for the title
         inner_w = w - 2.0 * self.DEFAULT_PAD
-        # Keep a small vertical margin so text does not touch bar edges
         inner_h = h * 0.82
 
-        # Compute scale factors to fit width and height; only down-scale
         if txt.width > 0 and txt.height > 0:
             scale_w = inner_w / txt.width
             scale_h = inner_h / txt.height
@@ -68,12 +63,10 @@ class Presentation(Slide):
             if scale < 1.0:
                 txt.scale(scale)
 
-        # Assemble group and position
         elements = [bar, txt]
         group = VGroup(*elements)
         group.to_edge(UP, buff=0)
 
-        # Left align with padding and vertically center in the bar
         txt.align_to(bar, LEFT)
         txt.shift(RIGHT * self.DEFAULT_PAD)
         txt.set_y(bar.get_center()[1])
@@ -82,6 +75,21 @@ class Presentation(Slide):
         self._current_bar = group
         self._body_last = None
         self._text_left_x = bar.get_left()[0] + self.DEFAULT_PAD
+
+        # --- NEW CODE: Slide Counter ---
+        # We check if attributes exist to avoid errors if running outside construct loop
+        # Create the text, e.g., "3/41"
+        counter_text = f"{self.current_slide_number}/{self.total_slides}"
+
+        # Style the counter (Dark gray, small font)
+        footer = Tex(counter_text, font_size=24, color=pc.blueGreen)
+
+        # Position at Bottom Left (DL) with a small buffer
+        footer.to_corner(DR, buff=0.3)
+
+        # Add directly to the scene
+        self.add(footer)
+        # -------------------------------
 
         return group
 
@@ -142,9 +150,20 @@ class Presentation(Slide):
         nums = all_numbers()
         if not nums:
             return
+
         selection_str = os.environ.get("SLIDES", SLIDES_SELECTION)
-        total = max(nums)
-        selection = parse_selection(selection_str, total)
+        # We assume the "Total" is the count of all registered slides
+        total_slides = len(nums)
+        # Or use total_slides = max(nums) if you prefer the highest index number
+
+        # Store total in self so _top_bar can access it
+        self.total_slides = total_slides
+
+        total_in_selection = max(nums)  # logic for the selector
+        selection = parse_selection(selection_str, total_in_selection)
+
         for n in nums:
             if n in selection:
+                # Store the current number in self before rendering
+                self.current_slide_number = n
                 get(n)(self)
