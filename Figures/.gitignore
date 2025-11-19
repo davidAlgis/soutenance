@@ -1,4 +1,5 @@
 heat_pictures/
 hybrid.gif
 lateral_moving_boat.gif
-wave_propagation_2d.gif
+wave_propagation_2d_with_damping.gif
+wave_propagation_2d_no_damping.gif

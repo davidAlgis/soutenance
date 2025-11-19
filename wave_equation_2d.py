@@ -1,6 +1,11 @@
+import matplotlib
+
+# Force 'Agg' backend to ensure GIF generation works without a display
+# and prevents the 'NoneType' attribute error during cleanup.
+matplotlib.use("Agg")
+
 import os
 
-import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
@@ -16,6 +21,7 @@ def simulate_wave_2d_dirichlet(
     T=4.0,  # total simulated duration
     dt=0.005,  # user-requested output sampling step
     t0=0.0,  # start time
+    damping=1.0,  # Damping factor (1.0 = no damping, <1.0 = decay)
     moving_source=False,
 ):
     """
@@ -79,8 +85,11 @@ def simulate_wave_2d_dirichlet(
         # 2. Wave Update
         u_next = 2.0 * u - u_prev + lam2 * lap
 
+        # Apply Damping
+        if damping != 1.0:
+            u_next *= damping
+
         # 3. Apply Moving Hard Source
-        # Instead of adding force, we enforce u = A inside the radius
         if A != 0.0 and moving_source:
             current_time = (n - n0) * dt_sim
 
@@ -128,79 +137,98 @@ if __name__ == "__main__":
     C_VAL = 0.5  # Wave speed
     A_VAL = 1.0  # Height of the "boat" (Displacement)
     RADIUS_VAL = 0.05  # Radius of the "boat"
-    N_VAL = 401  # Higher resolution for sharper wake details
+    N_VAL = 201  # Higher resolution for sharper wake details
     T_VAL = 2.0  # High speed duration
-    DT_VAL = 0.005  # Finer time step for smoother animation
+    DT_VAL = 0.01  # Finer time step for smoother animation
 
     MOVING = True
 
-    print(f"Running 2D wave simulation (Kelvin Wake Setup)...")
-    H, x, y, t = simulate_wave_2d_dirichlet(
-        L=L_VAL,
-        c=C_VAL,
-        A=A_VAL,
-        radius=RADIUS_VAL,
-        N=N_VAL,
-        T=T_VAL,
-        dt=DT_VAL,
-        moving_source=MOVING,
-    )
-    print(f"Simulation complete. Frames: {H.shape[0]}")
+    # Define the scenarios to run
+    scenarios = [
+        {"d": 1.0, "label": "no_damping"},
+        {"d": 0.99, "label": "with_damping"},
+    ]
 
-    # --- Visualization ---
-    BLUE_GREEN_LIGHT = (0.12, 0.61, 0.73)
-    WHITE = (1.0, 1.0, 1.0)
+    for scen in scenarios:
+        d_factor = scen["d"]
+        label = scen["label"]
 
-    def create_symmetric_cmap(color, center):
-        colors = [color, center, color]
-        nodes = [0.0, 0.5, 1.0]
-        return LinearSegmentedColormap.from_list(
-            "SymmetricBlueGreen", list(zip(nodes, colors))
+        print(f"\n--- Running Simulation: {label} (d={d_factor}) ---")
+
+        H, x, y, t = simulate_wave_2d_dirichlet(
+            L=L_VAL,
+            c=C_VAL,
+            A=A_VAL,
+            radius=RADIUS_VAL,
+            N=N_VAL,
+            T=T_VAL,
+            dt=DT_VAL,
+            t0=0.0,
+            damping=d_factor,
+            moving_source=MOVING,
+        )
+        print(f"Simulation complete. Frames: {H.shape[0]}")
+
+        # --- Visualization ---
+        BLUE_GREEN_LIGHT = (0.12, 0.61, 0.73)
+        WHITE = (1.0, 1.0, 1.0)
+
+        def create_symmetric_cmap(color, center):
+            colors = [color, center, color]
+            nodes = [0.0, 0.5, 1.0]
+            return LinearSegmentedColormap.from_list(
+                "SymmetricBlueGreen", list(zip(nodes, colors))
+            )
+
+        custom_cmap = create_symmetric_cmap(BLUE_GREEN_LIGHT, WHITE)
+
+        # Visualize based on the wake amplitude
+        wake_scale = 0.3
+        norm = Normalize(vmin=-wake_scale, vmax=wake_scale)
+
+        # Create figure
+        fig = plt.figure(figsize=(6, 6), frameon=False)
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+
+        img = ax.imshow(
+            H[0].T,
+            cmap=custom_cmap,
+            norm=norm,
+            origin="lower",
+            extent=[-L_VAL, L_VAL, -L_VAL, L_VAL],
+            interpolation="bilinear",
         )
 
-    custom_cmap = create_symmetric_cmap(BLUE_GREEN_LIGHT, WHITE)
+        def update(frame):
+            img.set_data(H[frame].T)
+            return [img]
 
-    # Visualize based on the wake amplitude, ignoring the massive source amplitude
-    # The source is at height A=1.0, but the wake is much smaller.
-    # We clip the visualization to see the wake details clearly.
-    wake_scale = 0.3
-    norm = Normalize(vmin=-wake_scale, vmax=wake_scale)
+        # Create Animation (blit=False is safer for file generation)
+        ani = FuncAnimation(
+            fig,
+            update,
+            frames=range(H.shape[0]),
+            interval=30,
+            blit=False,
+            cache_frame_data=False,  # Reduce memory usage
+        )
 
-    print("Starting Live Animation Window...")
-    fig = plt.figure(figsize=(6, 6), frameon=False)
-    ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-    ax.set_axis_off()
-    fig.add_axes(ax)
+        # GIF Export
+        GIF_FILENAME = f"Figures/wave_propagation_2d_{label}.gif"
+        output_dir = os.path.dirname(GIF_FILENAME)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
-    img = ax.imshow(
-        H[0].T,
-        cmap=custom_cmap,
-        norm=norm,
-        origin="lower",
-        extent=[-L_VAL, L_VAL, -L_VAL, L_VAL],
-        interpolation="bilinear",
-    )
+        print(f"Saving animation to GIF: {GIF_FILENAME}...")
+        # Use pillow writer explicitly to avoid ImageIO warning
+        ani.save(GIF_FILENAME, writer="pillow", fps=30, dpi=100)
+        print("GIF export complete.")
 
-    def update(frame):
-        img.set_data(H[frame].T)
-        return [img]
+        # Cleanup: Delete animation object before closing figure to prevent
+        # 'NoneType' attribute error on event loop callback.
+        del ani
+        plt.close(fig)
 
-    ani = FuncAnimation(
-        fig,
-        update,
-        frames=range(H.shape[0]),
-        interval=30,
-        blit=True,
-    )
-
-    # GIF Export
-    GIF_FILENAME = "Figures/wave_propagation_2d.gif"
-    output_dir = os.path.dirname(GIF_FILENAME)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    print(f"Saving animation to GIF: {GIF_FILENAME}...")
-    ani.save(GIF_FILENAME, writer="imageio", fps=1000 / 30, dpi=100)
-    print("GIF export complete.")
-
-    plt.show()
+    print("\nAll simulations done.")
