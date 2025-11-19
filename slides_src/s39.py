@@ -14,7 +14,7 @@ def slide_39(self):
     - Bullet list built with utils.make_bullet_list (blueGreen triangles)
     """
     # --- Top bar
-    bar = self._top_bar("Conclusion")
+    bar = self._top_bar("Conclusions")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
@@ -46,10 +46,10 @@ def slide_39(self):
         "La bibliothèque InteropUnityCUDA",
         "Le calcul de la vitesse de l'océan en temps réel",
         "Les expressions des forces pour le couplage fluide vers solides",
-        "Le masque pour l'entrée du couplage solide vers fluides",
+        "Le masque pour l'entrée du couplage solides vers fluide",
         "Les interactions entre les trois méthodes",
         "L'utilisation de la mémoire partagée pour la RPPV",
-        "L'utilisation des c\\oe ur RT pour la RPPV",
+        "L'utilisation des c\\oe urs RT pour la RPPV",
         "Un modèle théorique pour l'hybridation entre des modèles de vagues et SPH",
     ]
 

@@ -26,7 +26,7 @@ def slide_21(self):
 
     # --- Intro line ---
     intro = Tex(
-        r"SPH est une méthode qui simule le fluide comme des particules :",
+        r"SPH est une méthode qui représente le fluide par des particules :",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )

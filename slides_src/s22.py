@@ -48,7 +48,7 @@ def slide_22(self):
     # Prefix (already positioned with your existing pos/anchor_left)
     t_prefix = (
         Tex(
-            "Propriété essentielle à l'eau : ",
+            "Propriété de l'eau : ",
             color=BLACK,
             font_size=self.BODY_FONT_SIZE,
         )
@@ -77,7 +77,7 @@ def slide_22(self):
     # --- Bullets (using utils.make_bullet_list) ---------------------------------
     bullet_items = [
         r"Densité constante : $|\hat{\rho}-\rho_0| \rightarrow 0$",
-        r"La somme des volumes des particules reste constante $\nabla \cdot v = 0$",
+        r"La somme des volumes des particules reste constante : $\nabla \cdot v = 0$",
     ]
     bullets = make_bullet_list(
         bullet_items,

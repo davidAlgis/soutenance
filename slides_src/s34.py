@@ -510,7 +510,7 @@ def slide_34(self):
     self.next_slide()
 
     nr_title_tex = Tex(
-        "\mbox{On utilise la méthode de Newton-Raphson, pour determiner $a$ et $b$ à partir d'une position donnée :}",
+        "\mbox{On utilise la méthode de Newton-Raphson, pour déterminer $a$ et $b$ à partir d'une position donnée :}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

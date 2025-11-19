@@ -109,7 +109,7 @@ def slide_17(self):
     self.next_slide()
 
     line4 = Tex(
-        r"On utilise la méthode des différences finies pour la résoudre.",
+        r"Résolution par la méthode des différences finies.",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )

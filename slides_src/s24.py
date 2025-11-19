@@ -45,7 +45,7 @@ def slide_24(self):
 
     # Prefix (placed exactly like your original code using anchor_x and the top bar)
     line1_prefix = Tex(
-        "Propriété essentielle à l'eau : ",
+        "Propriété de l'eau : ",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

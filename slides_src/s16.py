@@ -40,7 +40,7 @@ def slide_16(self):
     area_w = x_right - x_left
 
     l1 = Tex(
-        r"\mbox{L'action du fluide sur le solide est approximée par des forces sur le maillage du solide.}",
+        r"\mbox{Action du fluide sur le solide approximée par 4 forces appliquée sur le maillage }",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -49,7 +49,7 @@ def slide_16(self):
     l1.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l1.get_left()[0]))
 
     l2 = Tex(
-        r"Découpage en 4 forces :",
+        r"du solide :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -229,7 +229,6 @@ def slide_16(self):
         rate_func=linear,
         run_time=2.6,
     )
-    self.next_slide()
 
     # ========= Force arrows (foreground), colored as requested =========
     keel = boat.get_bottom()
