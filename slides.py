@@ -31,7 +31,8 @@ class Presentation(Slide):
     BODY_TOP_BUFF = 0.2
     BODY_LINE_BUFF = 0.15
     DEFAULT_PAD = 0.3
-    BODY_FONT_SIZE = 28
+    BODY_FONT_SIZE = 34
+    SHIFT_SCALE = 0.15
 
     def _top_bar(self, label: str, *, font_size: int = 48):
         """
