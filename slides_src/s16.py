@@ -57,7 +57,9 @@ def slide_16(self):
     l2.shift(RIGHT * ((x_left + self.DEFAULT_PAD) - l2.get_left()[0]))
 
     intro_group = VGroup(l1, l2)
-    self.play(FadeIn(intro_group, run_time=0.35))
+    self.play(
+        FadeIn(intro_group, run_time=0.35, shift=RIGHT * self.SHIFT_SCALE)
+    )
 
     # ========= 4 forces layout (Tex only) =========
     # Left column --------------------------------------------------------------
@@ -143,7 +145,7 @@ def slide_16(self):
     rem_y_center = (rem_top + rem_bot) * 0.5
 
     forces_group.move_to([x_center, rem_y_center, 0.0])
-    self.play(FadeIn(forces_group, run_time=0.45))
+    self.play(FadeIn(forces_group, run_time=0.45, shift=UP * self.SHIFT_SCALE))
 
     # ========= Wait, then remove 3 lines and re-center forces higher =========
     self.next_slide()

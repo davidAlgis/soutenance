@@ -53,7 +53,7 @@ def slide_10(self):
     )
     intro_y = y_top - 0.35
     intro.move_to([anchor_x + intro.width / 2.0, intro_y, 0.0])
-    self.play(FadeIn(intro), run_time=0.25)
+    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -107,7 +107,11 @@ def slide_10(self):
         m.set_points_as_corners([axes.c2p(x, y) for x, y in zip(xs, ys)])
 
     update_curve(curve)
-    self.play(Create(curve), FadeIn(formula), run_time=1.0)
+    self.play(
+        Create(curve),
+        FadeIn(formula, shift=RIGHT * self.SHIFT_SCALE),
+        run_time=1.0,
+    )
     curve.add_updater(update_curve)
 
     # ---------- Numeric label (no per-frame LaTeX) ----------

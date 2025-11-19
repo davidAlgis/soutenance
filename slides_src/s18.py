@@ -56,7 +56,7 @@ def slide_18(self):
         self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
     )
     line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
-    self.play(FadeIn(line1), run_time=0.5)
+    self.play(FadeIn(line1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5)
     self.next_slide()
 
     line2 = Tex(
@@ -74,7 +74,9 @@ def slide_18(self):
     )
     line3.next_to(line2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     line3.shift(RIGHT * (anchor_x - line3.get_left()[0]))
-    self.play(FadeIn(line2, line3), run_time=0.5)
+    self.play(
+        FadeIn(line2, line3, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
+    )
 
     # --- Wait for user before images --------------------------------------
     self.next_slide()

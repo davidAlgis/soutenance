@@ -51,7 +51,7 @@ def slide_07(self):
     # ========= Left: text column =========
     # Heading
     h1 = Tex(
-        "CUDA un langage pour programmation sur GPU.",
+        "CUDA : programmation sur GPU NVidia.",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -61,7 +61,11 @@ def slide_07(self):
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - h1.get_left()[0]
     h1.shift(RIGHT * (dx + 0.6))
 
-    self.play(FadeIn(logo), FadeIn(h1), run_time=0.25)
+    self.play(
+        FadeIn(logo, shift=LEFT * self.SHIFT_SCALE),
+        FadeIn(h1, shift=RIGHT * self.SHIFT_SCALE),
+        run_time=1.0,
+    )
 
     self.next_slide()
     # (vspace in LaTeX → vertical gap here)
@@ -69,13 +73,13 @@ def slide_07(self):
 
     # Subheading
     h2 = Tex(
-        "Les avantages et les inconvénients :",
+        "Avantages/Inconvénients :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     h2.align_to(h1, LEFT)
     h2.next_to(h1, DOWN, buff=0.5, aligned_edge=LEFT)
-    self.play(FadeIn(h2), run_time=0.25)
+    self.play(FadeIn(h2, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
     self.next_slide()
 
     # Pros / Cons
@@ -102,7 +106,7 @@ def slide_07(self):
     )
     pc_list.align_to(h2, LEFT)
     pc_list.next_to(h2, DOWN, buff=0.22, aligned_edge=LEFT)
-    self.play(FadeIn(pc_list), run_time=0.25)
+    self.play(FadeIn(pc_list, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
     self.next_slide()
 
     # End slide

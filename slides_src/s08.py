@@ -53,7 +53,7 @@ def slide_08(self):
     line2.next_to(line1, DOWN, aligned_edge=LEFT)
     dx2 = anchor_x - line2.get_left()[0]
     line2.shift(RIGHT * dx2)
-    self.play(FadeIn(line1, line2, shift=RIGHT * 0.15))
+    self.play(FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE))
 
     self.wait(0.1)
     self.next_slide()
@@ -85,7 +85,7 @@ def slide_08(self):
     box_cpp = box("Librairie C++", cx_right)
 
     # Show only UNITY box initially
-    self.play(Create(box_unity), run_time=0.3)
+    self.play(Create(box_unity), run_time=1.0)
 
     # ========= Image + caption (initial state) =========
     img = ImageMobject("Figures/logo_images.png")
@@ -109,7 +109,7 @@ def slide_08(self):
 
     # Move image + caption together as a single unit
     ic_group = Group(img, cap)
-    self.play(FadeIn(ic_group, run_time=0.4))
+    self.play(FadeIn(ic_group, shift=UP * SHIFT_SCALE, run_time=0.4))
 
     # ========= STEP 1 → 2 =========
     self.next_slide()
@@ -154,14 +154,14 @@ def slide_08(self):
     self.play(ic_group.animate.shift(shift_vec_3), run_time=0.6)
 
     new_cap_3 = Text(
-        "écriture dans cuda", color=BLACK, font_size=self.BODY_FONT_SIZE
+        "calcul dans cuda", color=BLACK, font_size=self.BODY_FONT_SIZE
     )
     new_cap_3.move_to(cap)
     self.play(Transform(cap, new_cap_3), run_time=0.35)
 
     # ========= Bottom-right credit =========
     credit = Tex(
-        r"Algis \textit{et al.} (2025), \textit{InteropUnityCUDA...}",
+        r"Algis \textit{et al.}, \textit{SPE}, 2025",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE - 6,
     )

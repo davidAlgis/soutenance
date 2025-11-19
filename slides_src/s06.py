@@ -52,7 +52,7 @@ def slide_06(self):
     # ========= Left: text column =========
     # Headings + lists
     h1 = Tex(
-        "Unity un moteur de jeu polyvalent :",
+        "Unity : moteur de jeu polyvalent",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -61,7 +61,11 @@ def slide_06(self):
     )
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - h1.get_left()[0]
     h1.shift(RIGHT * (dx + 0.6))
-    self.play(FadeIn(logo), FadeIn(h1), run_time=0.25)
+    self.play(
+        FadeIn(logo, shift=LEFT * self.SHIFT_SCALE),
+        FadeIn(h1, shift=RIGHT * self.SHIFT_SCALE),
+        run_time=1.0,
+    )
 
     self.next_slide()
 
@@ -69,7 +73,7 @@ def slide_06(self):
         "Physique",
         "Rendu",
         "Réalité virtuelle",
-        r"Interface avec le GPU : \textit{les compute shaders}",
+        r"Interface avec GPU : \textit{les compute shaders}",
         "...",
     ]
     lst = make_bullet_list(
@@ -82,24 +86,24 @@ def slide_06(self):
     # stack under h1
     lst.align_to(h1, LEFT)
     lst.next_to(h1, DOWN, buff=0.22, aligned_edge=LEFT)
-    self.play(FadeIn(lst), run_time=0.25)
+    self.play(FadeIn(lst, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
     self.next_slide()
 
     h2 = Tex(
-        r"Les avantages et les inconvénients des \textit{compute shaders}:",
+        r"Avantages/Inconvénients des \textit{compute shaders}:",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     h2.align_to(h1, LEFT)
     h2.next_to(lst, DOWN, buff=1.0, aligned_edge=LEFT)
-    self.play(FadeIn(h2), run_time=0.25)
+    self.play(FadeIn(h2, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
     self.next_slide()
 
     pros = ["Multi-support"]
     cons = [
-        "Ne bénéficie pas des dernières technologies",
-        "Lourd à programmer",
-        "Pas simple à débogger",
+        "Ne bénéficie pas dernières technologies",
+        "Complexe à programmer",
+        "Difficile à débogger",
         "...",
     ]
     pc_list = make_pro_cons(
@@ -115,7 +119,7 @@ def slide_06(self):
     )
     pc_list.align_to(h2, LEFT)
     pc_list.next_to(h2, DOWN, buff=0.22, aligned_edge=LEFT)
-    self.play(FadeIn(pc_list), run_time=0.25)
+    self.play(FadeIn(pc_list, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # End slide
     self.pause()

@@ -38,7 +38,6 @@ def slide_15(self):
     y_center = 0.5 * (y_top + y_bottom)
 
     # --- Subtitle (Tex) ---
-    self.start_body()
     subtitle = Tex(
         r"La m\'ethode de Tessendorf ne permet pas le couplage avec des solides :",
         color=BLACK,
@@ -51,7 +50,7 @@ def slide_15(self):
         0
     ]
     subtitle.shift(RIGHT * dx_sub)
-    self.play(FadeIn(subtitle), run_time=0.25)
+    self.play(FadeIn(subtitle, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # --- Plot mapping (no axes) ---
     plot_w = min(area_w * 0.88, 12.0)

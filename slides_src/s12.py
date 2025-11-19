@@ -54,7 +54,7 @@ def slide_12(self):
     )
     dx = anchor_x - intro.get_left()[0]
     intro.shift(RIGHT * dx)
-    self.play(FadeIn(intro, shift=RIGHT), run_time=0.25)
+    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     # Wait for user
     self.next_slide()
 
@@ -75,7 +75,7 @@ def slide_12(self):
     bullets.next_to(intro, DOWN, buff=0.28, aligned_edge=LEFT)
     dx_b = anchor_x - bullets.get_left()[0]
     bullets.shift(RIGHT * dx_b)
-    self.play(FadeIn(bullets, shift=RIGHT), run_time=0.25)
+    self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # Wait for user
     self.next_slide()

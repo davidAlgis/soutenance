@@ -70,7 +70,9 @@ def slide_17(self):
     )
     line2.next_to(line1, DOWN, buff=0.22, aligned_edge=LEFT)
     _lock_left_y(line2, line2.get_y())
-    self.play(FadeIn(line1, line2), run_time=0.25)
+    self.play(
+        FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
+    )
     self.wait(0.1)
     # Attente utilisateur ------------------------------------------------------
     self.next_slide()
@@ -100,7 +102,9 @@ def slide_17(self):
     )
     line3.next_to(eq_pde, DOWN, buff=0.26, aligned_edge=LEFT)
     _lock_left_y(line3, line3.get_y())
-    self.play(Create(eq_pde), FadeIn(line3), run_time=0.5)
+    self.play(
+        FadeIn(eq_pde, line3, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
+    )
     self.wait(0.1)
     self.next_slide()
 
@@ -119,7 +123,9 @@ def slide_17(self):
     )
     line5.next_to(line4, DOWN, buff=0.16, aligned_edge=LEFT)
     _lock_left_y(line5, line5.get_y())
-    self.play(FadeIn(line4, line5), run_time=0.25)
+    self.play(
+        FadeIn(line4, line5, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25
+    )
     self.next_slide()
 
     # --- Schéma DF initial ----------------------------------------------------
@@ -147,7 +153,9 @@ def slide_17(self):
     )
     line_a.next_to(eq_fd, DOWN, buff=0.22, aligned_edge=LEFT)
     _lock_left_y(line_a, line_a.get_y())
-    self.play(FadeIn(eq_fd, line_a), run_time=0.5)
+    self.play(
+        FadeIn(eq_fd, line_a, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
+    )
 
     # Attente utilisateur ------------------------------------------------------
     self.next_slide()

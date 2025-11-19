@@ -25,7 +25,7 @@ def slide_02(self):
     self.add_foreground_mobject(bar)  # keep the bar above everything
 
     intro = Tex(
-        r"Formation en réalité virtuelle : manipulation complexe sur un navire",
+        r"Arc Blanc : formations manœuvres complexes sur un navire",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
@@ -34,7 +34,7 @@ def slide_02(self):
     )
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - intro.get_left()[0]
     intro.shift(RIGHT * (dx + 0.6))
-    self.play(FadeIn(intro, run_time=0.3, shift=RIGHT))
+    self.play(FadeIn(intro, run_time=0.3, shift=RIGHT * self.SHIFT_SCALE))
     self.wait(0.1)
     self.next_slide()
 
@@ -47,9 +47,7 @@ def slide_02(self):
     img_left.to_edge(LEFT, buff=0.6)
     img_left.to_edge(DOWN, buff=0.1)
     img_left.scale(0.7)
-    self.play(FadeIn(img_left, shift=RIGHT * 0.15, run_time=0.6))
-    self.wait(0.1)
-    self.next_slide()
+    self.play(FadeIn(img_left, shift=RIGHT * self.SHIFT_SCALE, run_time=0.6))
     # --- Lines (draw from their start to end) ---
     line1 = Line([-4.5, 0, 0], [-1, -2, 0], color=pc.blueGreen)
     line2 = Line([-4.5, 0.5, 0], [-1, 2, 0], color=pc.blueGreen)

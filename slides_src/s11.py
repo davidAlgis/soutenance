@@ -54,7 +54,7 @@ def slide_11(self):
         0
     ]
     subtitle.shift(RIGHT * dx_sub)
-    self.play(FadeIn(subtitle), run_time=0.25)
+    self.play(FadeIn(subtitle, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -216,7 +216,7 @@ def slide_11(self):
         m = MathTex(
             r"h_T(x,t) = ",
             r"\sum",
-            r"_{i=0}",
+            r"_{i=1}",
             r"^{",
             n_txt,
             r"} A_i\cos\!\left(k_i x - \omega t\right)",
@@ -260,7 +260,7 @@ def slide_11(self):
     # Progressive addition in one clip; curve updates via n_comp
     rng = np.random.default_rng(42)
     extra = []
-    add_count = 20
+    add_count = 28
     for _ in range(add_count):
         A_rand = float(rng.uniform(0.01, 0.1))
         k_rand = float(rng.uniform(0.1, 20.0))

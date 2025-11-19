@@ -106,8 +106,8 @@ def slide_03(self):
     col1_img.shift(DOWN * 0.35)  # only this image a bit lower
 
     self.add(col1_title)
-    self.play(Restore(col1_title), run_time=0.6)
-    self.play(FadeIn(col1_img, run_time=0.35, shift=DOWN))
+    self.play(Restore(col1_title), run_time=1.0)
+    self.play(FadeIn(col1_img, run_time=0.6, shift=DOWN))
     revealed += [col1_title, col1_img]
     self.next_slide()
 
@@ -120,8 +120,8 @@ def slide_03(self):
     )
 
     self.add(col2_title)
-    self.play(Restore(col2_title), run_time=0.6)
-    self.play(FadeIn(col2_img, run_time=0.35, shift=DOWN))
+    self.play(Restore(col2_title), run_time=1.0)
+    self.play(FadeIn(col2_img, run_time=0.6, shift=DOWN))
     revealed += [col2_title, col2_img]
     self.next_slide()
     self.play(Create(line_right))
@@ -133,16 +133,16 @@ def slide_03(self):
     )
 
     self.add(col3_title)
-    self.play(Restore(col3_title), run_time=0.6)
-    self.play(FadeIn(col3_img, run_time=0.35, shift=DOWN))
+    self.play(Restore(col3_title), run_time=1.0)
+    self.play(FadeIn(col3_img, run_time=0.6, shift=DOWN))
     revealed += [col3_title, col3_img]
     self.next_slide()
 
     # --- Final collapse + remove guides ---
     collapse_group = Group(*revealed)
     self.play(
-        FadeOut(line_left, shift=UP),
-        FadeOut(line_right, shift=UP),
+        FadeOut(line_left, shift=DOWN),
+        FadeOut(line_right, shift=DOWN),
         run_time=0.2,
     )
 
@@ -235,6 +235,7 @@ def slide_03(self):
     self.play(Create(edge1, run_time=0.30))
     self.play(Create(edge2, run_time=0.30))
     self.play(Create(edge3, run_time=0.30))
+    self.wait(0.1)
     self.next_slide()
 
     # JellyBean cross at centroid

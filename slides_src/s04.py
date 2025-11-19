@@ -25,7 +25,7 @@ def slide_04(self):
 
     # ==== Intro line ====
     intro = Tex(
-        r"Pour r{\'e}pondre à nos objectifs :",
+        r"Pour répondre à nos objectifs :",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
@@ -34,19 +34,18 @@ def slide_04(self):
     )
     dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - intro.get_left()[0]
     intro.shift(RIGHT * (dx + 0.6))
-    self.play(FadeIn(intro, run_time=0.3))
+    self.play(FadeIn(intro, run_time=0.5, shift=RIGHT * self.SHIFT_SCALE))
     self.next_slide()
 
     # ==== Section title ====
     sec = Tex(
-        r"I) Couplages 3 m{\'e}thodes grandes {\'e}chelles",
+        r"I) Couplages 3 méthodes grandes échelles",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
     sec.next_to(intro, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     sec.shift(RIGHT * (dx + 0.6))
-    self.play(FadeIn(sec, run_time=0.3))
-    self.next_slide()
+    self.play(FadeIn(sec, run_time=0.5, shift=RIGHT * self.SHIFT_SCALE))
 
     # ==== Columns geometry ====
     y_bottom = -config.frame_height / 2 + 0.6
@@ -298,8 +297,8 @@ def slide_04(self):
     )
 
     self.play(
-        t_tracker.animate.increment_value(2 * PI),
-        run_time=3.5,
+        t_tracker.animate.increment_value(8 * PI),
+        run_time=6.0,
         rate_func=linear,
     )
 
@@ -353,10 +352,12 @@ def slide_04(self):
     self.play(Create(cross, run_time=0.35), rate_func=linear)
 
     # ==== Move cross toward bottom side (with concurrent wave motion) ====
+    self.wait(0.1)
     self.next_slide()
     target = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
     self.play(cross.animate.move_to(target), run_time=0.8, rate_func=linear)
 
+    self.wait(0.1)
     self.next_slide()
 
     # ======================= CLEAR MINIATURE CONTENTS (keep the box) =======================
@@ -413,8 +414,7 @@ def slide_04(self):
         color=BLACK,
     )
     sec2.next_to(sec, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    # sec2.shift(RIGHT * (dx + 0.6))
-    self.play(FadeIn(sec2, run_time=0.3))
+    self.play(FadeIn(sec2, run_time=0.5, shift=RIGHT * self.SHIFT_SCALE))
 
     # ---------------- Miniature of slide 37 INSIDE the existing box ----------------
     inner_pad = 0.20

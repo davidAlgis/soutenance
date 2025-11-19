@@ -25,7 +25,6 @@ def slide_21(self):
     self.add_foreground_mobject(bar)
 
     # --- Intro line ---
-    self.start_body()
     intro = Tex(
         r"SPH est une méthode qui simule le fluide comme des particules :",
         font_size=self.BODY_FONT_SIZE,
@@ -38,7 +37,7 @@ def slide_21(self):
         0
     ]
     intro.shift(RIGHT * dx)
-    self.play(FadeIn(intro, run_time=0.3))
+    self.play(FadeIn(intro, run_time=0.3, shift=RIGHT * self.SHIFT_SCALE))
     self.next_slide()
     # --- SPH animation (fluids only) with ROI crop ---
 

@@ -40,7 +40,7 @@ def slide_26(self):
     lead.shift(
         RIGHT * (dx + 0.6)
     )  # small extra pad to match your usual rhythm
-    self.play(FadeIn(lead, run_time=0.25))
+    self.play(FadeIn(lead, run_time=0.25, shift=RIGHT * self.SHIFT_SCALE))
     self.wait(0.1)
     self.next_slide()
 

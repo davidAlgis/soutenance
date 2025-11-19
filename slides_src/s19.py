@@ -266,7 +266,7 @@ def slide_19(self):
         tbl.scale_to_fit_height(max_h)
     tbl.move_to([0.0, -0.1, 0.0])
 
-    self.play(FadeIn(tbl, run_time=0.6))
+    self.play(FadeIn(tbl, run_time=0.6, shift=DOWN * self.SHIFT_SCALE))
 
     credit = Tex(
         r"Algis \textit{et al.} (2025), \textit{Arc Blanc...}",
@@ -361,7 +361,7 @@ def slide_19(self):
         -config.frame_width / 2 + 0.6 + self.DEFAULT_PAD
     ) - bullets.get_left()[0]
     bullets.shift(RIGHT * dx2)
-    self.play(FadeIn(bullets), run_time=0.5)
+    self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5)
 
     self.pause()
     self.clear()

@@ -36,7 +36,7 @@ def slide_14(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     line1 = Tex(
-        r"\mbox{La vitesse de l'eau en tout points de l'espace est calculée avec le même principe de transformation}",
+        r"\mbox{La vitesse de l'eau en tout point de l'espace calculée avec le même principe de transformation}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -53,7 +53,9 @@ def slide_14(self):
     line2.next_to(line1, DOWN, aligned_edge=LEFT)
     dx2 = anchor_x - line2.get_left()[0]
     line2.shift(RIGHT * dx2)
-    self.play(FadeIn(line1, line2), run_time=0.25)
+    self.play(
+        FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25
+    )
 
     # ===================== Axis & Layout =================================
     # Tweakables to nudge the axes where you want

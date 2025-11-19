@@ -3,6 +3,7 @@
 # Texte conservé exactement tel qu'écrit par l'utilisateur.
 
 # flake8: noqa: F405
+import csv
 import os
 
 import numpy as np
@@ -37,21 +38,11 @@ def slide_22(self):
     area_w = x_right - x_left
     area_h = y_top - y_bottom
 
-    # ---- Palette fallbacks ----
-    import csv
-
-    import numpy as np
-
-    blueGreen = getattr(pc, "blueGreen", BLUE_D)
-    jellyBean = getattr(pc, "jellyBean", RED_D)
-    fernGreen = getattr(pc, "fernGreen", GREEN_D)
-    oxfordBlue = getattr(pc, "oxfordBlue", BLUE_E)
-
     # ---------- Intro (aligned left) ----------
     intro = VGroup()
     # Display prefix, then (after next_slide) replace it by the full sentence.
 
-    pos = [x_left + 0.01 * area_w, y_top - 0.55, 0]
+    pos = [x_left + 0.01 * area_w, y_top - 0.2, 0]
     anchor_left = [x_left, 0, 0]
 
     # Prefix (already positioned with your existing pos/anchor_left)
@@ -65,7 +56,7 @@ def slide_22(self):
         .align_to(anchor_left, LEFT)
     )
 
-    self.play(FadeIn(t_prefix, run_time=0.3))
+    self.play(FadeIn(t_prefix, shift=RIGHT * self.SHIFT_SCALE, run_time=0.3))
     self.wait(0.1)
     self.next_slide()
 
@@ -98,7 +89,7 @@ def slide_22(self):
     bullets.next_to(t_prefix, DOWN, buff=0.5, aligned_edge=LEFT)
     bullets.align_to(t_prefix, LEFT)
 
-    self.play(FadeIn(bullets), run_time=0.3)
+    self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE), run_time=0.3)
     self.wait(0.1)
     self.next_slide()
 
@@ -110,7 +101,7 @@ def slide_22(self):
     t2.next_to(bullets, DOWN, buff=1.5).align_to(t_prefix, LEFT)
     intro.add(t_prefix, t_suffix, bullets, t2)
 
-    self.play(FadeIn(t2, shift=UP, run_time=0.35))
+    self.play(FadeIn(t2, shift=RIGHT * self.SHIFT_SCALE, run_time=0.35))
     self.next_slide()
 
     # ---------- Clear intro (keep bar) ----------
@@ -165,7 +156,7 @@ def slide_22(self):
     Pw = [to_world(p) for p in pts01]
     r_vis = min(rc_w, rc_h) / 60.0
     dots = [
-        Dot(p, radius=r_vis, color=blueGreen, fill_opacity=1.0) for p in Pw
+        Dot(p, radius=r_vis, color=pc.blueGreen, fill_opacity=1.0) for p in Pw
     ]
     labels = [
         Tex(f"{i+1}", color=BLACK, font_size=self.BODY_FONT_SIZE - 10)
@@ -193,7 +184,9 @@ def slide_22(self):
     self.play(
         *[
             (
-                dots[i].animate.set_color(jellyBean).set_fill(jellyBean, 1.0)
+                dots[i]
+                .animate.set_color(pc.jellyBean)
+                .set_fill(pc.jellyBean, 1.0)
                 if i == target_idx
                 else dots[i].animate.set_color(BLACK).set_fill(BLACK, 1.0)
             )
@@ -270,7 +263,9 @@ def slide_22(self):
         L = Line(center, p, color=GRAY, stroke_width=4)
         self.play(Create(L), run_time=0.25)
         self.play(
-            dots[k].animate.set_color(blueGreen).set_fill(blueGreen, 1.0),
+            dots[k]
+            .animate.set_color(pc.blueGreen)
+            .set_fill(pc.blueGreen, 1.0),
             run_time=0.15,
         )
         taken.append(k)
@@ -283,7 +278,9 @@ def slide_22(self):
     self.play(
         *[
             (
-                dots[i].animate.set_color(jellyBean).set_fill(jellyBean, 1.0)
+                dots[i]
+                .animate.set_color(pc.jellyBean)
+                .set_fill(pc.jellyBean, 1.0)
                 if i == target_idx
                 else dots[i].animate.set_color(BLACK).set_fill(BLACK, 1.0)
             )
@@ -362,7 +359,7 @@ def slide_22(self):
         poly = Polygon(X0, X1, Y1, Y0, stroke_width=0)
         h_avg = 0.5 * (Wnorm(x0) + Wnorm(x1))
         poly.set_fill(
-            interpolate_color(blueGreen, jellyBean, h_avg), opacity=0.75
+            interpolate_color(pc.blueGreen, pc.jellyBean, h_avg), opacity=0.75
         )
         strips.append(poly)
     fill_group = VGroup(*strips)
@@ -382,10 +379,10 @@ def slide_22(self):
     # self.play(Create(curve), run_time=0.6)
     self.play(FadeIn(kernel_label), run_time=0.25)
 
-    # Helper: color from distance (0..h) mapped to gradient (blueGreen -> jellyBean upward)
+    # Helper: color from distance (0..h) mapped to gradient (pc.blueGreen -> pc.jellyBean upward)
     def color_for_r(dist, h):
         t = np.clip(dist / h, 0.0, 1.0)
-        return interpolate_color(jellyBean, blueGreen, t)
+        return interpolate_color(pc.jellyBean, pc.blueGreen, t)
 
     # Weighted sum with 4-NN
     def eq_weighted_lines(taken):
@@ -411,7 +408,7 @@ def slide_22(self):
     for k in nn_indices:
         p = dots[k].get_center()
         r = float(np.linalg.norm(p - center))
-        L = Line(center, p, color=oxfordBlue, stroke_width=5)
+        L = Line(center, p, color=pc.oxfordBlue, stroke_width=5)
         self.play(Create(L), run_time=0.25)
 
         # color neighbor by kernel value
@@ -427,7 +424,7 @@ def slide_22(self):
         L_dest = Line(
             [ax_center[0] + x_y_axis, line_y_under, 0],
             [ax_center[0] + x_y_axis + lx, line_y_under, 0],
-            color=oxfordBlue,
+            color=pc.oxfordBlue,
             stroke_width=5,
         )
         self.play(Transform(L, L_dest), run_time=0.25)

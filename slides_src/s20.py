@@ -64,7 +64,7 @@ def slide_20(self):
     l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     l2.shift(RIGHT * (anchor_x - l2.get_left()[0]))
 
-    self.play(FadeIn(l1, l2), run_time=0.25)
+    self.play(FadeIn(l1, l2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # --- Wait for user -----------------------------------------------------
     self.next_slide()

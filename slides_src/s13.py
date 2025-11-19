@@ -67,7 +67,9 @@ def slide_13(self):
     dx2 = anchor_x - line2.get_left()[0]
     line2.shift(RIGHT * dx2)
 
-    self.play(FadeIn(line1, line2), run_time=0.25)
+    self.play(
+        FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25
+    )
 
     # --- Two-column layout (below body text) ------------------------------
     content_top_y = line2.get_bottom()[1] - 0.35
@@ -101,7 +103,10 @@ def slide_13(self):
     )
     cap_f.next_to(fourier_img, DOWN, buff=0.18)
     self.next_slide()
-    self.play(FadeIn(border_f, fourier_img, cap_f), run_time=0.25)
+    self.play(
+        FadeIn(border_f, fourier_img, cap_f, shift=UP * self.SHIFT_SCALE),
+        run_time=1.0,
+    )
 
     # --- Wait for user -----------------------------------------------------
     self.next_slide()
@@ -160,7 +165,7 @@ def slide_13(self):
     )
     cap_r.next_to(real_img, DOWN, buff=0.18)
 
-    self.play(FadeIn(border_r, real_img, cap_r, run_time=0.5))
+    self.play(FadeIn(border_r, real_img, cap_r, run_time=1.0))
 
     # --- End slide ---------------------------------------------------------
     self.pause()

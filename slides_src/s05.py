@@ -105,9 +105,9 @@ def slide_05(self):
 
     # --- Appear: rows and labels ---
     self.play(
-        FadeIn(label_a, shift=RIGHT * 0.1, run_time=0.3),
-        FadeIn(label_b, shift=RIGHT * 0.1, run_time=0.3),
-        FadeIn(label_c_seq, shift=RIGHT * 0.1, run_time=0.3),
+        FadeIn(label_a, shift=RIGHT * self.SHIFT_SCALE, run_time=0.3),
+        FadeIn(label_b, shift=RIGHT * self.SHIFT_SCALE, run_time=0.3),
+        FadeIn(label_c_seq, shift=RIGHT * self.SHIFT_SCALE, run_time=0.3),
     )
     self.play(FadeIn(plus1, run_time=0.2), FadeIn(eq1, run_time=0.2))
     self.wait(0.1)
