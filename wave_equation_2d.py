@@ -146,7 +146,7 @@ if __name__ == "__main__":
     # Define the scenarios to run
     scenarios = [
         {"d": 1.0, "label": "no_damping"},
-        {"d": 0.99, "label": "with_damping"},
+        {"d": 0.95, "label": "with_damping"},
     ]
 
     for scen in scenarios:
