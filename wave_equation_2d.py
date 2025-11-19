@@ -10,21 +10,20 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 def simulate_wave_2d_dirichlet(
     L=1.0,  # half-domain size; x, y ∈ [-L, L]
     c=1.0,  # wave speed
-    W=0.3,  # radius of the central circular region for the initial bell (W/2)
-    A=1.0,  # amplitude of the Gaussian bell
-    sigma=0.08,  # std dev of the Gaussian bell
-    N=151,  # number of spatial nodes in both x and y (nx=ny=N, odd recommended)
-    T=2.0,  # total simulated duration
+    A=1.0,  # amplitude of the source (height of the flat circle)
+    radius=0.05,  # Radius of the filled circle
+    N=151,  # number of spatial nodes
+    T=4.0,  # total simulated duration
     dt=0.005,  # user-requested output sampling step
-    t0=0.0,  # time at which the truncated Gaussian is applied
+    t0=0.0,  # start time
+    moving_source=False,
 ):
     """
-    Solve ∂²h/∂t² = c² (∂²h/∂x² + ∂²h/∂y²) on x, y ∈ [-L, L] with Dirichlet BCs h=0.
+    Solve ∂²h/∂t² = c² ∇²h
+    Source is modeled as a moving Dirichlet condition (u = A inside circle).
     """
-    if t0 < 0:
-        raise ValueError("t0 must be ≥ 0.")
     if N < 3:
-        raise ValueError("N must be at least 3 for a valid grid.")
+        raise ValueError("N must be at least 3.")
 
     nx = N
     ny = N
@@ -33,100 +32,85 @@ def simulate_wave_2d_dirichlet(
     x = np.linspace(-L, L, nx)
     y = np.linspace(-L, L, ny)
     dx = x[1] - x[0]
-    dy = y[1] - y[0]
-    h = dx
+    h_grid = dx
 
-    # Handle c = 0
-    if c == 0.0:
-        nt_out = int(np.floor(T / dt)) + 1
-        t_out = np.arange(nt_out) * dt
-        X, Y = np.meshgrid(x, y, indexing="ij")
-        R = np.sqrt(X**2 + Y**2)
-        bell = np.zeros((nx, ny), dtype=float)
-        mask = R <= W / 2
-        bell[mask] = A * np.exp(-0.5 * (R[mask] / sigma) ** 2)
-        H_out = np.zeros((nt_out, nx, ny), dtype=float)
-        if 0.0 <= t0 <= T:
-            start_idx = int(round(t0 / dt))
-            start_idx = min(max(start_idx, 0), nt_out - 1)
-            H_out[start_idx:] = bell
-        return H_out, x, y, t_out
+    # Meshgrid for distance calculations
+    X, Y = np.meshgrid(x, y, indexing="ij")
 
     # --- CFL Condition
     dt_user = dt
     dt_sim = dt_user
     cfl_limit = 1.0 / np.sqrt(2)
-    cfl_actual = c * dt_user / h
+    cfl_actual = c * dt_user / h_grid
 
     if cfl_actual > cfl_limit:
-        dt_sim = h / (c * np.sqrt(2.0))
+        dt_sim = h_grid / (c * np.sqrt(2.0))
 
-    # --- Build the 2D bell
-    X, Y = np.meshgrid(x, y, indexing="ij")
-    R = np.sqrt(X**2 + Y**2)
-    bell = np.zeros((nx, ny), dtype=float)
-    mask = R <= W / 2
-    bell[mask] = A * np.exp(-0.5 * (R[mask] / sigma) ** 2)
-
-    # --- Allocate internal simulation arrays
+    # --- Allocate Arrays
     nt_sim = int(np.floor(T / dt_sim)) + 1
     t_sim = np.arange(nt_sim) * dt_sim
-    lam2 = (c * dt_sim / h) ** 2
+    lam2 = (c * dt_sim / h_grid) ** 2
+
     H_sim = np.zeros((nt_sim, nx, ny), dtype=float)
 
-    if t0 >= T or nt_sim < 2:
-        nt_out = int(np.floor(T / dt_user)) + 1
-        t_out = np.arange(nt_out) * dt_user
-        H_out = np.zeros((nt_out, nx, ny), dtype=float)
-        return H_out, x, y, t_out
-
+    # Start index
     n0 = int(round(t0 / dt_sim))
     n0 = min(max(n0, 0), nt_sim - 1)
 
-    # Initial conditions
-    u_prev = bell.copy()
-    u_prev[0, :] = 0.0
-    u_prev[-1, :] = 0.0
-    u_prev[:, 0] = 0.0
-    u_prev[:, -1] = 0.0
-    H_sim[n0] = u_prev
+    u_prev = np.zeros((nx, ny))
+    u = np.zeros((nx, ny))
 
-    # First step (Taylor)
-    if n0 + 1 < nt_sim:
-        u = u_prev.copy()
+    # Trajectory definition (Top-Left to Bottom-Right)
+    start_pos = np.array([-0.7 * L, 0.7 * L])
+    end_pos = np.array([0.7 * L, -0.7 * L])
+
+    # --- Main Loop ---
+    for n in range(n0, nt_sim - 1):
+        # 1. Laplacian
         lap = np.zeros((nx, ny), dtype=float)
         lap[1:-1, 1:-1] = (
-            u_prev[2:, 1:-1]
-            + u_prev[:-2, 1:-1]
-            + u_prev[1:-1, 2:]
-            + u_prev[1:-1, :-2]
-            - 4.0 * u_prev[1:-1, 1:-1]
+            u[2:, 1:-1]
+            + u[:-2, 1:-1]
+            + u[1:-1, 2:]
+            + u[1:-1, :-2]
+            - 4.0 * u[1:-1, 1:-1]
         )
-        u[1:-1, 1:-1] = u_prev[1:-1, 1:-1] + 0.5 * lam2 * lap[1:-1, 1:-1]
-        u[0, :] = u[-1, :] = u[:, 0] = u[:, -1] = 0.0
-        H_sim[n0 + 1] = u
 
-        # Leapfrog
-        for n in range(n0 + 1, nt_sim - 1):
-            u_next = np.empty((nx, ny), dtype=float)
-            lap = np.zeros((nx, ny), dtype=float)
-            lap[1:-1, 1:-1] = (
-                u[2:, 1:-1]
-                + u[:-2, 1:-1]
-                + u[1:-1, 2:]
-                + u[1:-1, :-2]
-                - 4.0 * u[1:-1, 1:-1]
-            )
-            u_next[1:-1, 1:-1] = (
-                2.0 * u[1:-1, 1:-1]
-                - u_prev[1:-1, 1:-1]
-                + lam2 * lap[1:-1, 1:-1]
-            )
-            u_next[0, :] = u_next[-1, :] = u_next[:, 0] = u_next[:, -1] = 0.0
-            u_prev, u = u, u_next
-            H_sim[n + 1] = u
+        # 2. Wave Update
+        u_next = 2.0 * u - u_prev + lam2 * lap
 
-    # Downsample
+        # 3. Apply Moving Hard Source
+        # Instead of adding force, we enforce u = A inside the radius
+        if A != 0.0 and moving_source:
+            current_time = (n - n0) * dt_sim
+
+            # Calculate current position
+            progress = current_time / T
+            if progress > 1.0:
+                progress = 1.0
+
+            curr_x = start_pos[0] + (end_pos[0] - start_pos[0]) * progress
+            curr_y = start_pos[1] + (end_pos[1] - start_pos[1]) * progress
+
+            # Create Hard Mask (Filled Circle)
+            dist_sq = (X - curr_x) ** 2 + (Y - curr_y) ** 2
+            mask = dist_sq <= radius**2
+
+            # Impose Dirichlet condition on the moving body
+            u_next[mask] = A
+
+        # 4. Dirichlet BCs (Walls)
+        u_next[0, :] = 0.0
+        u_next[-1, :] = 0.0
+        u_next[:, 0] = 0.0
+        u_next[:, -1] = 0.0
+
+        # 5. Shift
+        H_sim[n + 1] = u_next
+        u_prev = u
+        u = u_next
+
+    # --- Downsample
     nt_out = int(np.floor(T / dt_user)) + 1
     t_out = np.arange(nt_out) * dt_user
     idx_out = np.round(t_out / dt_sim).astype(int)
@@ -137,68 +121,57 @@ def simulate_wave_2d_dirichlet(
 
 
 if __name__ == "__main__":
-    # --- 1. Simulation Parameters ---
+    # --- Parameters ---
     L_VAL = 1.0
-    C_VAL = 1.0
-    W_VAL = 0.5
-    A_VAL = 1.0
-    SIGMA_VAL = 0.1
-    N_VAL = 151
-    T_VAL = 3.0
-    DT_VAL = 0.02
-    T0_VAL = 0.0
 
-    print("Running 2D wave simulation...")
+    # Froude Number > 1 Setup (Supersonic/Supercritical)
+    C_VAL = 0.5  # Wave speed
+    A_VAL = 1.0  # Height of the "boat" (Displacement)
+    RADIUS_VAL = 0.05  # Radius of the "boat"
+    N_VAL = 401  # Higher resolution for sharper wake details
+    T_VAL = 2.0  # High speed duration
+    DT_VAL = 0.005  # Finer time step for smoother animation
+
+    MOVING = True
+
+    print(f"Running 2D wave simulation (Kelvin Wake Setup)...")
     H, x, y, t = simulate_wave_2d_dirichlet(
         L=L_VAL,
         c=C_VAL,
-        W=W_VAL,
         A=A_VAL,
-        sigma=SIGMA_VAL,
+        radius=RADIUS_VAL,
         N=N_VAL,
         T=T_VAL,
         dt=DT_VAL,
-        t0=T0_VAL,
+        moving_source=MOVING,
     )
-    print(f"Simulation complete. Total frames: {H.shape[0]}")
+    print(f"Simulation complete. Frames: {H.shape[0]}")
 
-    # --- 2. Custom Colormap Setup (More Intense Blue-Green Only) ---
-
-    # Max positive displacement color (your desired blue-green)
+    # --- Visualization ---
     BLUE_GREEN_LIGHT = (0.12, 0.61, 0.73)
-    # Zero displacement color
     WHITE = (1.0, 1.0, 1.0)
-    # Max negative displacement color (a more saturated/darker blue-green)
-    # Example: slightly darker blue-green (values decreased by ~20%)
-    BLUE_GREEN_DARK = (0.08, 0.40, 0.48)
 
-    # Create a divergent map: Dark BlueGreen (Min) -> White (Zero) -> Light BlueGreen (Max)
-    def create_divergent_cmap(min_color, center_color, max_color):
-        colors = [min_color, center_color, max_color]
+    def create_symmetric_cmap(color, center):
+        colors = [color, center, color]
         nodes = [0.0, 0.5, 1.0]
         return LinearSegmentedColormap.from_list(
-            "IntenseBlueGreen", list(zip(nodes, colors))
+            "SymmetricBlueGreen", list(zip(nodes, colors))
         )
 
-    custom_cmap = create_divergent_cmap(
-        BLUE_GREEN_LIGHT, WHITE, BLUE_GREEN_LIGHT
-    )
+    custom_cmap = create_symmetric_cmap(BLUE_GREEN_LIGHT, WHITE)
 
-    # Determine absolute max for symmetric scaling
-    abs_max = np.max(np.abs(H))
-    if abs_max == 0.0:
-        abs_max = 1.0
-    norm = Normalize(vmin=-abs_max, vmax=abs_max)
+    # Visualize based on the wake amplitude, ignoring the massive source amplitude
+    # The source is at height A=1.0, but the wake is much smaller.
+    # We clip the visualization to see the wake details clearly.
+    wake_scale = 0.3
+    norm = Normalize(vmin=-wake_scale, vmax=wake_scale)
 
-    # --- 3. Live Animation Setup ---
     print("Starting Live Animation Window...")
-
     fig = plt.figure(figsize=(6, 6), frameon=False)
     ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
     ax.set_axis_off()
     fig.add_axes(ax)
 
-    # Initial Plot
     img = ax.imshow(
         H[0].T,
         cmap=custom_cmap,
@@ -212,31 +185,22 @@ if __name__ == "__main__":
         img.set_data(H[frame].T)
         return [img]
 
-    # Create Animation
     ani = FuncAnimation(
         fig,
         update,
         frames=range(H.shape[0]),
-        interval=30,  # ~30ms per frame
+        interval=30,
         blit=True,
     )
 
-    # --- 4. GIF Export Setup ---
+    # GIF Export
     GIF_FILENAME = "Figures/wave_propagation_2d.gif"
-
-    # Create directory if it doesn't exist
     output_dir = os.path.dirname(GIF_FILENAME)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
-        print(f"Created directory: {output_dir}")
 
     print(f"Saving animation to GIF: {GIF_FILENAME}...")
-    # This uses the same FuncAnimation object to save the frames
-    # The fps argument controls the animation speed in the GIF
-    ani.save(
-        GIF_FILENAME, writer="imageio", fps=1000 / 30, dpi=100
-    )  # fps = 1000/interval
+    ani.save(GIF_FILENAME, writer="imageio", fps=1000 / 30, dpi=100)
     print("GIF export complete.")
 
-    # Display the live animation after saving the GIF
     plt.show()
