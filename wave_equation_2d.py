@@ -1,6 +1,5 @@
 import matplotlib
 
-# Force 'Agg' backend to ensure GIF generation works without a display
 matplotlib.use("Agg")
 
 import os
@@ -9,16 +8,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.patches import Circle
 
 
 def shift_field(field, sx, sy):
     """
     Shifts the field by (sx, sy) integers, padding with zeros.
     Implements the logic: new[i, j] = old[i - sx, j - sy]
-
-    If sx > 0 (Shift Right):
-        new[sx:] = old[:-sx]
-        new[:sx] = 0
     """
     rows, cols = field.shape
     out = np.zeros_like(field)
@@ -27,13 +23,9 @@ def shift_field(field, sx, sy):
     if sx == 0:
         tmp = field
     elif sx > 0:
-        # Shift Right/Down (depending on axis convention, here axis 0)
-        # Takes from old[i-sx]. Valid for i >= sx.
         tmp = np.zeros_like(field)
         tmp[sx:, :] = field[:-sx, :]
     else:  # sx < 0
-        # Shift Left/Up
-        # Takes from old[i - (-sx)] = old[i+|sx|]. Valid for i < N-|sx|
         tmp = np.zeros_like(field)
         tmp[:sx, :] = field[-sx:, :]
 
@@ -73,7 +65,6 @@ def simulate_wave_translated(
     h_grid = dx
 
     # --- CFL & Time Step ---
-    # Standard CFL condition for 2D
     cfl_limit = 1.0 / np.sqrt(2)
     dt_sim = dt
     if c * dt / dx > cfl_limit:
@@ -81,35 +72,24 @@ def simulate_wave_translated(
 
     nt_sim = int(np.ceil(T / dt_sim))
 
-    # Factor 'a' in the Algis equation: a = (c * dt / dx)^2
-    # Note: In the standard scheme h_new = 2*h - h_old + a * Laplacian
-    # The Algis equation factorizes differently:
-    # h_new = a * (neighbors - 4*center) + 2*center - old
-    # This is algebraically equivalent to the standard scheme.
     a_coeff = (c * dt_sim / h_grid) ** 2
 
     # --- Arrays ---
-    # We need current (n) and previous (n-1) fields
     h_n = np.zeros((nx, ny), dtype=float)
-    h_nm1 = np.zeros((nx, ny), dtype=float)  # n minus 1
+    h_nm1 = np.zeros((nx, ny), dtype=float)
 
     # Storage for output
     nt_out = int(np.ceil(T / dt))
     H_out = np.zeros((nt_out, nx, ny), dtype=float)
 
-    # --- Source Mask (Fixed at Center) ---
-    X, Y = np.meshgrid(x, x, indexing="ij")  # x is axis 0
-    # Center is (0,0) in this coordinate system
-    mask = (X**2 + Y**2) <= radius**2
+    # --- Source Mask (Fixed at Center of its own grid system) ---
+    X_grid, Y_grid = np.meshgrid(x, x, indexing="ij")
+    mask = (X_grid**2 + Y_grid**2) <= radius**2
 
     # --- Grid Translation State ---
-    # Continuous position of the mesh
     p_x, p_y = 0.0, 0.0
-
-    # Integer grid coordinates at steps n, n+1, n-1
-    # Initialize at 0
     I_x_n, I_y_n = 0, 0
-    I_x_nm1, I_y_nm1 = 0, 0  # n-1
+    I_x_nm1, I_y_nm1 = 0, 0
 
     # Output index tracking
     out_idx = 0
@@ -117,49 +97,29 @@ def simulate_wave_translated(
 
     # --- Main Loop ---
     for n in range(nt_sim):
-        current_time = n * dt_sim
+        current_time_sim = n * dt_sim
 
-        # 1. Calculate Next Position (p at t+dt)
+        # 1. Calculate Next Position
         p_x_next = p_x + vel_x * dt_sim
         p_y_next = p_y + vel_y * dt_sim
 
         # 2. Calculate Integer Coordinates
-        # We use floor to determine the "cell" the mesh origin resides in
         I_x_next = int(np.floor(p_x_next / dx))
         I_y_next = int(np.floor(p_y_next / dx))
 
-        # 3. Calculate Shifts (Algis Equations 1 & 2)
-        # k = i - floor(...) -> shift from n to n+1
-        # Shift = I_next - I_current
+        # 3. Calculate Shifts
         sx_n = I_x_next - I_x_n
         sy_n = I_y_next - I_y_n
 
-        # o = i - floor(...) -> shift from n-1 to n+1
         sx_nm1 = I_x_next - I_x_nm1
         sy_nm1 = I_y_next - I_y_nm1
 
-        # 4. Shift Fields to align with the new grid at n+1
-        # h^n_{k,l} -> shifted by sx_n, sy_n
+        # 4. Shift Fields
         h_n_shifted = shift_field(h_n, sx_n, sy_n)
-
-        # h^{n-1}_{o,p} -> shifted by sx_nm1, sy_nm1
         h_nm1_shifted = shift_field(h_nm1, sx_nm1, sy_nm1)
 
-        # 5. Compute Laplacian on the aligned n-field
-        # Standard 5-point stencil
-        # We can use slicing on h_n_shifted directly
-        # (center is h_n_shifted)
-        # h_ip1 = roll(h, -1, axis=0) (neighbor i+1)
-        # h_im1 = roll(h, 1, axis=0)  (neighbor i-1)
-        # Note: For speed we can use padding or assume Dirichlet 0 at boundaries
-        # We'll use slicing for interior points
+        # 5. Compute Laplacian
         lap = np.zeros_like(h_n_shifted)
-
-        # Interior: [1:-1, 1:-1]
-        # i+1: [2:, 1:-1]
-        # i-1: [:-2, 1:-1]
-        # j+1: [1:-1, 2:]
-        # j-1: [1:-1, :-2]
         lap[1:-1, 1:-1] = (
             h_n_shifted[2:, 1:-1]
             + h_n_shifted[:-2, 1:-1]
@@ -168,30 +128,17 @@ def simulate_wave_translated(
             - 4.0 * h_n_shifted[1:-1, 1:-1]
         )
 
-        # 6. Update Step (Algis Equation 2)
-        # h^{n+1} = d * [ a * Lap + 2*h^n - h^{n-1} ]
+        # 6. Update Step
         h_next = damping * (a_coeff * lap + 2.0 * h_n_shifted - h_nm1_shifted)
 
-        # 7. Apply Fixed Source (Circle at center)
-        # The source overrides the physics at the center
+        # 7. Apply Fixed Source
         if A != 0.0:
             h_next[mask] = A
 
-        # 8. Rotate buffers and State
-        # The calculated h_next is correctly aligned with grid I_next
-        h_nm1 = h_n_shifted  # The old n becomes n-1 (but aligned!) -> Wait.
-        # Careful: The recursion needs h^n and h^{n-1} valid for the *next* step.
-        # Next step will shift from *this* step's grid.
-        # So we just store h_next as the raw data for the grid at I_next.
-        # But h_nm1 for the *next* step corresponds to h_n of *this* step.
-        # Yes.
-        h_nm1 = h_n  # Store the raw field at grid n
-        h_n = h_next  # Store the raw field at grid n+1
+        # 8. Rotate buffers
+        h_nm1 = h_n
+        h_n = h_next
 
-        # Update positions history
-        # For the NEXT iteration:
-        # n becomes n-1. next becomes n.
-        # So we need to store the I indices.
         I_x_nm1 = I_x_n
         I_y_nm1 = I_y_n
 
@@ -202,12 +149,21 @@ def simulate_wave_translated(
         p_y = p_y_next
 
         # 9. Output
-        if current_time >= next_out_time and out_idx < nt_out:
+        if current_time_sim >= next_out_time and out_idx < nt_out:
             H_out[out_idx] = h_n
             out_idx += 1
             next_out_time += dt
 
     return H_out, x, x, np.arange(nt_out) * dt
+
+
+def create_symmetric_cmap(color, center):
+    """Simple symmetric colormap: Color -> Center -> Color"""
+    colors = [color, center, color]
+    nodes = [0.0, 0.5, 1.0]
+    return LinearSegmentedColormap.from_list(
+        "SymmetricBlueGreen", list(zip(nodes, colors))
+    )
 
 
 if __name__ == "__main__":
@@ -216,12 +172,10 @@ if __name__ == "__main__":
     C_VAL = 0.5  # Wave Speed
     A_VAL = 1.0  # Source Height
     RADIUS = 0.05
-    N_VAL = 151  # Grid Size
+    N_VAL = 301  # Grid Size
     T_VAL = 3.0  # Duration
-    DT_VAL = 0.015  # Output dt
+    DT_VAL = 0.007  # Output dt
 
-    # Velocity setup to visualize wake
-    # Simulating flow (-0.8, 0.8) implies boat moves (0.8, -0.8)
     VEL_X = -0.8
     VEL_Y = 0.8
 
@@ -229,6 +183,16 @@ if __name__ == "__main__":
         {"d": 1.0, "label": "no_damping"},
         {"d": 0.95, "label": "with_damping"},
     ]
+
+    # --- Visualization Colors ---
+    BLUE_GREEN_LIGHT = (0.12, 0.61, 0.73)
+    WHITE = (1.0, 1.0, 1.0)
+    UCLA_GOLD = (1.00, 0.71, 0.00)
+
+    # --- Setup Colormap ---
+    custom_cmap = create_symmetric_cmap(BLUE_GREEN_LIGHT, WHITE)
+    WAKE_MAX_VIS = 0.25
+    norm = Normalize(vmin=-WAKE_MAX_VIS, vmax=WAKE_MAX_VIS)
 
     for scen in scenarios:
         d_factor = scen["d"]
@@ -252,29 +216,12 @@ if __name__ == "__main__":
         )
         print(f"Simulation complete. Frames: {H.shape[0]}")
 
-        # --- Visualization ---
-        BLUE_GREEN_LIGHT = (0.12, 0.61, 0.73)
-        WHITE = (1.0, 1.0, 1.0)
-
-        def create_symmetric_cmap(color, center):
-            colors = [color, center, color]
-            nodes = [0.0, 0.5, 1.0]
-            return LinearSegmentedColormap.from_list(
-                "SymmetricBlueGreen", list(zip(nodes, colors))
-            )
-
-        custom_cmap = create_symmetric_cmap(BLUE_GREEN_LIGHT, WHITE)
-
-        # Tighter norm to see the wake
-        wake_scale = 0.3
-        norm = Normalize(vmin=-wake_scale, vmax=wake_scale)
-
         fig = plt.figure(figsize=(6, 6), frameon=False)
         ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
         ax.set_axis_off()
         fig.add_axes(ax)
 
-        # Plot centered (local coordinates)
+        # 1. Plot the Wave Field
         img = ax.imshow(
             H[0].T,
             cmap=custom_cmap,
@@ -283,6 +230,13 @@ if __name__ == "__main__":
             extent=[-L_VAL, L_VAL, -L_VAL, L_VAL],
             interpolation="bilinear",
         )
+
+        # 2. Add the UCLA Gold Source Circle on top
+        # Since we are in local coordinates centered at (0,0), the source is at (0,0)
+        source_circle = Circle(
+            (0, 0), RADIUS, color=UCLA_GOLD, fill=True, zorder=10
+        )
+        ax.add_patch(source_circle)
 
         def update(frame):
             img.set_data(H[frame].T)
@@ -297,7 +251,9 @@ if __name__ == "__main__":
             cache_frame_data=False,
         )
 
-        GIF_FILENAME = f"Figures/wave_propagation_2d_{label}.gif"
+        GIF_FILENAME = (
+            f"Figures/wave_propagation_2d_{label}_uclagold_source.gif"
+        )
         output_dir = os.path.dirname(GIF_FILENAME)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
