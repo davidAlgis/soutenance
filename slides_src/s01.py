@@ -34,7 +34,7 @@ def slide_01(self):
         fill_opacity=1.0,
         stroke_opacity=0.0,
     ).move_to(
-        [0.0, 0.0, 0.0]
+        target_pos
     )  # centered first
 
     # ---- Helper: wrap title into <=3 lines ----
@@ -78,7 +78,7 @@ def slide_01(self):
     # 3) Title appears inside the card (fit paragraph to card inner area, then fade-in)
     inner_w = card_w - 0.8
     inner_h = card_h - 0.55
-    para.move_to(card.get_center())
+    para.move_to(target_pos)
     if para.width and para.height:
         scale_w = inner_w / para.width
         scale_h = inner_h / para.height
@@ -91,12 +91,12 @@ def slide_01(self):
 
     self.wait(0.05)
     self.next_slide()
-    titles = []
-    titles.append(para)
-    titles.append(card)
-    titles_group = Group(*titles)
+    # titles = []
+    # titles.append(para)
+    # titles.append(card)
+    # titles_group = Group(*titles)
     # 2) Move the card to its FINAL TOP position
-    self.play(titles_group.animate.move_to(target_pos), run_time=0.5)
+    # self.play(titles_group.animate.move_to(target_pos), run_time=0.5)
 
     # 4) Author appears just below the card (compute now, with card at target)
     author.next_to(card, DOWN, buff=0.45)
@@ -106,15 +106,13 @@ def slide_01(self):
 
     # 5) Logos grid (3×2), compute AFTER author is placed
     img_paths = [
-        "Figures/nyx.png",
-        "Figures/aurora.jpg",
         "Figures/xlim.png",
-        "Figures/up.png",
-        "Figures/inria.png",
-        "Figures/ensip.png",
+        "Figures/nyx.png",
+        "Figures/icube.png",
+        "Figures/aurora.jpg",
     ]
 
-    COLS, ROWS = 3, 2
+    COLS, ROWS = 2, 2
     HGAP, VGAP = 0.35, 0.30
     GRID_WIDTH_RATIO = 0.96
     GRID_HEIGHT_RATIO = 0.90
