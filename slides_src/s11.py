@@ -35,13 +35,20 @@ def slide_11(self):
 
     # --- Usable area -------------------------------------------------------
     bar_rect = bar.submobjects[0]
-    y_top = bar_rect.get_bottom()[1] - 0.15
-    x_left = -config.frame_width / 2 + 0.6
-    x_right = config.frame_width / 2 - 0.6
-    y_bottom = -config.frame_height / 2 + 0.6
-    area_w = x_right - x_left
-    area_h = y_top - y_bottom
+    # Use footer top if available, otherwise approximate
+    footer_top = (
+        footer.get_top()[1]
+        if "footer" in locals()
+        else -config.frame_height / 2 + 0.6
+    )
 
+    y_top = bar_rect.get_bottom()[1] - 0.2
+    y_bottom = footer_top + 0.2
+
+    area_h = y_top - y_bottom
+    x_left = -config.frame_width / 2 + 0.6
+
+    # Title
     subtitle = Tex(
         "« Généralisation » des vagues d'Airy :",
         tex_template=self.french_template,
@@ -59,22 +66,30 @@ def slide_11(self):
     self.wait(0.1)
     self.next_slide()
 
-    # --- Layout (two rows, no axes) ---------------------------------------
-    row_gap = 0.55
-    plot_w = min(area_w * 0.55, 8.8)
-    plot_h = min((area_h - 1.6) * 0.35, 2.2)
+    # --- Layout: 3 Rows ----------------------------------------------------
+    # Calculate vertical spacing for 3 rows
+    # We reserve some space for the subtitle, so we adjust area_h
+    y_start_plots = subtitle.get_bottom()[1] - 0.3
+    plot_space_h = y_start_plots - y_bottom
 
-    row1_y = y_top - 0.95 - plot_h / 2.0
-    row2_y = row1_y - plot_h - row_gap
-    plot_x = x_left + 0.9 + plot_w / 2.0
+    # Height of each plot
+    plot_h = min(plot_space_h / 3.2, 1.5)
+    plot_w = 7.0  # Fixed width for curves
 
-    # Helper: draw a smooth curve from sampled points (no axes)
-    def make_function_curve(center, width, height, func):
+    # Y positions for the centers of the 3 rows
+    y_row1 = y_start_plots - plot_h / 2
+    y_row2 = y_row1 - plot_h - 0.3
+    y_row3 = y_row2 - plot_h - 0.3
+
+    plot_center_x = x_left + 1.0 + plot_w / 2.0
+
+    # Helper: draw a smooth curve
+    def make_function_curve(center, width, height, func, color=pc.blueGreen):
         x_min, x_max = -10.0, 10.0
         n = 300
         X = np.linspace(x_min, x_max, n)
         sx = width / (x_max - x_min)
-        y_vis = 4.0
+        y_vis = 4.0  # Vertical clip range
         sy = (height / 2.0) / y_vis
 
         path = VMobject()
@@ -85,180 +100,238 @@ def slide_11(self):
             py = np.clip(y, -y_vis, y_vis) * sy
             pts.append([center[0] + px, center[1] + py, 0.0])
         path.set_points_smoothly(pts)
-        path.set_stroke(color=pc.blueGreen, width=4)
+        path.set_stroke(color=color, width=4)
         return path
 
-    # ===================== Row 1: ONE Airy wave curve ======================
-    A1 = ValueTracker(0.7)
-    k1 = ValueTracker(1.5)
+    # --- Row 1: Wave 1 -----------------------------------------------------
+    def func1(x):
+        return 0.7 * np.cos(1.5 * x)
 
-    def airy_y(x):
-        return A1.get_value() * np.cos(k1.get_value() * x)
-
-    curve1 = always_redraw(
-        lambda: make_function_curve(
-            center=np.array([plot_x, row1_y, 0.0]),
-            width=plot_w,
-            height=plot_h,
-            func=airy_y,
-        )
+    curve1 = make_function_curve(
+        [plot_center_x, y_row1, 0], plot_w, plot_h, func1, color=pc.blueGreen
     )
 
-    f1_initial = MathTex(
-        r"h_A(x,t) = 0.7\cos\!\left(1.5\,x + \omega t\right)",
+    text1 = MathTex(
+        r"h_A^1(x,t)",  # Index 0
+        r" = 0.7\cos(1.5\,x + \omega_1 t)",  # Index 1
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 2,
+        font_size=self.BODY_FONT_SIZE,
     )
-    f1_initial.next_to(curve1, RIGHT, buff=0.35, aligned_edge=UP)
-    # self.add(curve1, f1_initial)
-    self.play(Create(curve1), Create(f1_initial), run_time=1.0)
+    text1[0].set_color(pc.blueGreen)
+    text1.next_to(curve1, RIGHT, buff=0.5)
+
+    # --- Row 2: Wave 2 -----------------------------------------------------
+    def func2(x):
+        return 0.8 * np.cos(0.9 * x)
+
+    curve2 = make_function_curve(
+        [plot_center_x, y_row2, 0], plot_w, plot_h, func2, color=pc.orange
+    )
+
+    text2 = MathTex(
+        r"h_A^2(x,t)",  # Index 0
+        r" = 0.8\cos(0.9\,x + \omega_2 t)",  # Index 1
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
+    text2[0].set_color(pc.orange)
+    text2.next_to(curve2, RIGHT, buff=0.5)
+
+    # Show Rows 1 & 2
+    self.play(
+        Create(curve1),
+        Write(text1),
+        Create(curve2),
+        Write(text2),
+        run_time=1.2,
+    )
     self.wait(0.1)
     self.next_slide()
-    # ===================== Row 2: ONE sum curve ============================
-    row2_anchor = Dot(
-        [plot_x, row2_y, 0.0],
-        radius=0.001,
-        fill_opacity=0.0,
-        stroke_opacity=0.0,
+
+    # --- Row 3 Step 1: Copy Row 1 ------------------------------------------
+    # Create explicit curve for Row 3 (initially identical to curve 1)
+    curve3 = make_function_curve(
+        [plot_center_x, y_row3, 0], plot_w, plot_h, func1, color=pc.blueGreen
     )
-    row2_scale = ValueTracker(1.0)
-    self.add(row2_anchor)
 
-    components = [(0.7, 1.5)]  # (A, k) initial
+    text3_step1 = MathTex(
+        r"h_T(x,t)",  # Index 0
+        r"=",  # Index 1
+        r"h_A^1(x,t)",  # Index 2
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    ).next_to(curve3, RIGHT, buff=0.5)
 
-    def sum_y_up_to(m, x):
+    # Apply specific colors by index
+    text3_step1[0].set_color(pc.blueGreen)  # h_T
+    text3_step1[2].set_color(pc.blueGreen)  # h_A^1
+    # Align text3 left with text1/text2 for neatness
+    text3_step1.align_to(text1, LEFT)
+
+    # Animation: Clone curve1 and move it down
+    ghost1 = curve1.copy()
+    self.add(ghost1)
+    self.play(
+        ghost1.animate.move_to(curve3.get_center()),
+        Write(text3_step1),
+        run_time=0.8,
+    )
+    self.remove(ghost1)
+    self.add(curve3)
+    self.wait(0.1)
+    self.next_slide()
+
+    # --- Row 3 Step 2: Add Row 2 -------------------------------------------
+
+    # Define the sum function
+    def func_sum(x):
+        return func1(x) + func2(x)
+
+    # Target curve (Sum)
+    curve3_target = make_function_curve(
+        [plot_center_x, y_row3, 0],
+        plot_w,
+        plot_h,
+        func_sum,
+        color=pc.fernGreen,
+    )
+
+    text3_step2 = MathTex(
+        r"h_T(x,t)",  # Index 0
+        r"=",  # Index 1
+        r"h_A^1(x,t)",  # Index 2
+        r"+",  # Index 3
+        r"h_A^2(x,t)",  # Index 4
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    ).next_to(curve3, RIGHT, buff=0.5)
+
+    # Apply specific colors by index
+    text3_step2[0].set_color(pc.fernGreen)  # h_T
+    text3_step2[2].set_color(pc.blueGreen)  # h_A^1
+    text3_step2[4].set_color(pc.orange)  # h_A^2 (matches your request)
+
+    # Keep the alignment logic from the previous step
+    text3_step2.align_to(text1, LEFT)
+
+    # Animation: Clone curve2 and move it down
+    ghost2 = curve2.copy()
+    self.add(ghost2)
+
+    self.play(
+        ghost2.animate.move_to(curve3.get_center()).set_opacity(0),
+        Transform(curve3, curve3_target),
+        ReplacementTransform(text3_step1, text3_step2),
+        run_time=1.0,
+    )
+    self.remove(ghost2)
+
+    self.wait(0.1)
+    self.next_slide()
+    # --- Transition to Generalization ---------------------------------------
+    self.next_slide()
+
+    # 1. Fade out Row 1 and Row 2 (curves and text)
+    # We keep curve3 and text3_step2 for a moment
+    self.play(FadeOut(VGroup(curve1, text1, curve2, text2)), run_time=0.4)
+
+    # 2. Setup dynamic objects for the main curve
+    # We create an anchor at the current position of Row 3 (old position)
+    # This anchor will drive the movement to the center
+    sum_anchor = Dot(
+        [plot_center_x, y_row3, 0], fill_opacity=0, stroke_opacity=0
+    )
+    self.add(sum_anchor)
+
+    # Tracker for scaling the curve up when it moves to center
+    sum_scale = ValueTracker(1.0)
+
+    # Re-initialize components list matching the previous two rows
+    components = [(0.7, 1.5), (0.8, 0.9)]
+    n_comp = ValueTracker(len(components))
+
+    # Define the summation logic
+    def sum_y_up_to(m_val, x):
         s = 0.0
-        m_int = int(max(0, min(m, len(components))))
+        # Safe integer cast
+        m_int = int(np.clip(m_val, 0, len(components)))
         for i in range(m_int):
-            A, k = components[i]
-            s += A * np.cos(k * x)
+            A_i, k_i = components[i]
+            s += A_i * np.cos(k_i * x)
         return s
 
-    n_comp = ValueTracker(len(components))  # number of components included
-
-    curve_sum = always_redraw(
+    # Create the "Always Redraw" curve
+    # We swap the static 'curve3' with this identical dynamic one attached to the anchor
+    dynamic_curve = always_redraw(
         lambda: make_function_curve(
-            center=row2_anchor.get_center(),
-            width=plot_w * row2_scale.get_value(),
-            height=plot_h * row2_scale.get_value(),
-            func=lambda x: sum_y_up_to(int(np.floor(n_comp.get_value())), x),
+            center=sum_anchor.get_center(),
+            width=plot_w * sum_scale.get_value(),
+            height=plot_h * sum_scale.get_value(),
+            func=lambda x: sum_y_up_to(n_comp.get_value(), x),
+            color=pc.fernGreen,
         )
     )
 
-    f2 = MathTex(
-        r"h_T(x,t) = 0.7\cos\!\left(1.5\,x + \omega t\right)",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 2,
-    )
-    f2.next_to(curve_sum, RIGHT, buff=0.35, aligned_edge=UP)
-    # self.add(curve_sum, f2)
-    self.play(Create(curve_sum), Create(f2), run_time=1.0)
-    self.wait(0.1)
-    self.next_slide()
+    self.add(dynamic_curve)
+    self.remove(curve3)  # Swap is invisible
 
-    # Row 1: same curve, new params
-    f1_new = MathTex(
-        r"h_A(x,t) = 0.8\cos\!\left(0.9\,x + \omega t\right)",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 2,
-    )
-    f1_new.next_to(curve1, RIGHT, buff=0.35, aligned_edge=UP)
+    # 3. Prepare the Target Destination (CENTERED)
+    # x = 0.0 is the horizontal center of the slide
+    target_center_y = (
+        y_top + y_bottom
+    ) * 0.5 + 0.5  # Slightly higher to make room for text
 
-    self.play(
-        A1.animate.set_value(0.8),
-        k1.animate.set_value(0.9),
-        ReplacementTransform(f1_initial, f1_new),
-        run_time=0.7,
-    )
-
-    # ----------------------------------------------------------------------
-    self.next_slide()
-
-    # Symbolize addition: ghost flies and fades to row2
-    ghost = f1_initial.copy().set_opacity(0.85)
-    ghost.move_to(f1_new.get_center())
-    self.add(ghost)
-    self.play(
-        ghost.animate.move_to(f2.get_center()).set_opacity(0.15),
-        run_time=0.6,
-    )
-
-    # Two-line explicit sum to stay in bounds
-    f2_sum = MathTex(
-        r"h_T(x,t) = 0.7\cos\!\left(1.5\,x + \omega t\right)"
-        r" \\ + 0.8\cos\!\left(0.9\,x + \omega t\right)",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 2,
-    )
-    f2_sum.next_to(curve_sum, RIGHT, buff=0.35, aligned_edge=UP)
-
-    components.append((0.8, 0.9))
-    n_comp.set_value(len(components))
-
-    self.play(ReplacementTransform(f2, f2_sum), FadeOut(ghost), run_time=0.6)
-
-    # ----------------------------------------------------------------------
-    self.next_slide()
-
-    # Remove Row 1; center and enlarge Row 2
-    self.play(FadeOut(VGroup(curve1, f1_new)), run_time=0.4)
-
-    target_center_y = (y_top + y_bottom) * 0.5 + 0.2
-
-    # --- Sigma label: build once, then move RIGHT -> BELOW and keep N colored ---
+    # --- Sigma label construction ---
     def build_sigma(n_val: int) -> MathTex:
         """
-        Build MathTex and color ONLY the top index 'N' (numeric) by:
-          - selecting parts that match the string of N,
-          - keeping the one with the highest y (superscript),
-          - coloring it pc.uclaGold.
+        Build MathTex for the sum formula.
+        Colors only h_T in fernGreen, everything else BLACK.
         """
         n_txt = str(int(max(0, n_val)))
         m = MathTex(
-            r"h_T(x,t) = ",
-            r"\sum",
-            r"_{i=1}",
-            r"^{",
-            n_txt,
-            r"} A_i\cos\!\left(k_i x - \omega t\right)",
+            r"h_T(x,t)",  # Index 0
+            r" = ",  # Index 1
+            r"\sum",  # Index 2
+            r"_{i=1}",  # Index 3
+            r"^{",  # Index 4
+            n_txt,  # Index 5
+            r"} A_i\cos\!\left(k_i x - \omega_i t\right)",  # Index 6
             color=BLACK,
             font_size=self.BODY_FONT_SIZE + 6,
         )
-        # m[1].set_color(pc.blueGreen)
+        m[0].set_color(pc.fernGreen)
         return m
 
+    # Initial Sigma text (N=2)
     sigma = build_sigma(int(n_comp.get_value()))
-    sigma.next_to(curve_sum, DOWN, buff=0.35, aligned_edge=UP)
-    sigma.move_to([0.0, -2.0, 0.0])
-    # self.play(, run_time=0.5)
 
+    # Calculate where the sigma text should end up (Centered horizontally)
+    # We place it below the TARGET curve position
+    sigma_target_pos = [0.0, target_center_y - 1.8, 0]
+    sigma.move_to(sigma_target_pos)
+
+    # 4. Animate Move to Center + Transform Text
     self.play(
-        AnimationGroup(
-            row2_anchor.animate.move_to([0.0, target_center_y, 0.0]),
-            row2_scale.animate.set_value(1.15),
-            lag_ratio=0.0,
-        ),
-        ReplacementTransform(f2_sum, sigma),
-        run_time=0.5,
+        # Move anchor to TRUE CENTER [0, y, 0]
+        sum_anchor.animate.move_to([0.0, target_center_y, 0.0]),
+        # Scale up slightly
+        sum_scale.animate.set_value(1.3),
+        # Transform explicit sum "h = h1 + h2" to Sigma notation
+        ReplacementTransform(text3_step2, sigma),
+        run_time=0.8,
     )
 
-    # Create sigma at RIGHT of the curve (replace the two-line sum)
-
-    # Move sigma smoothly BELOW the curve (no teleport)
-    # sigma.generate_target()
-    # sigma.target.next_to(curve_sum, DOWN, buff=0.25)
-    # self.play(MoveToTarget(sigma), run_time=0.35)
-
-    # Live update of N while preserving the current position
+    # 5. Setup Updater for Live Counter
     def sigma_updater(mobj: Mobject) -> None:
+        # Keep the exact same center position
         pos = mobj.get_center()
-        new = build_sigma(int(np.floor(n_comp.get_value())))
-        new.move_to(pos)
-        mobj.become(new)
+        new_mobj = build_sigma(int(np.floor(n_comp.get_value())))
+        new_mobj.move_to(pos)
+        mobj.become(new_mobj)
 
     sigma.add_updater(sigma_updater)
 
-    # Progressive addition in one clip; curve updates via n_comp
+    # 6. Generate Random Components
     rng = np.random.default_rng(42)
     extra = []
     add_count = 28
@@ -268,10 +341,10 @@ def slide_11(self):
         extra.append((A_rand, k_rand))
     components.extend(extra)
 
-    # Avoid reversing issues on this slide
+    # Avoid reversing issues on this complex slide
     self.skip_reversing = True
 
-    # Drive the curve and sigma 'N' together
+    # 7. Animate the Summation (Curve gets noisy, N increases)
     self.play(
         n_comp.animate.set_value(len(components)),
         rate_func=linear,
