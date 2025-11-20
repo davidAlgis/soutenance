@@ -91,35 +91,6 @@ def slide_19(self):
             tip_length=0.16,
         )
 
-    def _dotted_curved_arrow(
-        start_pt: np.ndarray,
-        end_pt: np.ndarray,
-        angle: float,
-        num_dashes=60,
-        dashed_ratio=0.5,
-    ) -> VGroup:
-        """
-        Dotted curved arrow for Manim 0.19: dashed arc + triangular tip aligned
-        to the end tangent. Uses num_dashes/dashed_ratio (no dash_length).
-        """
-        arc = ArcBetweenPoints(
-            start_pt, end_pt, angle=angle, color=BLACK, stroke_width=6
-        )
-        dashed = DashedVMobject(arc, num_dashes, dashed_ratio)
-        pts = arc.get_points()
-        p_end = pts[-1]
-        p_prev = pts[-2]
-        v = p_end - p_prev
-        theta = np.arctan2(v[1], v[0])
-        tip = (
-            Triangle()
-            .scale(0.10)
-            .set_fill(BLACK, opacity=1.0)
-            .set_stroke(opacity=0.0)
-        )
-        tip.move_to(p_end).rotate(theta)
-        return VGroup(dashed, tip)
-
     def _right_of(m: Mobject, dx: float = 0.0, dy: float = 0.0) -> np.ndarray:
         p = m.get_right().copy()
         p[0] += dx
@@ -151,8 +122,8 @@ def slide_19(self):
     # (2) F->S -> S->F : origin ok, now end on RIGHT side of S->F
     self.next_slide()
     a2 = _solid_curved_arrow(
-        start_pt=_right_of(e_s2f, dx=0.15, dy=0.05),  # moved to right side
-        end_pt=_left_of(e_f2s, dx=-0.10, dy=0.05),
+        start_pt=_right_of(e_s2f, dx=0.0, dy=-0.6),  # moved to right side
+        end_pt=_left_of(e_f2s, dx=0.0, dy=-0.6),
         angle=1.0,  # under-arc clockwise
     )
     self.play(Create(a2, run_time=0.6))
