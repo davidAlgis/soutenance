@@ -91,7 +91,20 @@ class Presentation(Slide):
         self.add(footer)
         # -------------------------------
 
-        return group
+        return group, footer
+
+    def add_credit(self, credit_txt):
+        credit = Tex(
+            credit_txt,
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE - 8,
+        )
+        credit.to_edge(DL, buff=0.3)
+
+        dot = Dot(color=pc.blueGreen)
+        dot.next_to(credit, RIGHT, buff=0.3)
+        self.play(FadeIn(credit), run_time=0.5)
+        self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
 
     def start_body(self):
         """Initialize body placement just under the bar, with per-slide defaults."""

@@ -164,42 +164,11 @@ def slide_19(self):
     )
     self.play(Create(a3, run_time=0.6))
 
-    # ================= DOTTED arrows =================
-    # (4) S->F -> F->S : inner arc, higher
-    self.next_slide()
-    d1 = _dotted_curved_arrow(
-        start_pt=_right_of(e_s2f, dx=0.10, dy=0.4),  # higher start
-        end_pt=_left_of(e_f2s, dx=-0.10, dy=0.4),  # higher end
-        angle=-0.8,  # inner bulge
-    )
-    self.play(Create(d1, run_time=0.6))
-    self.wait(0.1)
-
-    # (5) S->F -> Surface : inner, shifted right at both ends
-    self.next_slide()
-    d2 = _dotted_curved_arrow(
-        start_pt=_top_of(e_s2f, dx=1.4, dy=-0.35),  # more to the right
-        end_pt=_left_of(e_surface, dx=0.30, dy=-1.05),  # more to the right
-        angle=+0.6,
-        num_dashes=20,
-    )
-    self.play(Create(d2, run_time=0.6))
-    self.wait(0.1)
-
-    # (6) F->S -> Surface : inner, shifted left
-    self.next_slide()
-    d3 = _dotted_curved_arrow(
-        start_pt=_right_of(e_surface, dx=-0.30, dy=-1.05),  # more to the left
-        end_pt=_top_of(e_f2s, dx=-1.35, dy=-0.25),  # more to the left
-        angle=+0.6,
-        num_dashes=20,
-    )
-    self.play(Create(d3, run_time=0.6))
     self.wait(0.1)
 
     # --- Clear all except the bar -----------------------------------------
     self.next_slide()
-    to_keep = {bar}
+    to_keep = {bar, }
     self.remove(*[m for m in self.mobjects if m not in to_keep])
 
     # --- Summary table (BLACK text, pass-through for Tex) -------------------

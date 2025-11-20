@@ -37,7 +37,7 @@ def slide_08(self):
     y_center = (y_top + y_bottom) * 0.5
 
     line1 = Tex(
-        r"\mbox{Afin d'utiliser CUDA dans Unity à la place des \textit{compute shaders} : InteropUnityCUDA}",
+        r"\mbox{Utiliser CUDA dans Unity à la place des \textit{compute shaders} : InteropUnityCUDA}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -158,20 +158,7 @@ def slide_08(self):
     )
     new_cap_3.move_to(cap)
     self.play(Transform(cap, new_cap_3), run_time=0.35)
-
-    # ========= Bottom-right credit =========
-    credit = Tex(
-        r"Algis \textit{et al.}, \textit{SPE}, 2025",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
+    self.add_credit(r"Algis \textit{et al.}, \textit{SPE}, 2025")
     # End slide
     self.pause()
     self.clear()

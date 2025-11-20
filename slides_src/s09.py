@@ -38,8 +38,7 @@ def slide_09(self):
     # --- First ellipse: ocean surface simulation (higher) ----------------
     e1 = Ellipse(width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7)
     t1 = Paragraph(
-        "Simulation de",
-        "surface de l'océan",
+        "Simulation de surface",
         alignment="center",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
@@ -57,8 +56,7 @@ def slide_09(self):
     # --- Second ellipse: fluid -> solid ----------------------------------
     e2 = Ellipse(width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7)
     t2 = Paragraph(
-        "Action du fluide",
-        "sur le solide",
+        "Fluide vers solide",
         alignment="center",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
@@ -76,8 +74,7 @@ def slide_09(self):
     # --- Third ellipse: solid -> fluid -----------------------------------
     e3 = Ellipse(width=ell_w, height=ell_h, color=pc.blueGreen, stroke_width=7)
     t3 = Paragraph(
-        "Action du solide",
-        "sur le fluide",
+        "Solide vers fluide",
         alignment="center",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
