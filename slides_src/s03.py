@@ -143,7 +143,7 @@ def slide_03(self):
     self.play(
         FadeOut(line_left, shift=DOWN),
         FadeOut(line_right, shift=DOWN),
-        run_time=0.2,
+        run_time=0.6,
     )
 
     self.play(
