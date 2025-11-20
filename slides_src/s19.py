@@ -144,84 +144,22 @@ def slide_19(self):
     to_keep = {bar, footer}
     self.remove(*[m for m in self.mobjects if m not in to_keep])
 
-    # --- Summary table (BLACK text, pass-through for Tex) -------------------
-    def _tx(s: str) -> Tex:
-        return Tex(s, color=BLACK)
+    # --- Image Insertion (replaces table) -------------------
+    img = ImageMobject("Figures/result_arc_blanc.png")
 
-    headers = [
-        _tx(""),
-        _tx(""),
-        _tx(r"\emph{un solide}"),
-        _tx(r"\emph{dix solides}"),
-    ]
-    body = [
-        [
-            _tx("M\\'ethode de Tessendorf"),
-            _tx("Hauteur"),
-            _tx("0.4"),
-            _tx("0.4"),
-        ],
-        [_tx(""), _tx("Vitesse"), _tx("1.1"), _tx("1.1")],
-        [_tx(""), _tx("Total"), _tx("1.5"), _tx("1.5")],
-        [
-            _tx("Fluide-vers-Solide"),
-            _tx("G\\'eom\\'etrie"),
-            _tx("1.1"),
-            _tx("4.6"),
-        ],
-        [_tx(""), _tx("Forces"), _tx("0.4"), _tx("3.6")],
-        [_tx(""), _tx("Total"), _tx("1.5"), _tx("8.2")],
-        [_tx("Solide-vers-Fluide"), _tx("MDF"), _tx("0.1"), _tx("0.8")],
-        [_tx(""), _tx("Masque"), _tx("0.2"), _tx("1.6")],
-        [_tx(""), _tx("Total"), _tx("0.3"), _tx("2.4")],
-        [
-            _tx(r"\textbf{Total}"),
-            _tx(""),
-            _tx(r"\textbf{3.4 ms}"),
-            _tx(r"\textbf{12.2 ms}"),
-        ],
-    ]
+    # 1. Calculate constraints based on the bar and footer positions
+    top_y = bar.get_bottom()[1]
+    bottom_y = footer.get_top()[1]
 
-    tbl = Table(
-        body,
-        col_labels=headers,
-        include_outer_lines=True,
-        line_config={"stroke_width": 2},
-        h_buff=0.7,
-        v_buff=0.35,
-        element_to_mobject=lambda x: x,  # <- crucial: keep Tex as-is
-    )
-    tbl.set_color(BLACK)
+    img.scale(1.1)
+    # 5. Center the image vertically between bar and footer
+    center_y = (top_y + bottom_y) / 2
+    img.move_to([0, center_y, 0])
 
-    for line in tbl.get_horizontal_lines() + tbl.get_vertical_lines():
-        line.set_stroke(width=2)
+    # 6. Display
+    self.play(FadeIn(img))
 
-    last_row = len(body)
-    for c in range(1, 5):
-        tbl.get_cell((last_row, c)).set_fill(pc.blueGreen, opacity=0.15)
-
-    max_w = config.frame_width * 0.92
-    max_h = (config.frame_height * 0.92) - bar.height - 1.0
-    if tbl.width > max_w:
-        tbl.scale_to_fit_width(max_w)
-    if tbl.height > max_h:
-        tbl.scale_to_fit_height(max_h)
-    tbl.move_to([0.0, -0.1, 0.0])
-
-    self.play(FadeIn(tbl, run_time=0.6, shift=DOWN * self.SHIFT_SCALE))
-
-    credit = Tex(
-        r"Algis \textit{et al.} (2025), \textit{Arc Blanc...}",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
+    self.add_credit(r"Algis \textit{et al.}, \textit{JCGT}, 2025")
 
     self.next_slide()
     self.remove(*[m for m in self.mobjects if m not in to_keep])
@@ -289,7 +227,7 @@ def slide_19(self):
     # --- Bullet points (using utils.make_bullet_list) ---------------------------
     bullet_items = [
         r"La méthode de Tessendorf repose sur de très nombreuses approximations",
-        r"Les méthodes de couplage se basent sur des modéles phénoménologiques",
+        r"Les méthodes de couplage se basent sur des modèles phénoménologiques",
     ]
     bullets = make_bullet_list(
         bullet_items,
