@@ -1,8 +1,8 @@
 import numpy as np
 import palette_colors as pc
-from manim import (DOWN, LEFT, ORIGIN, RIGHT, UP, Create, FadeIn, FadeOut,
-                   Polygon, Tex, TransformMatchingTex, VGroup, VMobject,
-                   config)
+from manim import (BLACK, DOWN, LEFT, ORIGIN, RIGHT, UP, Create, FadeIn,
+                   FadeOut, Polygon, Tex, TransformMatchingTex, VGroup,
+                   VMobject, config)
 from slide_registry import slide
 
 
@@ -27,7 +27,7 @@ def slide_40(self):
     EDGE_INSET = 0.06  # tiny guard from absolute screen edges
     BIG_PAD = 0.35  # << increased padding for the big blue rectangle >>
     RECT_STROKE = 6
-    TEXT_FS = 32
+    TEXT_FS = self.BODY_FONT_SIZE
     LINE_BUFF = 0.35
 
     bar, footer = self._top_bar("Perspectives")
@@ -95,7 +95,7 @@ def slide_40(self):
     # ---------- Intro (left-aligned to slide)
     intro = Tex(
         "Passage de la preuve de concept à l'utilisation en production :",
-        color=pc.oxfordBlue,
+        color=BLACK,
         font_size=TEXT_FS,
     )
     left_align_to_slide(intro, usable_top_y)
@@ -107,9 +107,7 @@ def slide_40(self):
     def make_bullets(lines):
         g = VGroup()
         for i, s in enumerate(lines):
-            t = Tex(
-                r"\(\bullet\)\; " + s, color=pc.oxfordBlue, font_size=TEXT_FS
-            )
+            t = Tex(r"\(\bullet\)\; " + s, color=BLACK, font_size=TEXT_FS)
             if i == 0:
                 left_align_below(t, intro, buff=LINE_BUFF)
             else:

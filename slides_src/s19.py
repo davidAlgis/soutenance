@@ -32,7 +32,9 @@ def slide_19(self):
     Then: summary table, demo image, and final bullets.
     """
     # --- Top bar -----------------------------------------------------------
-    bar, footer = self._top_bar("Résultats de la combinaison des trois méthodes")
+    bar, footer = self._top_bar(
+        "Résultats de la combinaison des trois méthodes"
+    )
     self.add(bar)
     self.add_foreground_mobject(bar)
 
@@ -168,7 +170,7 @@ def slide_19(self):
 
     # --- Clear all except the bar -----------------------------------------
     self.next_slide()
-    to_keep = {bar, }
+    to_keep = {bar, footer}
     self.remove(*[m for m in self.mobjects if m not in to_keep])
 
     # --- Summary table (BLACK text, pass-through for Tex) -------------------

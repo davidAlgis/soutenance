@@ -47,7 +47,7 @@ def slide_20(self):
     # --- Body text (Tex) ---------------------------------------------------
     self.start_body()
     l1 = Tex(
-        r"\mbox{On conserve la méthode de Tessendorf pour les grandes étendues et pour le couplage avec les}",
+        r"\mbox{Méthode de Tessendorf pour les grandes étendues et pour le couplage}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -57,7 +57,7 @@ def slide_20(self):
     l1.shift(RIGHT * (anchor_x - l1.get_left()[0]))
 
     l2 = Tex(
-        r"solides on utilise la méthode \textit{smoothed particles hydrodynamics} (SPH)",
+        r"avec les solides on utilise la méthode \textit{smoothed particles hydrodynamics} (SPH)",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
