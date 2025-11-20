@@ -30,7 +30,7 @@ def slide_29(self):
     - Lower the 30 particles.
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Méthode X-Pencil")
+    bar, footer = self._top_bar("Méthode X-Pencil")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

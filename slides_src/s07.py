@@ -20,7 +20,7 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(7)
 def slide_07(self):
     # --- Top bar ---
-    bar = self._top_bar("CUDA")
+    bar, footer = self._top_bar("CUDA")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

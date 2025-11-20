@@ -12,7 +12,7 @@ def slide_32(self):
     Implements the sequence requested for slide 32.
     """
     # ------------------------------------------------------------------ Title
-    bar = self._top_bar("Hybridation, forces d'Airy et zones")
+    bar, footer = self._top_bar("Hybridation, forces d'Airy et zones")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

@@ -19,7 +19,7 @@ def slide_04(self):
       while the mini-wave is animating.
     """
 
-    bar = self._top_bar("Sommaires")
+    bar, footer = self._top_bar("Sommaires")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

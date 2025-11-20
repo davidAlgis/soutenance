@@ -28,7 +28,7 @@ def slide_23(self):
     from manim.utils.rate_functions import linear
 
     # ---------- Top bar ----------
-    bar = self._top_bar("Incompressibilité et forces de pressions")
+    bar, footer = self._top_bar("Incompressibilité et forces de pressions")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

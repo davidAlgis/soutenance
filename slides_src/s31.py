@@ -53,7 +53,7 @@ def slide_31(self):
     """
 
     # --- Top bar ---
-    bar = self._top_bar("Lancer de rayon pour la RPPV")
+    bar, footer = self._top_bar("Lancer de rayon pour la RPPV")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

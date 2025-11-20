@@ -20,7 +20,7 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(6)
 def slide_06(self):
     # --- Top bar ---
-    bar = self._top_bar("Unity et les compute shaders")
+    bar, footer = self._top_bar("Unity et les compute shaders")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

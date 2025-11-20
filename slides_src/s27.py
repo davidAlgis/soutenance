@@ -31,7 +31,7 @@ def slide_27(self):
     Positions are in [0,1]x[0,1].
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Recherche du plus proche voisin (RPPV)")
+    bar, footer = self._top_bar("Recherche du plus proche voisin (RPPV)")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

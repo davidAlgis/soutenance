@@ -29,7 +29,7 @@ def slide_11(self):
         to avoid any teleport/snap-back due to grouping.
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Méthode de Tessendorf")
+    bar, footer = self._top_bar("Méthode de Tessendorf")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

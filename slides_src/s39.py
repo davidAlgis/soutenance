@@ -14,7 +14,7 @@ def slide_39(self):
     - Bullet list built with utils.make_bullet_list (blueGreen triangles)
     """
     # --- Top bar
-    bar = self._top_bar("Conclusions")
+    bar, footer = self._top_bar("Conclusions")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

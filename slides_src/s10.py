@@ -26,7 +26,7 @@ def slide_10(self):
     constant amplitude while frequency changes (no "breathing").
     """
     # ---------- Top bar ----------
-    bar = self._top_bar("La théorie des vagues d'Airy")
+    bar, footer = self._top_bar("La théorie des vagues d'Airy")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

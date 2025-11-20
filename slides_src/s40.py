@@ -30,7 +30,7 @@ def slide_40(self):
     TEXT_FS = 32
     LINE_BUFF = 0.35
 
-    bar = self._top_bar("Perspectives")
+    bar, footer = self._top_bar("Perspectives")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]

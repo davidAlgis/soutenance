@@ -13,7 +13,7 @@ def slide_41(self):
       "Je vous remercie pour votre attention."
     """
     # Top bar
-    bar = self._top_bar("Merci")
+    bar, footer = self._top_bar("Merci")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]

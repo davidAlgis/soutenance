@@ -16,7 +16,7 @@ def slide_36(self):
       4) Add final pause/clear/next_slide.
     """
     # --- Top bar ---
-    bar = self._top_bar("Découpage du domaine en zones")
+    bar, footer = self._top_bar("Découpage du domaine en zones")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

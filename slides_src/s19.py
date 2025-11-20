@@ -32,7 +32,7 @@ def slide_19(self):
     Then: summary table, demo image, and final bullets.
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Résultats de la combinaison des trois méthodes")
+    bar, footer = self._top_bar("Résultats de la combinaison des trois méthodes")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

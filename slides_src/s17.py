@@ -27,7 +27,7 @@ def slide_17(self):
     tout chevauchement.
     """
     # --- Barre de titre -------------------------------------------------------
-    bar = self._top_bar("Action du solide sur le fluide")
+    bar, footer = self._top_bar("Action du solide sur le fluide")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

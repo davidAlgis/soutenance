@@ -25,7 +25,7 @@ def slide_09(self):
     two at the bottom (left and right).
     """
     # --- Top bar ---------------------------------------------------------
-    bar = self._top_bar(
+    bar, footer = self._top_bar(
         "Trois méthodes de l'état de l'art pour la simulation d'océan"
     )
     self.add(bar)

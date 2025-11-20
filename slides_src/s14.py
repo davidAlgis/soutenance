@@ -23,7 +23,7 @@ def slide_14(self):
     Slide 14 : Vitesse de l'océan
     """
     # --- Top bar ---------------------------------------------------------
-    bar = self._top_bar("Vitesse de l'océan")
+    bar, footer = self._top_bar("Vitesse de l'océan")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

@@ -17,7 +17,7 @@ def slide_37(self):
       - Keep earlier guards to avoid zero-duration plays.
     """
     # --- Top bar ---
-    bar = self._top_bar("Régulation de particules")
+    bar, footer = self._top_bar("Régulation de particules")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

@@ -20,7 +20,7 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(2)
 def slide_02(self):
     # --- Top bar + title (kept static, on top) ---
-    bar = self._top_bar("Contexte")
+    bar, footer = self._top_bar("Contexte")
     self.add(bar)
     self.add_foreground_mobject(bar)  # keep the bar above everything
 

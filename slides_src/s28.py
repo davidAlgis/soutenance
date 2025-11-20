@@ -28,7 +28,7 @@ def slide_28(self):
          vertically halfway between the top rectangle and the grids.
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Mémoire partagée")
+    bar, footer = self._top_bar("Mémoire partagée")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

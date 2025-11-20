@@ -32,7 +32,7 @@ def slide_13(self):
           square border and caption "Espace réel ($h(x,t)$)"
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Transformée de Fourier rapide")
+    bar, footer = self._top_bar("Transformée de Fourier rapide")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

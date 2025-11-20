@@ -25,7 +25,7 @@ def slide_22(self):
     CSV expected at states_sph/particles.csv with header: Particle,X,Y in [0,1]^2.
     """
     # ---------- Top bar ----------
-    bar = self._top_bar("Incompressibilité et estimation de densité")
+    bar, footer = self._top_bar("Incompressibilité et estimation de densité")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

@@ -23,7 +23,7 @@ def slide_15(self):
          (left uses +t, right uses -t) and keep animating like before.
     """
     # --- Top bar ---
-    bar = self._top_bar("Couplage avec des solides")
+    bar, footer = self._top_bar("Couplage avec des solides")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

@@ -30,7 +30,7 @@ def slide_18(self):
         3) Figures/Mask3D-contrast.jpeg     + "Vue avec une mer plate"
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Comment calculer l'entrée de la méthode ?")
+    bar, footer = self._top_bar("Comment calculer l'entrée de la méthode ?")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

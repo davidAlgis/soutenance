@@ -13,7 +13,7 @@ def slide_03(self):
     """
 
     # --- Top bar ---
-    bar = self._top_bar("Objectifs")
+    bar, footer = self._top_bar("Objectifs")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]

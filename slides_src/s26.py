@@ -21,7 +21,7 @@ def slide_26(self):
         origin=(-1.0, -0.9), size=(2.0, 5.5)
     """
     # --- Top bar ---
-    bar = self._top_bar("Récapitulatif SPH")
+    bar, footer = self._top_bar("Récapitulatif SPH")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]

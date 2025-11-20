@@ -46,7 +46,7 @@ def slide_34(self):
     left_center_x = -full_w * 0.5 + left_w * 0.5 + 0.3
     right_center_x = left_center_x + (left_w * 0.5) + (right_w * 0.5) + 0.3
 
-    bar = self._top_bar("Vitesse d'Airy")
+    bar, footer = self._top_bar("Vitesse d'Airy")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]

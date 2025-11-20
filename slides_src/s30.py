@@ -7,7 +7,7 @@ from slide_registry import slide
 @slide(30)
 def slide_30(self):
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Lancer de rayon et cœur RT")
+    bar, footer = self._top_bar("Lancer de rayon et cœur RT")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

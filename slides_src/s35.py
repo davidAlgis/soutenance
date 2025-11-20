@@ -21,7 +21,7 @@ def slide_35(self):
       applied only to fluid particles (type==0), fast run_time.
     """
     # --- Top bar ---
-    bar = self._top_bar("Facteur de modulation")
+    bar, footer = self._top_bar("Facteur de modulation")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

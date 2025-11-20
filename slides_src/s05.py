@@ -31,7 +31,7 @@ def slide_05(self):
       whole sequence. Ultra-short waits are removed.
     """
     # --- Top bar (kept above everything) ---
-    bar = self._top_bar("Introduction au calcul parallèle : CPU/GPU")
+    bar, footer = self._top_bar("Introduction au calcul parallèle : CPU/GPU")
     self.add(bar)
     self.add_foreground_mobject(bar)
     # numberplane = NumberPlane(color=BLACK)
@@ -244,7 +244,7 @@ def slide_05(self):
     # --- End the slide ---
     self.clear()
     self.next_slide()
-    bar = self._top_bar("I) Introduction au calcul parallèle : CPU/GPU")
+    bar, footer = self._top_bar("I) Introduction au calcul parallèle : CPU/GPU")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

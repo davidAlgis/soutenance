@@ -20,7 +20,7 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(21)
 def slide_21(self):
     # --- Top bar ---
-    bar = self._top_bar("SPH pas à pas")
+    bar, footer = self._top_bar("SPH pas à pas")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

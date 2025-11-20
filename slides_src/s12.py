@@ -30,7 +30,7 @@ def slide_12(self):
       while A_i appears on the right and slides a bit to the right.
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Spectres d'océans")
+    bar, footer = self._top_bar("Spectres d'océans")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

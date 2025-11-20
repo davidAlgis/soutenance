@@ -26,7 +26,7 @@ def slide_16(self):
     Tex spacers to avoid arrange() quirks. All other behavior unchanged.
     """
     # --- Top bar ---
-    bar = self._top_bar("Action du fluide sur le solide")
+    bar, footer = self._top_bar("Action du fluide sur le solide")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

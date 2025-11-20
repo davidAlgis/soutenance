@@ -30,7 +30,7 @@ def slide_20(self):
     - Draw two pc.uclaGold squares around each boat and add "SPH" label in their top-left.
     """
     # --- Top bar -----------------------------------------------------------
-    bar = self._top_bar("Principe de l'hybridation")
+    bar, footer = self._top_bar("Principe de l'hybridation")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

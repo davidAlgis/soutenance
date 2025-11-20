@@ -34,7 +34,7 @@ def slide_25(self):
     from manim.utils.rate_functions import linear
 
     # ---------- Top bar ----------
-    bar = self._top_bar("Couplage avec des solides")
+    bar, footer = self._top_bar("Couplage avec des solides")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
