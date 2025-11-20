@@ -215,15 +215,6 @@ def slide_19(self):
 
     self.remove(*[m for m in self.mobjects if m not in to_keep])
 
-    line = Tex("Néanmoins :", font_size=self.BODY_FONT_SIZE, color=BLACK)
-    line.next_to(
-        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
-    )
-    dx = (-config.frame_width / 2 + 0.6 + self.DEFAULT_PAD) - line.get_left()[
-        0
-    ]
-    line.shift(RIGHT * dx)
-    self.add(line)
     # --- Bullet points (using utils.make_bullet_list) ---------------------------
     bullet_items = [
         r"La méthode de Tessendorf repose sur de très nombreuses approximations",
@@ -236,12 +227,88 @@ def slide_19(self):
         line_gap=0.20,
         left_pad=0.25,
     )
-    bullets.next_to(line, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+    bullets.next_to(
+        self._current_bar, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT
+    )
     dx2 = (
         -config.frame_width / 2 + 0.6 + self.DEFAULT_PAD
     ) - bullets.get_left()[0]
     bullets.shift(RIGHT * dx2)
     self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5)
+
+    # 1. Calculate available vertical space
+    # We assume 'footer' exists from your _top_bar call
+    y_top = bullets.get_bottom()[1]
+    y_bottom = footer.get_top()[1]
+    available_h = y_top - y_bottom
+    center_y = (y_top + y_bottom) / 2
+
+    # Define center point for the triangle
+    tri_center = np.array([0.0, center_y, 0.0])
+
+    # 2. Define Geometry sizes
+    # Restrict size to fit height with padding, or width constraints
+    tri_size = min(config.frame_width * 0.5, available_h * 0.75)
+    htri = np.sqrt(3) / 2 * tri_size
+
+    # Calculate vertices relative to the calculated center
+    # Note: We center the bounding box of the triangle, not the centroid,
+    # to make it look visually centered between text and footer.
+    V_top = tri_center + np.array([0.0, htri / 2, 0.0])
+    V_bl = tri_center + np.array([-tri_size / 2, -htri / 2, 0.0])
+    V_br = tri_center + np.array([tri_size / 2, -htri / 2, 0.0])
+
+    tri = Polygon(V_top, V_br, V_bl, stroke_color=pc.blueGreen, stroke_width=6)
+
+    # 3. Labels
+    fs_lab = max(22, self.BODY_FONT_SIZE - 4)
+
+    lab_top = Tex(r"Pr{\'e}c.", color=pc.blueGreen, font_size=fs_lab).next_to(
+        V_top, UP, buff=0.10
+    )
+    lab_bl = Tex(r"Perf.", color=pc.blueGreen, font_size=fs_lab).next_to(
+        V_bl, DOWN, buff=0.10
+    )
+    lab_br = Tex(r"{\'E}ch.", color=pc.blueGreen, font_size=fs_lab).next_to(
+        V_br, DOWN, buff=0.10
+    )
+
+    tri_group = VGroup(tri, lab_top, lab_bl, lab_br)
+
+    self.play(
+        FadeIn(tri_group, run_time=0.6),
+        rate_func=linear,
+    )
+
+    # Target: Midpoint of bottom edge + slight offset up/right
+    # Adjusted offset slightly to be proportional to tri_size if needed,
+    # but keeping your fixed offset logic which usually works well.
+    target = 0.5 * (V_bl + V_br) + np.array([0.2, 0.5, 0.0])
+    cross_len = tri_size * 0.06
+    cross = VGroup(
+        Line(
+            target + np.array([-cross_len, -cross_len, 0.0]),
+            target + np.array([cross_len, cross_len, 0.0]),
+            stroke_color=pc.jellyBean,
+            stroke_width=6,
+        ),
+        Line(
+            target + np.array([-cross_len, cross_len, 0.0]),
+            target + np.array([cross_len, -cross_len, 0.0]),
+            stroke_color=pc.jellyBean,
+            stroke_width=6,
+        ),
+    )
+    self.play(Create(cross, run_time=0.35), rate_func=linear)
+
+    # 5. Move Cross Animation
+    self.wait(0.1)
+    self.next_slide()
+
+    target_again = 0.5 * (V_bl + V_top) + np.array([0.5, 0.1, 0.0])
+    self.play(
+        cross.animate.move_to(target_again), run_time=0.6, rate_func=linear
+    )
 
     self.pause()
     self.clear()
