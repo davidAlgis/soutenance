@@ -61,6 +61,7 @@ def slide_18(self):
 
     line2 = Tex(
         r"\mbox{« masque du navire » : intersection entre solide et surface de l'eau $h(x,t)$",
+        tex_template=self.french_template,
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

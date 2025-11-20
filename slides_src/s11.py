@@ -44,6 +44,7 @@ def slide_11(self):
 
     subtitle = Tex(
         "« Généralisation » des vagues d'Airy :",
+        tex_template=self.french_template,
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

@@ -160,6 +160,13 @@ class Presentation(Slide):
 
         from utils import parse_selection
 
+        self.french_template = TexTemplate()
+        self.french_template.preamble = r"""
+            \usepackage[french]{babel}
+            \usepackage[T1]{fontenc}
+            \usepackage{amsmath}
+            \usepackage{amssymb}
+            """
         nums = all_numbers()
         if not nums:
             return

@@ -57,6 +57,7 @@ def slide_17(self):
 
     line1 = Tex(
         "L'action du solide sur le fluide est approximée comme une simple « onde ».",
+        tex_template=self.french_template,
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
