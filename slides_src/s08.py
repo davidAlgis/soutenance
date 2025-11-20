@@ -109,7 +109,7 @@ def slide_08(self):
 
     # Move image + caption together as a single unit
     ic_group = Group(img, cap)
-    self.play(FadeIn(ic_group, shift=UP * SHIFT_SCALE, run_time=0.4))
+    self.play(FadeIn(ic_group, shift=UP * self.SHIFT_SCALE, run_time=0.4))
 
     # ========= STEP 1 → 2 =========
     self.next_slide()
