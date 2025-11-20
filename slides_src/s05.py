@@ -72,30 +72,30 @@ def slide_05(self):
             )
             rect.move_to([x, y, 0.0])
             if placeholder:
-                txt = Text("?", font_size=28, color=BLACK)
+                txt = Tex("?", font_size=28, color=BLACK)
             else:
-                txt = Text(str(v), font_size=28, color=BLACK)
+                txt = Tex(str(v), font_size=28, color=BLACK)
             txt.move_to(rect.get_center())
             boxes.append(rect)
             texts.append(txt)
         return VGroup(*boxes), VGroup(*texts)
 
     # --- Build rows: A, B, C (sequential result, initially "?") ---
-    label_a = Text("A", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
+    label_a = Tex("A", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
         [x0 - 3.0, y_a, 0], RIGHT
     )
-    label_b = Text("B", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
+    label_b = Tex("B", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
         [x0 - 3.0, y_b, 0], RIGHT
     )
-    label_c_seq = Text(
-        "C (1 thread)", font_size=self.BODY_FONT_SIZE, color=BLACK
+    label_c_seq = Tex(
+        r"C (1 \textit{thread})", font_size=self.BODY_FONT_SIZE, color=BLACK
     ).next_to([x0 - 3.5, y_c_seq, 0], RIGHT)
 
     # Plus and equal signs for visual clarity
-    plus1 = Text("+", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
+    plus1 = Tex("+", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
         [x0 - 3.0, (y_a + y_b) / 2.0, 0], RIGHT
     )
-    eq1 = Text("=", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
+    eq1 = Tex("=", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
         [x0 - 3.0, (y_b + y_c_seq) / 2.0, 0], RIGHT
     )
 
@@ -144,7 +144,7 @@ def slide_05(self):
         b_box = boxes_b[i]
         c_box = boxes_c_seq[i]
         c_txt_old = txts_c_seq[i]
-        c_txt_new = Text(str(c_vals[i]), font_size=28, color=BLACK)
+        c_txt_new = Tex(str(c_vals[i]), font_size=28, color=BLACK)
         c_txt_new.move_to(c_box.get_center())
         step = AnimationGroup(
             Indicate(
@@ -172,20 +172,22 @@ def slide_05(self):
     self.next_slide()
 
     # --- Parallel (multi-thread) version: new result row with simultaneous updates ---
-    label_c_par = Text(
-        "C (N threads) ", font_size=self.BODY_FONT_SIZE, color=BLACK
+    label_c_par = Tex(
+        r"C (N \textit{threads}) ", font_size=self.BODY_FONT_SIZE, color=BLACK
     ).next_to([x0 - 3.5, y_c_par, 0], RIGHT)
     boxes_c_par, txts_c_par = make_row(["?"] * n, y_c_par, placeholder=True)
-    eq2 = Text("=", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
+    eq2 = Tex("=", font_size=self.BODY_FONT_SIZE, color=BLACK).next_to(
         [x0 - 3.0, y_c_par + 1.0, 0], RIGHT
     )
 
     # Thread labels above each column
     thread_labels = VGroup(
         *[
-            Text(f"Thread {i}", font_size=20, color=pc.oxfordBlue).next_to(
-                [x0 + i * (box_w + gap), y_c_par + 0.5, 0], UP
-            )
+            Tex(
+                f"\\textit{{thread}} {i}",
+                font_size=self.BODY_FONT_SIZE - 5,
+                color=pc.oxfordBlue,
+            ).next_to([x0 + i * (box_w + gap), y_c_par + 0.5, 0], UP)
             for i in range(n)
         ]
     )
@@ -219,7 +221,7 @@ def slide_05(self):
                 run_time=4.0 * run_time_animation_addition,
             )
         )
-        new_txt = Text(str(c_vals[i]), font_size=28, color=BLACK)
+        new_txt = Tex(str(c_vals[i]), font_size=28, color=BLACK)
         new_txt.move_to(boxes_c_par[i].get_center())
         transforms.append(
             Transform(
@@ -244,7 +246,7 @@ def slide_05(self):
     # --- End the slide ---
     self.clear()
     self.next_slide()
-    bar, footer = self._top_bar("I) Introduction au calcul parallèle : CPU/GPU")
+    bar, footer = self._top_bar("Introduction au calcul parallèle : CPU/GPU")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
