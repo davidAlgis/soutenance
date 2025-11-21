@@ -78,12 +78,14 @@ def slide_28(self):
         width=top_rect_w,
         height=top_rect_h,
         corner_radius=0.18,
-        stroke_color=BLACK,
+        stroke_color=pc.blueGreen,
         stroke_width=6,
         fill_opacity=0.0,
     ).move_to([mid_x, top_rect_y, 0.0])
     global_label = Tex(
-        r"Mémoire globale", color=BLACK, font_size=self.BODY_FONT_SIZE + 6
+        r"Mémoire globale",
+        color=pc.blueGreen,
+        font_size=self.BODY_FONT_SIZE + 6,
     ).move_to(global_rect.get_center())
     self.play(Create(global_rect), Create(global_label), run_time=0.5)
     self.wait(0.1)
@@ -113,7 +115,7 @@ def slide_28(self):
         width=small_w,
         height=small_h,
         corner_radius=0.18,
-        stroke_color=BLACK,
+        stroke_color=pc.jellyBean,
         stroke_width=6,
         fill_opacity=0.0,
     ).move_to([left_center[0], shared_y, 0.0])
@@ -122,16 +124,20 @@ def slide_28(self):
         width=small_w,
         height=small_h,
         corner_radius=0.18,
-        stroke_color=BLACK,
+        stroke_color=pc.jellyBean,
         stroke_width=6,
         fill_opacity=0.0,
     ).move_to([right_center[0], shared_y, 0.0])
 
     txt_shared_l = Tex(
-        r"Mémoire partagée", color=BLACK, font_size=self.BODY_FONT_SIZE
+        r"Mémoire partagée",
+        color=pc.jellyBean,
+        font_size=self.BODY_FONT_SIZE - 6,
     ).move_to(shared_left.get_center())
     txt_shared_r = Tex(
-        r"Mémoire partagée", color=BLACK, font_size=self.BODY_FONT_SIZE
+        r"Mémoire partagée",
+        color=pc.jellyBean,
+        font_size=self.BODY_FONT_SIZE - 6,
     ).move_to(shared_right.get_center())
 
     self.play(
@@ -171,9 +177,9 @@ def slide_28(self):
     lbl_slow_l = Tex(
         r"Débit lent\\Stockage large",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
+        font_size=self.BODY_FONT_SIZE - 4,
     ).next_to(central_line, RIGHT, buff=0.12)
-    # lbl_slow_r = Tex(r"Débit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE)\
+    # lbl_slow_r = Tex(r"Débit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE-4)\
     # .next_to(central_line, LEFT, buff=0.12)
 
     self.play(
@@ -207,12 +213,12 @@ def slide_28(self):
     lbl_fast_l = Tex(
         r"Débit rapide\\Stockage léger",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
+        font_size=self.BODY_FONT_SIZE - 4,
     ).next_to(fast_arrow_l, LEFT, buff=0.18)
     lbl_fast_r = Tex(
         r"Débit rapide\\Stockage léger",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
+        font_size=self.BODY_FONT_SIZE - 4,
     ).next_to(fast_arrow_r, RIGHT, buff=0.18)
 
     self.play(

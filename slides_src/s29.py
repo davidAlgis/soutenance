@@ -49,21 +49,31 @@ def slide_29(self):
     TOP_RECT_VPAD = 0.55
     top_y = y_top - TOP_RECT_VPAD
 
-    left_rect = Rectangle(
-        width=rect_w, height=rect_h, color=BLACK, stroke_width=3
+    left_rect = RoundedRectangle(
+        width=rect_w,
+        height=rect_h,
+        corner_radius=0.18,
+        color=pc.blueGreen,
+        stroke_width=3,
     )
     left_rect.move_to([x_left + rect_w * 0.5 + 0.2, top_y, 0.0])
     left_lbl = Tex(
-        r"M\'emoire globale", color=BLACK, font_size=self.BODY_FONT_SIZE
+        r"M\'emoire globale", color=pc.blueGreen, font_size=self.BODY_FONT_SIZE
     )
     left_lbl.move_to(left_rect.get_center())
 
-    right_rect = Rectangle(
-        width=rect_w, height=rect_h, color=BLACK, stroke_width=3
+    right_rect = RoundedRectangle(
+        width=rect_w,
+        height=rect_h,
+        corner_radius=0.18,
+        color=pc.jellyBean,
+        stroke_width=3,
     )
     right_rect.move_to([x_right - rect_w * 0.5 - 0.2, top_y, 0.0])
     right_lbl = Tex(
-        r"M\'emoire partag\'ee", color=BLACK, font_size=self.BODY_FONT_SIZE
+        r"M\'emoire partag\'ee",
+        color=pc.jellyBean,
+        font_size=self.BODY_FONT_SIZE,
     )
     right_lbl.move_to(right_rect.get_center())
 
@@ -183,7 +193,7 @@ def slide_29(self):
         brace_center + np.array([0.25, 0.0, 0.0]),
         brace_center + np.array([5.0, 0.9, 0.0]),
         mid_above - np.array([0.9, 0.9, 0.0]),
-        mid_above - np.array([0.1, 0.0, 0.0]),
+        mid_above - np.array([0.1, 0.05, 0.0]),
         stroke_color=pc.blueGreen,
         stroke_width=5,
     )
@@ -342,18 +352,7 @@ def slide_29(self):
             )
         )
 
-    credit = Tex(
-        r"Algis \textit{et al.} (2024), \textit{Efficient GPU...}",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
+    self.add_credit(r"Algis \textit{et al.}, PCDS, 2024}")
 
     # --- End slide ---------------------------------------------------------
     self.pause()
