@@ -197,7 +197,12 @@ def slide_17(self):
         def update_wave(mob, dt):
             if not hasattr(mob, "frame_idx"):
                 mob.frame_idx = 0
-            mob.frame_idx = (mob.frame_idx + 1) % len(H)
+
+            # --- SPEED FACTOR ---
+            # Increase this number to make the animation faster.
+            # 1 = real time, 10 = 10x speed.
+            speed_factor = 10
+            mob.frame_idx = (mob.frame_idx + speed_factor) % len(H)
 
             y_data = H[mob.frame_idx]
 
