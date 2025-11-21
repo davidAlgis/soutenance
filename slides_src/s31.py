@@ -261,18 +261,7 @@ def slide_31(self):
     # Play both at the same time
     self.play(AnimationGroup(rays_seq, reveals_seq, lag_ratio=0.10))
 
-    credit = Tex(
-        r"Algis et Bramas (2025), \textit{Exploiting Ray Tracing...}",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 6,
-    )
-    credit.to_edge(DOWN, buff=0.5)
-    credit.to_edge(RIGHT, buff=0.5)
-
-    dot = Dot(color=pc.blueGreen)
-    dot.next_to(credit, LEFT, buff=0.3)
-    self.play(FadeIn(credit), run_time=0.5)
-    self.play(Flash(dot, color=pc.blueGreen), run_time=2.0)
+    self.add_credit(r"Algis et Bramas, IJACSA, 2025}")
 
     # End
     self.pause()
