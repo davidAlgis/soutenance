@@ -99,7 +99,7 @@ def slide_40(self):
         font_size=TEXT_FS,
     )
     left_align_to_slide(intro, usable_top_y)
-    self.add(intro)
+    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE))
 
     self.next_slide()
 

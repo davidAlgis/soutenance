@@ -37,7 +37,7 @@ def slide_33(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - objective.get_left()[0]
     objective.shift(RIGHT * dx)
-    self.add(objective)
+    self.play(FadeIn(objective, shift=RIGHT * self.SHIFT_SCALE))
     self.wait(0.1)
     # --- Wait for input ---
     self.next_slide()

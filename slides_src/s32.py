@@ -26,7 +26,7 @@ def slide_32(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - title_tex.get_left()[0]
     title_tex.shift(RIGHT * dx_title)
-    self.play(FadeIn(title_tex), run_time=0.5)
+    self.play(FadeIn(title_tex, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5)
 
     def make_bullets(items):
         bullet_group = make_bullet_list(
@@ -57,7 +57,7 @@ def slide_32(self):
     bullets_v1, texts_v1 = make_bullets(
         ["Simulation 3D", "Methode de Tessendorf", "SPH"]
     )
-    self.play(FadeIn(bullets_v1), run_time=0.3)
+    self.play(FadeIn(bullets_v1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.3)
     self.wait(0.1)
     self.next_slide()
 

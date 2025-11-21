@@ -34,7 +34,7 @@ def slide_36(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - intro.get_left()[0]
     intro.shift(RIGHT * dx)
-    self.play(FadeIn(intro))
+    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE))
 
     # Pause
     self.next_slide()

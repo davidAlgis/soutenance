@@ -52,7 +52,7 @@ def slide_26(self):
     )
     l1.next_to(lead, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     l1.shift(RIGHT * (dx + 0.6) + DOWN * 0.1)
-    self.play(FadeIn(l1), run_time=0.25)
+    self.play(FadeIn(l1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -63,7 +63,7 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    self.play(FadeIn(l2), run_time=0.25)
+    self.play(FadeIn(l2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -81,7 +81,7 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l4.next_to(l3, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    self.play(FadeIn(l3, l4), run_time=0.25)
+    self.play(FadeIn(l3, l4, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -92,7 +92,7 @@ def slide_26(self):
         font_size=self.BODY_FONT_SIZE,
     )
     l5.next_to(l4, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    self.play(FadeIn(l5), run_time=0.25)
+    self.play(FadeIn(l5, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # Centered equations (keep the vertical you already set via next_to)
     eq1 = Tex(
@@ -112,7 +112,7 @@ def slide_26(self):
     y2 = eq2.get_center()[1]
     eq1.move_to(np.array([0.0, y1, 0.0]))
     eq2.move_to(np.array([0.0, y2, 0.0]))
-    self.play(FadeIn(eq1, eq2), run_time=0.25)
+    self.play(FadeIn(eq1, eq2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 

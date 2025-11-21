@@ -22,7 +22,6 @@ def slide_37(self):
     self.add_foreground_mobject(bar)
 
     # --- Subtitle (left-aligned under bar) ---
-    self.start_body()
     subtitle = Tex(
         r"S'assurer que le nombre de particules est relativement constant.",
         font_size=self.BODY_FONT_SIZE,
@@ -35,7 +34,7 @@ def slide_37(self):
         bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
     ) - subtitle.get_left()[0]
     subtitle.shift(RIGHT * dx)
-    self.play(FadeIn(subtitle))
+    self.play(FadeIn(subtitle, shift=RIGHT * self.SHIFT_SCALE))
 
     # Layout
     frame_w = config.frame_width

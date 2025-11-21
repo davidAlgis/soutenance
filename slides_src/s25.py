@@ -54,7 +54,7 @@ def slide_25(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     ).move_to([x_left + 0.5 * area_w, y_top - 0.45, 0])
-    self.play(FadeIn(txt), run_time=0.45)
+    self.play(FadeIn(txt, shift=self.SHIFT_SCALE * DOWN), run_time=0.45)
 
     # ---------- 1) Thick rectangle (draw each edge) ----------
     pad_side = 0.35
