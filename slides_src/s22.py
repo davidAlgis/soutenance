@@ -40,12 +40,11 @@ def slide_22(self):
 
     # ---------- Intro (aligned left) ----------
     intro = VGroup()
-    # Display prefix, then (after next_slide) replace it by the full sentence.
 
     pos = [x_left + 0.01 * area_w, y_top - 0.2, 0]
     anchor_left = [x_left, 0, 0]
 
-    # Prefix (already positioned with your existing pos/anchor_left)
+    # Prefix
     t_prefix = (
         Tex(
             "Propriété de l'eau : ",
@@ -60,7 +59,7 @@ def slide_22(self):
     self.wait(0.1)
     self.next_slide()
 
-    # Suffix appended on the right of the existing prefix (no rewrite of the beginning)
+    # Suffix
     t_suffix = Tex(
         "~l'incompressibilité.",
         color=BLACK,
@@ -68,13 +67,11 @@ def slide_22(self):
     )
     t_suffix.next_to(t_prefix, RIGHT, buff=0.1).align_to(t_prefix, DOWN)
 
-    # Animate only the new part
     self.play(Write(t_suffix, run_time=0.35))
-
     self.wait(0.1)
     self.next_slide()
 
-    # --- Bullets (using utils.make_bullet_list) ---------------------------------
+    # --- Bullets ---
     bullet_items = [
         r"Densité constante : $|\hat{\rho}-\rho_0| \rightarrow 0$",
         r"La somme des volumes des particules reste constante : $\nabla \cdot v = 0$",
@@ -93,33 +90,58 @@ def slide_22(self):
     self.wait(0.1)
     self.next_slide()
 
+    # --- Updated t2 with isolated Rho ---
+    # We split the Tex so we can grab the middle part (index 1)
     t2 = Tex(
-        "L'estimation de la densité $\\rho$ au c\\oe ur de SPH.",
+        "L'estimation de la densité ",
+        "$\\rho$",
+        " au c\\oe ur de SPH.",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     t2.next_to(bullets, DOWN, buff=1.5).align_to(t_prefix, LEFT)
+
+    # Add everything to intro group for now
     intro.add(t_prefix, t_suffix, bullets, t2)
 
     self.play(FadeIn(t2, shift=RIGHT * self.SHIFT_SCALE, run_time=0.35))
     self.next_slide()
 
-    # ---------- Clear intro (keep bar) ----------
-    self.play(FadeOut(intro, run_time=0.3))
+    # ---------- Prepare Layout Geometry Early ----------
+    # We need these coordinates now to know where to send the Rho
+    left_center = np.array([x_left + 0.21 * area_w, (y_top + y_bottom) / 2, 0])
+    sep_x = x_left + 0.42 * area_w
+    left_w, right_w = sep_x - x_left - 0.2, x_right - sep_x - 0.2
+    left_h, right_h = area_h - 0.2, area_h - 0.2
+
+    # The target position for the equation
+    eq_pos = np.array([left_center[0], left_center[1] - 0.65 * left_h / 2, 0])
+
+    # ---------- Animate Transition (Keep Rho) ----------
+
+    # 1. Extract rho from the group
+    rho_obj = t2[1]
+    intro.remove(t2)  # remove t2 from intro
+    intro.add(t2[0], t2[2])  # add back the text parts, but NOT rho_obj
+
+    # 2. Fade out intro text while moving rho to eq_pos
+    self.play(
+        FadeOut(intro, run_time=0.3),
+        rho_obj.animate.move_to(eq_pos).scale(
+            1.2
+        ),  # slight scale up to match Equation font size later
+        run_time=0.6,
+    )
 
     # ---------- Two columns (right larger) ----------
-    sep_x = x_left + 0.42 * area_w
     separator = Line(
         [sep_x, y_bottom, 0], [sep_x, y_top, 0], color=BLACK, stroke_width=6
     )
     self.play(Create(separator), run_time=0.25)
 
-    left_center = np.array([x_left + 0.21 * area_w, (y_top + y_bottom) / 2, 0])
     right_center = np.array(
         [x_left + 0.71 * area_w, (y_top + y_bottom) / 2, 0]
     )
-    left_w, right_w = sep_x - x_left - 0.2, x_right - sep_x - 0.2
-    left_h, right_h = area_h - 0.2, area_h - 0.2
 
     # ---------- Load 30 particles ----------
     pts01 = []
@@ -179,7 +201,7 @@ def slide_22(self):
     )
     self.next_slide()
 
-    # ---------- Target particle (3rd) + left equation placeholder ----------
+    # ---------- Target particle (3rd) + Transform Rho to Rho_3 ----------
     target_idx = min(2, len(dots) - 1)
     self.play(
         *[
@@ -195,11 +217,17 @@ def slide_22(self):
         run_time=0.6,
     )
 
-    eq_pos = np.array([left_center[0], left_center[1] - 0.65 * left_h / 2, 0])
+    # Create the equation, splitting parts to target the rho_3
     eq = MathTex(
-        r"\rho_3 \;=\; ?", color=BLACK, font_size=self.BODY_FONT_SIZE + 12
+        r"\rho_3", r" \;=\; ?", color=BLACK, font_size=self.BODY_FONT_SIZE + 12
     ).move_to(eq_pos)
-    self.play(Write(eq), run_time=0.35)
+
+    # Transform the waiting rho_obj into eq[0] (rho_3) and write the rest
+    self.play(Transform(rho_obj, eq[0]), Write(eq[1]), run_time=0.35)
+    # Cleanup: remove the temp rho_obj and add the full eq to scene
+    self.remove(rho_obj)
+    self.add(eq)
+
     self.next_slide()
 
     # ---------- Neighborhood circle + diagonal h double-arrow ----------
@@ -301,12 +329,21 @@ def slide_22(self):
     )
 
     # ---------- Gaussian at top-left (axes intersect at origin, area gradient fill) ----------
-    ax_center = np.array(
-        [left_center[0] - 0.18 * left_w, left_center[1] + 0.18 * left_h, 0]
-    )
+
+    # 1. Define dimensions first
     x_len = 0.55 * left_w
     y_len = 0.34 * left_h
+
+    # 2. Calculate Position
+    # Horizontal: left_center[0] is the column middle. Subtract half the width to center the plot.
+    # Vertical: Changed from +0.18 * left_h to -0.05 * left_h to move it lower.
+    ax_center = np.array(
+        [left_center[0] - 0.5 * x_len, left_center[1] - 0.05 * left_h, 0]
+    )
+
     x_y_axis = 0.5 * x_len
+
+    # 3. Define Axes (Same as before)
     x_axis = Arrow(
         ax_center - np.array([0.05 * x_len, 0, 0]),
         ax_center + np.array([x_len, 0, 0]),
@@ -364,20 +401,8 @@ def slide_22(self):
         strips.append(poly)
     fill_group = VGroup(*strips)
 
-    kernel_label = (
-        MathTex(
-            r"W(r)=\frac{1}{h\pi}\exp\!\left(-\frac{r^{2}}{h^{2}}\right)",
-            color=BLACK,
-            font_size=self.BODY_FONT_SIZE - 6,
-        )
-        .next_to(y_axis, UP, buff=0.2)
-        .align_to(y_axis, LEFT)
-    )
-
     self.play(FadeIn(VGroup(x_axis, y_axis, x_lbl, y_lbl), run_time=0.25))
     self.play(FadeIn(fill_group, run_time=0.35))
-    # self.play(Create(curve), run_time=0.6)
-    self.play(FadeIn(kernel_label), run_time=0.25)
 
     # Helper: color from distance (0..h) mapped to gradient (pc.blueGreen -> pc.jellyBean upward)
     def color_for_r(dist, h):
@@ -398,9 +423,9 @@ def slide_22(self):
             else:
                 body = r" \\ &+ ".join(rows)
                 s = rf"\begin{{aligned}} \rho_3 &= {body} \end{{aligned}}"
-        return MathTex(s, color=BLACK, font_size=self.BODY_FONT_SIZE).move_to(
-            eq_pos
-        )
+        return MathTex(
+            s, color=BLACK, font_size=self.BODY_FONT_SIZE - 4
+        ).move_to(eq_pos)
 
     taken_w = []
     x_line_len = 0.9 * x_len
