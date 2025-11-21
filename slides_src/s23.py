@@ -137,20 +137,25 @@ def slide_23(self):
         font_size=self.BODY_FONT_SIZE + 10,
     )
     minus_tex = Tex(
-        r"-1,027\right| \;=\;",
+        r"-1027\right| \;=\;",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
 
-    rho_int = Integer(
+    rho_int = DecimalNumber(
         875,
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
+        num_decimal_places=0,
+        include_sign=False,
+        group_with_commas=False,
     )
-    diff_int = Integer(
+    diff_int = DecimalNumber(
         abs(875 - 1027),
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
+        num_decimal_places=0,
+        include_sign=False,
     )
 
     eq_group = VGroup(left_tex, rho_int, minus_tex, diff_int).arrange(
