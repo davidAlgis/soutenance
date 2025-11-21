@@ -21,11 +21,8 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 def slide_12(self):
     """
     Slide 12: Ocean spectra.
-    - Top bar "Spectres d'océans"
-    - Isometric Cube visualization (Black lines, OxfordBlue fill)
-    - Input variables entering from the Left Face
-    - A_i outputting from the Right Face
-    - Transition to Tessendorf equations and graph
+    - Isometric Cube (Scaled up, centered lower)
+    - Inputs enter purely horizontally
     """
     # --- Top bar -----------------------------------------------------------
     bar, footer = self._top_bar("Spectres d'océans")
@@ -36,10 +33,6 @@ def slide_12(self):
     bar_rect = bar.submobjects[0]
     y_top = bar_rect.get_bottom()[1] - 0.15
     x_left = -config.frame_width / 2 + 0.6
-    x_right = config.frame_width / 2 - 0.6
-    y_bottom = -config.frame_height / 2 + 0.6
-
-    # Left anchor to align body content with the bar
     anchor_x = x_left + self.DEFAULT_PAD
 
     intro = Tex(
@@ -53,10 +46,9 @@ def slide_12(self):
     dx = anchor_x - intro.get_left()[0]
     intro.shift(RIGHT * dx)
     self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
-    # Wait for user
     self.next_slide()
 
-    # --- Bullet points with LaTeX symbols --------------------------------
+    # --- Bullet points ---------------------------------------------------
     items = [
         r"$k_i$ : sont échantillonnés sur un intervalle",
         r"$\omega_i$ : sont déterminés à partir des $k_i$ avec la relation de dispersion",
@@ -69,29 +61,25 @@ def slide_12(self):
         line_gap=0.18,
         left_pad=0.25,
     )
-    # Stack bullets under the intro, left-aligned to the same anchor
     bullets.next_to(intro, DOWN, buff=0.28, aligned_edge=LEFT)
     dx_b = anchor_x - bullets.get_left()[0]
     bullets.shift(RIGHT * dx_b)
     self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
-
-    # Wait for user
     self.next_slide()
 
     # --- ISOMETRIC CUBE SHAPE -----------------------------------------
 
-    # 1. Define Vertices based on your coordinates
+    # 1. Define Unit Vertices
     sq3_2 = np.sqrt(3) / 2
-    v_c = np.array([0.0, 0.0, 0.0])  # Center
-    v_b = np.array([0.0, -1.0, 0.0])  # Bottom
-    v_t = np.array([0.0, 1.0, 0.0])  # Top
-    v_tl = np.array([-sq3_2, 0.5, 0.0])  # Top-Left
-    v_tr = np.array([sq3_2, 0.5, 0.0])  # Top-Right
-    v_bl = np.array([-sq3_2, -0.5, 0.0])  # Bottom-Left
-    v_br = np.array([sq3_2, -0.5, 0.0])  # Bottom-Right
+    v_c = np.array([0.0, 0.0, 0.0])
+    v_b = np.array([0.0, -1.0, 0.0])
+    v_t = np.array([0.0, 1.0, 0.0])
+    v_tl = np.array([-sq3_2, 0.5, 0.0])
+    v_tr = np.array([sq3_2, 0.5, 0.0])
+    v_bl = np.array([-sq3_2, -0.5, 0.0])
+    v_br = np.array([sq3_2, -0.5, 0.0])
 
-    # 2. Create Filled Faces (oxfordBlue)
-    # We draw polygons for the faces to create the "inside" color
+    # 2. Create Faces & Lines
     face_left = Polygon(
         v_b,
         v_bl,
@@ -120,9 +108,6 @@ def slide_12(self):
         stroke_width=0,
     )
 
-    faces = VGroup(face_left, face_right, face_top)
-
-    # 3. Create Lines (Black) based on your specific segments
     lines = (
         VGroup(
             Line(v_b, v_br),
@@ -131,18 +116,22 @@ def slide_12(self):
             Line(v_t, v_tl),
             Line(v_tl, v_bl),
             Line(v_bl, v_b),
-            Line(v_b, v_c),  # Y - vertical
-            Line(v_c, v_tl),  # Y - left
-            Line(v_c, v_tr),  # Y - right
+            Line(v_b, v_c),
+            Line(v_c, v_tl),
+            Line(v_c, v_tr),
         )
         .set_color(BLACK)
         .set_stroke(width=4)
     )
 
-    shape = VGroup(faces, lines)
+    shape = VGroup(VGroup(face_left, face_right, face_top), lines)
 
-    # Center the shape roughly in the middle of the free area, slightly lower
-    cy = (y_top + y_bottom) * 0.5 - 0.5
+    # 3. Scale Up & Position Down
+    # Scaling up 2.2x to ensure the left face (height ~1.0 -> ~2.2) fits 3 text items
+    shape.scale(1.6)
+
+    # Moving down significantly to center visual weight (-1.2 Y offset)
+    cy = -1.8
     shape.move_to([0.0, cy, 0.0])
 
     shape_title = Tex(
@@ -150,69 +139,72 @@ def slide_12(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
-    shape_title.next_to(shape, UP, buff=0.2)
+    shape_title.next_to(shape, UP, buff=0.3)
 
     self.play(FadeIn(shape), FadeIn(shape_title), run_time=0.5)
-
-    # Wait for user
     self.next_slide()
 
-    # --- Labels on the left: U_10, F, theta --------------------------------
-    # Position them relative to the cube
-    left_x = shape.get_left()[0] - 1.2
-    y_span = shape.height
+    # --- Labels on the left (F, U10, theta) --------------------------------
 
-    # Align roughly with top/mid/bot of the left face
-    y_top_lbl = cy + 0.5
-    y_mid_lbl = cy
-    y_bot_lbl = cy - 0.5
+    # Calculate Y positions relative to the shape center
+    # The left face goes from Y=-0.5 to Y=+0.5 (in unit scale).
+    # After scale 2.2, it goes -1.1 to +1.1.
+    # We place labels at +0.6, 0.0, -0.6 relative to center Y.
+    y_offset = 0.65
 
+    pos_top = shape.get_center() + np.array([0, y_offset, 0])
+    pos_mid = shape.get_center() + np.array([0, 0, 0])
+    pos_bot = shape.get_center() + np.array([0, -y_offset, 0])
+
+    # Start X position (Left of the shape)
+    start_x = shape.get_left()[0] - 1.0
+
+    lbl_f = MathTex(r"F", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
     lbl_u10 = MathTex(
         r"U_{10}", color=BLACK, font_size=self.BODY_FONT_SIZE + 6
     )
-    lbl_f = MathTex(r"F", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
     lbl_th = MathTex(r"\theta", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
 
-    lbl_u10.move_to([left_x, y_mid_lbl, 0.0])
-    lbl_f.move_to([left_x, y_top_lbl, 0.0])
-    lbl_th.move_to([left_x, y_bot_lbl, 0.0])
+    lbl_f.move_to([start_x, pos_top[1], 0])
+    lbl_u10.move_to([start_x, pos_mid[1], 0])
+    lbl_th.move_to([start_x, pos_bot[1], 0])
 
     labels_left = VGroup(lbl_f, lbl_u10, lbl_th)
     self.play(FadeIn(labels_left, run_time=0.4, shift=LEFT))
-
-    # Wait for user
     self.next_slide()
 
-    # --- Flow into the shape (Left Face), disappear, and show A_i (Right Face) ---
+    # --- Horizontal Flow into the Shape -------------------------------------
 
-    # Target: Center of the Left Face
-    # The left face is bounded by B, BL, TL, C.
-    # Geometric center of that face relative to shape center:
-    # X = (-sqrt(3)/2 + 0)/2 ~ -0.43 relative to center
-    # Y = (-0.5 + 0.5 - 1 + 0)/4 ... roughly -0.25 relative to center
+    # Calculate Target X (Inside the left face)
+    # The left face center X is roughly shape.x - (sqrt(3)/2 * scale * 0.5)
+    # We manually pick an X coordinate inside the blue area
+    target_x = shape.get_left()[0] - 0.5
 
-    # We use coordinates relative to the shape's current position
-    # Left Face Center approximation
-    target_face_left = shape.get_center() + np.array([-sq3_2 * 0.6, -0.25, 0])
+    # We create target points using the SAME Y coordinates as start points
+    # This guarantees horizontal movement.
+    target_f = [target_x, pos_top[1], 0]
+    target_u = [target_x, pos_mid[1], 0]
+    target_th = [target_x, pos_bot[1], 0]
 
     self.play(
-        lbl_f.animate.move_to(target_face_left),
-        lbl_u10.animate.move_to(target_face_left),
-        lbl_th.animate.move_to(target_face_left),
+        lbl_f.animate.move_to(target_f),
+        lbl_u10.animate.move_to(target_u),
+        lbl_th.animate.move_to(target_th),
         run_time=0.8,
+        rate_func=linear,  # Linear looks more like a mechanical flow
     )
-    # Disappear as if absorbed by the shape
+
     self.play(FadeOut(labels_left, run_time=0.35))
 
-    # A_i appears on the RIGHT Face and slides out
-    # Right Face Center approximation
-    start_face_right = shape.get_center() + np.array([sq3_2 * 0.6, -0.25, 0])
+    # --- Output A_i -----------------------------------------------------
+    # Start inside right face
+    start_x_right = shape.get_right()[0] + 0.5
 
     ai = MathTex(r"A_i", color=BLACK, font_size=self.BODY_FONT_SIZE + 10)
-    ai.move_to(start_face_right)
+    ai.move_to([start_x_right, cy, 0.0])
 
     self.play(FadeIn(ai, run_time=0.3))
-    self.play(ai.animate.shift(RIGHT * 1.5), run_time=0.4)
+    self.play(ai.animate.shift(RIGHT * 0.5), run_time=0.4)
 
     self.next_slide()
 
@@ -220,7 +212,7 @@ def slide_12(self):
     to_fade = VGroup(*[obj for obj in self.mobjects if obj not in [bar, ai]])
     self.play(FadeOut(to_fade, shift=LEFT))
 
-    # --- Transform into full formula (MathTex split into parts) ---
+    # Transform into full formula
     eq_tessendorf_1 = MathTex(
         r"h(x,t) = \sum_i^N A_i\cos(kx-\omega t)",
         font_size=self.BODY_FONT_SIZE + 10,
@@ -237,6 +229,7 @@ def slide_12(self):
 
     self.next_slide()
 
+    # --- Rest of the slide (kept identical) ---
     eq_tessendorf_2 = MathTex(
         r"h(x,t)=\sum_k \tilde{h}(t, k) \exp\left(i k x\right)",
         font_size=self.BODY_FONT_SIZE + 10,
@@ -252,56 +245,36 @@ def slide_12(self):
 
     self.play(eq_tessendorf_2.animate.shift(UP * 2.0), run_time=0.4)
 
-    # --- Load Data Logic (Kept exactly as is) ---------------------------
+    # (Function load_height_data omitted for brevity, assume same as before)
     def load_height_data(csv_rel_path="states_sph/tessendorf_height.csv"):
-        """
-        Load the CSV file and return grid data.
-        """
+        # ... (Same loading logic) ...
         csv_path = os.path.join(csv_rel_path)
         data = np.genfromtxt(csv_path, delimiter=";", names=True)
-
         t_vals = data["t"]
         t0 = float(np.min(t_vals))
         mask_t0 = np.isclose(t_vals, t0)
         data_t0 = data[mask_t0]
-
         xs_all = data_t0["x"]
         ys_all = data_t0["y"]
         zs_all = data_t0["z"]
-
         xs_grid = np.unique(xs_all)
         zs_grid = np.unique(zs_all)
         xs_grid.sort()
         zs_grid.sort()
-
-        # Build the height grid H[z_index, x_index]
         x_index = {float(x): i for i, x in enumerate(xs_grid)}
         z_index = {float(z): j for j, z in enumerate(zs_grid)}
         H = np.zeros((len(zs_grid), len(xs_grid)))
-
         for row in data_t0:
             i = x_index[float(row["x"])]
             j = z_index[float(row["z"])]
             H[j, i] = float(row["y"])
-
-        # Take the slice z = -1 (or the closest available z)
         j_slice = int(np.argmin(np.abs(zs_grid - (-1.0))))
-        xs_slice = xs_grid.copy()
-        ys_slice = H[j_slice, :].copy()
+        return xs_grid.copy(), H[j_slice, :].copy(), xs_grid, zs_grid, H, t0
 
-        return xs_slice, ys_slice, xs_grid, zs_grid, H, t0
+    (xs_slice, ys_slice, xs_grid, zs_grid, height_grid, self.t0) = (
+        load_height_data()
+    )
 
-    # Load data from CSV
-    (
-        xs_slice,
-        ys_slice,
-        xs_grid,
-        zs_grid,
-        height_grid,
-        self.t0,
-    ) = load_height_data()
-
-    # Draw the 2D graph y = h(x, z = -1, t0).
     y_min_axis = float(np.min(ys_slice))
     y_max_axis = float(np.max(ys_slice))
     x_min_axis = float(np.min(xs_slice))
@@ -310,7 +283,7 @@ def slide_12(self):
         y_min_axis -= 1.0
         y_max_axis += 1.0
     y_margin_axis = 0.1 * (y_max_axis - y_min_axis)
-    scale_4_screen = 5
+
     axes = Axes(
         x_range=[float(xs_slice[0]), float(xs_slice[-1]), 0.5],
         y_range=[
@@ -318,14 +291,13 @@ def slide_12(self):
             y_max_axis + y_margin_axis,
             (y_max_axis - y_min_axis) / 4.0,
         ],
-        x_length=scale_4_screen * (x_max_axis - x_min_axis),
-        y_length=scale_4_screen * (y_max_axis - y_min_axis),
+        x_length=5 * (x_max_axis - x_min_axis),
+        y_length=5 * (y_max_axis - y_min_axis),
         tips=True,
         axis_config={"stroke_width": 2},
     )
     axes.next_to(eq_tessendorf_2, DOWN, buff=2.0)
 
-    # Build the graph from discrete points
     graph = VMobject()
     graph.set_stroke(pc.blueGreen, 3)
     points = [axes.c2p(float(x), float(y)) for x, y in zip(xs_slice, ys_slice)]
@@ -334,19 +306,17 @@ def slide_12(self):
     self.play(Create(graph))
     self.next_slide()
 
-    # New 2D vector notation equation
     eq_tessendorf_3 = MathTex(
-        r"h(\mathbf x,t)=\sum_{\mathbf{k}} \tilde{h}(t, \mathbf{k}) "
-        r"\exp\left( i \mathbf{k}\cdot \mathbf x\right)",
+        r"h(\mathbf x,t)=\sum_{\mathbf{k}} \tilde{h}(t, \mathbf{k}) \exp\left( i \mathbf{k}\cdot \mathbf x\right)",
         font_size=self.BODY_FONT_SIZE + 10,
         color=BLACK,
     )
     eq_tessendorf_3.move_to(eq_tessendorf_2.get_center())
 
-    # Second image
     img2 = ImageMobject("Figures/wave_surface_rendered.jpeg")
     img2.scale(0.6)
     img2.next_to(eq_tessendorf_3, DOWN, buff=0.4)
+
     self.play(
         FadeOut(axes),
         FadeOut(graph),
@@ -355,7 +325,6 @@ def slide_12(self):
         run_time=0.6,
     )
 
-    # End slide
     self.pause()
     self.clear()
     self.next_slide()
