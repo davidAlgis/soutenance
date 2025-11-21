@@ -60,7 +60,6 @@ def slide_17(self):
     x_left = -config.frame_width / 2 + 0.6
     x_right = config.frame_width / 2 - 0.6
     area_w = x_right - x_left
-
     col_width = area_w / 2
     col_1_center = x_left + col_width / 2
     col_2_center = x_left + col_width * 1.5
@@ -68,7 +67,6 @@ def slide_17(self):
 
     # --- Corps de texte (Tex) -------------------------------------------------
     self.start_body()
-
     line1 = Tex(
         "L'action du solide sur le fluide est approximée comme une simple « onde ».",
         tex_template=self.french_template,
@@ -119,7 +117,6 @@ def slide_17(self):
     to_remove = VGroup(line1, eq_pde, line3)
     target_pos = line2.get_center()
     target_pos[1] = line1.get_y()
-
     self.play(
         FadeOut(to_remove, shift=LEFT),
         line2.animate.move_to(target_pos),
@@ -127,7 +124,6 @@ def slide_17(self):
     )
 
     # --- ANIMATION SECTION ----------------------------------------------------
-
     # 1. Load Data
     try:
         d1_nd = np.load(os.path.join(DATA_DIR, "wave_1d_no_damping.npz"))
@@ -144,13 +140,14 @@ def slide_17(self):
         L, A = float(data["L"]), float(data["A"])
 
         square_size = 4.5
-        bg_square = Square(side_length=square_size, color=GRAY, stroke_width=2)
+        bg_square = Square(
+            side_length=square_size, color=pc.blueGreen, stroke_width=4
+        )
         bg_square.set_fill(WHITE, opacity=1)
 
         # --- UPDATED AXES RANGE ---
         # Reduced y_range from [-2, 2] to [-0.5, 0.5] to "zoom in" on the y-axis
         y_min, y_max = -0.5, 0.5
-
         axes = Axes(
             x_range=[-L, L],
             y_range=[-2.0, 8.0],
@@ -172,7 +169,12 @@ def slide_17(self):
 
         # --- Boat Visualization (Polygon) ---
         boat_points_local = BOAT_1D_VERTS.copy()
-        boat_points_local[:, 1] += A
+
+        # --- VISUAL FIX: Sink the boat slightly ---
+        # We lift the boat by A (amplitude), then subtract a sink depth so it looks
+        # like it's sitting in the water, not just on top of it.
+        sink_depth = 0.8
+        boat_points_local[:, 1] += A - sink_depth
 
         boat_points_manim = [
             axes.c2p(pt[0], pt[1]) for pt in boat_points_local
@@ -199,9 +201,7 @@ def slide_17(self):
                 mob.frame_idx = 0
 
             # --- SPEED FACTOR ---
-            # Increase this number to make the animation faster.
-            # 1 = real time, 10 = 10x speed.
-            speed_factor = 10
+            speed_factor = 1
             mob.frame_idx = (mob.frame_idx + speed_factor) % len(H)
 
             y_data = H[mob.frame_idx]
@@ -210,15 +210,12 @@ def slide_17(self):
             x_coords = axes.x_axis.n2p(x)[:, 0]
             y_coords = axes.y_axis.n2p(y_data)[:, 1]
             z_coords = np.zeros_like(x_coords)
-
             line_points = np.stack([x_coords, y_coords, z_coords], axis=1)
+
             wave_line.set_points_as_corners(line_points)
 
             # --- UPDATED FILL LOGIC ---
-            # Dynamic bottom reference: pixel y-coordinate of y_min
-            # This ensures fill goes exactly to the bottom of the axis frame
             fill_base_y = axes.y_axis.n2p([y_min])[0, 1]
-
             bottom_left = np.array([x_coords[0], fill_base_y, 0])
             bottom_right = np.array([x_coords[-1], fill_base_y, 0])
 
@@ -244,7 +241,6 @@ def slide_17(self):
 
         # --- Boat Visualization (Polygon) ---
         boat_verts_local = get_boat_2d_verts()
-
         scale_factor = square_size / (2 * L)
         scaled_verts = boat_verts_local * scale_factor
 
@@ -266,14 +262,11 @@ def slide_17(self):
         def get_img_from_index(idx):
             arr = H[idx].T
             arr = np.flipud(arr)
-
             alpha = np.abs(arr) / vmax
             alpha = np.clip(alpha, 0, 1)
             alpha_ex = alpha[..., np.newaxis]
-
             rgb = (1.0 - alpha_ex) * white_rgb + alpha_ex * bg_rgb
             rgb_uint8 = (rgb * 255).astype("uint8")
-
             h, w, _ = rgb_uint8.shape
             rgba_uint8 = np.dstack(
                 (rgb_uint8, np.full((h, w), 255, dtype="uint8"))
@@ -289,16 +282,28 @@ def slide_17(self):
         group = Group(bg_square, img_mobj, source_mob, label)
 
         def update_img(mob, dt):
-            if not hasattr(mob, "frame_idx"):
-                mob.frame_idx = 0
-            mob.frame_idx = (mob.frame_idx + 1) % len(H)
+            # Initialize the float counter if it doesn't exist
+            if not hasattr(mob, "frame_idx_float"):
+                mob.frame_idx_float = 0.0
+
+            # --- SPEED CONTROL ---
+            # 1.0 = Play every calculated frame (Normal)
+            # 0.5 = Slow Motion (Half speed)
+            # 2.0 = Fast Forward (2x speed)
+            speed_factor = 1.0
+
+            # Increment the float counter
+            mob.frame_idx_float = (mob.frame_idx_float + speed_factor) % len(H)
+
+            # Convert to integer for array access
+            mob.frame_idx = int(mob.frame_idx_float)
+
             mob.pixel_array = get_img_from_index(mob.frame_idx)
 
         img_mobj.add_updater(update_img)
         return group
 
     # --- PHASE 1: NO DAMPING ---
-
     group_1d_nd = create_1d_group(d1_nd, "Vue de côté")
     group_1d_nd.move_to([col_1_center, y_anim_center, 0])
 
@@ -307,14 +312,11 @@ def slide_17(self):
 
     self.add(group_1d_nd, group_2d_nd)
 
-    # INCREASED WAIT TIME:
-    # 1D Sim T=16s ~ 800 frames @ 60fps ~ 13.3s
-    # We wait 15s to allow one full loop.
+    # Wait for loop
     self.next_slide(loop=True)
-    self.wait(15)
+    self.wait(10)
 
     # --- PHASE 2: WITH DAMPING ---
-
     group_1d_wd = create_1d_group(d1_wd, "Vue de côté")
     group_1d_wd.move_to([col_1_center, y_anim_center, 0])
 
@@ -325,7 +327,7 @@ def slide_17(self):
     self.add(group_1d_wd, group_2d_wd)
 
     self.next_slide(loop=True)
-    self.wait(15)
+    self.wait(10)
 
     # Finish
     self.clear()
