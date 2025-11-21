@@ -83,7 +83,7 @@ def slide_36(self):
     top_y = intro.get_bottom()[1] - top_gap
     left_x = -config.frame_width / 2.0 + margin_lr
     right_x = config.frame_width / 2.0 - margin_lr
-    bottom_y = -config.frame_height / 2.0 + margin_bottom
+    bottom_y = -config.frame_height / 2.0 + margin_bottom + 0.5
 
     outer_ul = np.array([left_x, top_y, 0.0])
     outer_ur = np.array([right_x, top_y, 0.0])

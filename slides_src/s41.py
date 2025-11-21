@@ -1,5 +1,5 @@
 import numpy as np
-from manim import BLACK, FadeIn, Tex, config
+from manim import BLACK, Create, FadeIn, Tex, config
 from slide_registry import slide
 
 
@@ -26,7 +26,7 @@ def slide_41(self):
 
     # Centered large text
     thanks = Tex(
-        r"Je vous remercie pour votre attention.",
+        r"Je vous remercie pour votre attention !",
         color=BLACK,
         font_size=60,
     )
@@ -34,4 +34,4 @@ def slide_41(self):
     thanks.move_to(np.array([0.0, center_y, 0.0]))
 
     # A gentle fade-in looks nice; remove if you prefer static add()
-    self.play(FadeIn(thanks, run_time=0.6))
+    self.play(Create(thanks), run_time=2.0)

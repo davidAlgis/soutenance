@@ -37,7 +37,7 @@ def slide_39(self):
     # Align left edge to bar's inner padding
     dx = self._text_left_x - title.get_left()[0]
     title.shift(dx * RIGHT)
-    self.play(FadeIn(title))
+    self.play(FadeIn(title, shift=RIGHT * self.SHIFT_SCALE))
     self.wait(0.1)
     self.next_slide()
 
@@ -67,7 +67,7 @@ def slide_39(self):
     bullets.shift(bdx * RIGHT)
 
     # A tiny animation to satisfy manim-slides before pausing
-    self.play(FadeIn(bullets))
+    self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE))
     self.next_slide()
     self.pause()
     self.clear()
