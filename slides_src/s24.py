@@ -54,7 +54,9 @@ def slide_24(self):
     )
     line1_prefix.shift(RIGHT * (anchor_x - line1_prefix.get_left()[0]))
 
-    self.play(FadeIn(line1_prefix, run_time=0.3))
+    self.play(
+        FadeIn(line1_prefix, shift=self.SHIFT_SCALE * RIGHT, run_time=0.3)
+    )
     self.next_slide()
 
     # Suffix appended; keep zero horizontal gap to look like a single sentence
@@ -80,7 +82,7 @@ def slide_24(self):
     )
     line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
 
-    self.play(FadeIn(line2), run_time=0.5)
+    self.play(FadeIn(line2, shift=self.SHIFT_SCALE * RIGHT), run_time=0.5)
 
     # --- Wait for user -----------------------------------------------------
     self.next_slide()
@@ -140,7 +142,7 @@ def slide_24(self):
 
     left_bullets = make_bullets(
         [
-            (r"Mercure", BLACK),
+            (r"Cognac", BLACK),
             (r"Eau", pc.blueGreen),
             (r"Lait", BLACK),
         ],
@@ -162,7 +164,7 @@ def slide_24(self):
         [
             (r"Huile", BLACK),
             (r"Miel", BLACK),
-            (r"Beurre de cacahuète", BLACK),
+            (r"Mayonnaise", BLACK),
         ],
         font_size=self.BODY_FONT_SIZE,
     )
@@ -174,10 +176,10 @@ def slide_24(self):
     )
     self.play(
         LaggedStart(
-            FadeIn(left_title),
-            FadeIn(left_bullets),
-            FadeIn(right_title),
-            FadeIn(right_bullets),
+            FadeIn(left_title, shift=self.SHIFT_SCALE * RIGHT),
+            FadeIn(left_bullets, shift=self.SHIFT_SCALE * RIGHT),
+            FadeIn(right_title, shift=self.SHIFT_SCALE * LEFT),
+            FadeIn(right_bullets, shift=self.SHIFT_SCALE * LEFT),
             lag_ratio=0.12,
             run_time=0.8,
         )
@@ -191,7 +193,7 @@ def slide_24(self):
 
     # --- Center equation (large) ------------------------------------------
     eq_center = MathTex(
-        r"\mathbf{F}_i^{\mathrm{viscosity}} = \frac{m_i}{\rho_i}\,\mu\,\nabla^{2}\mathbf{v}",
+        r"\mathbf{F}_i^v = \frac{m_i}{\rho_i}\,\mu\,\nabla^{2}\mathbf{v}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
@@ -203,7 +205,7 @@ def slide_24(self):
 
     # --- Transform to SPH viscosity form ----------------------------------
     eq_sph = MathTex(
-        r"\mathbf{F}_i^{v} = 2(d+2)\frac{m_i}{\rho_i}"
+        r"\mathbf{F}_i^{v} \simeq \frac{m_i}{\rho_i}"
         r"\sum_j \frac{m_j}{\rho_j}"
         r"\frac{\mathbf{v}_{ij}\cdot\mathbf{r}_{ij}}{\lVert\mathbf{r}_{ij}\rVert^{2} + 0.01\,h^{2}}"
         r"\,\nabla W_{ij}",
