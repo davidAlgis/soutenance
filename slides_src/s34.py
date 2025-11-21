@@ -101,7 +101,7 @@ def slide_34(self):
     intro.to_edge(LEFT, buff=0.4)
     dy_intro = top_y - intro.get_top()[1]
     intro.shift(np.array([0.0, dy_intro, 0.0]))
-    self.play(Create(intro), run_time=0.2)
+    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE), run_time=0.2)
     self.wait(0.3)
     self.next_slide()
 
@@ -253,7 +253,7 @@ def slide_34(self):
         font_size=self.BODY_FONT_SIZE,
     )
     place_left_tex(eq_h, above=intro, buff=LINE_BUFF * 1.2)
-    self.add(eq_h)
+    self.play(FadeIn(eq_h, shift=RIGHT * self.SHIFT_SCALE))
 
     # Crosses at label positions (time-independent)
     def make_cross(center, size=0.03):
@@ -302,7 +302,7 @@ def slide_34(self):
         font_size=self.BODY_FONT_SIZE,
     )
     place_left_tex(ab_tex, above=eq_h, buff=LINE_BUFF)
-    self.add(ab_tex)
+    self.play(FadeIn(ab_tex, shift=RIGHT * self.SHIFT_SCALE))
 
     # Animate crosses row-by-row
     row_ids_sorted = sorted(rows_groups.keys())
@@ -505,12 +505,15 @@ def slide_34(self):
         buff=LINE_BUFF,
         aligned_edge=LEFT,
     )
-    self.play(FadeIn(missing_labels_tex), run_time=0.3)
+    self.play(
+        FadeIn(missing_labels_tex, shift=RIGHT * self.SHIFT_SCALE),
+        run_time=0.3,
+    )
 
     self.next_slide()
 
     nr_title_tex = Tex(
-        "\mbox{On utilise la méthode de Newton-Raphson, pour déterminer $a$ et $b$ à partir d'une position donnée :}",
+        "\mbox{Méthode de Newton-Raphson pour déterminer $a$ et $b$ à partir d'une position donnée :}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -521,7 +524,9 @@ def slide_34(self):
         aligned_edge=LEFT,
     )
 
-    self.play(FadeIn(nr_title_tex), run_time=0.3)
+    self.play(
+        FadeIn(nr_title_tex, shift=RIGHT * self.SHIFT_SCALE), run_time=0.3
+    )
 
     # Final inverse mapping cases: BIGGER and CENTERED; keep same Y across transforms
     BIG_FS = self.BODY_FONT_SIZE + 15
@@ -535,7 +540,9 @@ def slide_34(self):
         font_size=BIG_FS,
     )
     inv_start_tex.move_to(np.array([0.0, inv_y_ref, 0.0]))  # center X, keep Y
-    self.play(FadeIn(inv_start_tex), run_time=0.3)
+    self.play(
+        FadeIn(inv_start_tex, shift=RIGHT * self.SHIFT_SCALE), run_time=0.3
+    )
 
     self.next_slide()
 
