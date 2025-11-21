@@ -48,7 +48,7 @@ def slide_13(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     line1 = Tex(
-        r"\mbox{Le calcul de la somme $h_T(x,t)$ est coûteux, donc on va utiliser une transformée de Fourier}",
+        r"\mbox{Le calcul de la somme $h_T(x,t)$ est coûteux, donc on va utiliser une transformée }",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -59,7 +59,7 @@ def slide_13(self):
     line1.shift(RIGHT * dx1)
 
     line2 = Tex(
-        r"rapide inverse (IFFT) :",
+        r"de Fourier rapide inverse (IFFT) :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -137,7 +137,7 @@ def slide_13(self):
     arrow_label = MathTex(
         r"IFFT~\mathcal{O}(N\log(N))",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 2,
+        font_size=self.BODY_FONT_SIZE - 4,
     )
     arrow_label.next_to(arrow, UP, buff=0.18)
 
