@@ -45,13 +45,12 @@ def slide_07(self):
     top_margin = 0.35
     logo_x = x_right - right_margin - logo.width * 0.5
     logo_y = y_bottom + top_margin + logo.height * 0.5
-    logo.move_to([logo_x, logo_y, 0])
-    self.add(logo)
+    logo.move_to([logo_x, logo_y - 1.0, 0])
 
     # ========= Left: text column =========
     # Heading
     h1 = Tex(
-        "CUDA : programmation sur GPU NVidia.",
+        "CUDA : programmation sur carte graphique NVidia.",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -90,7 +89,7 @@ def slide_07(self):
         "Bénéficie des dernières technologies",
     ]
     cons = [
-        "Utilisable uniquement sur carte Nvidia",
+        "Uniquement sur carte Nvidia",
         "Pas accessible dans Unity",
     ]
     pc_list = make_pro_cons(
