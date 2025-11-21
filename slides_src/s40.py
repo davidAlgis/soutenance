@@ -1,15 +1,17 @@
 import numpy as np
 import palette_colors as pc
 from manim import (BLACK, DOWN, LEFT, ORIGIN, RIGHT, UP, Create, FadeIn,
-                   FadeOut, Polygon, Tex, TransformMatchingTex, VGroup,
-                   VMobject, config)
+                   FadeOut, Polygon, ReplacementTransform, Tex,
+                   TransformMatchingTex, VGroup, VMobject, config)
 from slide_registry import slide
+from utils import make_bullet_list  # Import the bullet list utility
 
 
 @slide(40)
 def slide_40(self):
     """
     Perspectives (slide 40) — fixes:
+    - Uses utils.make_bullet_list to match slide 39 (BlueGreen Triangles).
     - Lock bullet left-edges during transform so "Airy" keeps the same X.
     - Increase outer padding for the big blueGreen rectangle.
     """
@@ -103,39 +105,41 @@ def slide_40(self):
 
     self.next_slide()
 
-    # ---------- Bullets (left-aligned to slide)
-    def make_bullets(lines):
-        g = VGroup()
-        for i, s in enumerate(lines):
-            t = Tex(r"\(\bullet\)\; " + s, color=BLACK, font_size=TEXT_FS)
-            if i == 0:
-                left_align_below(t, intro, buff=LINE_BUFF)
-            else:
-                left_align_below(t, g[-1], buff=LINE_BUFF)
-            g.add(t)
-        return g
+    # ---------- Bullets V1 (BlueGreen Triangles)
+    bullets_v1 = make_bullet_list(
+        ["2D", "Airy"],
+        bullet_color=pc.blueGreen,
+        font_size=TEXT_FS,
+        line_gap=LINE_BUFF,
+        left_pad=0.25,
+    )
+    left_align_below(bullets_v1, intro, buff=LINE_BUFF)
 
-    bullets_v1 = make_bullets(["2D", "Airy"])
     self.add(bullets_v1)
     self.wait(0.1)
     self.next_slide()
 
-    # New bullets with arrows (note: "Airy \\leftarrow Tessendorf" per your request)
-    bullets_v2 = make_bullets(
-        [r"2D $\rightarrow$ 3D", r"Airy $\rightarrow$ Tessendorf"]
+    # ---------- Bullets V2 (BlueGreen Triangles with Arrows)
+    bullets_v2 = make_bullet_list(
+        [r"2D $\rightarrow$ 3D", r"Airy $\rightarrow$ Tessendorf"],
+        bullet_color=pc.blueGreen,
+        font_size=TEXT_FS,
+        line_gap=LINE_BUFF,
+        left_pad=0.25,
     )
 
     # --- Lock left edges before Transform so the left X doesn't move off-slide
+    # This loops over the rows (each row is a VGroup of [bullet, text])
     for b_old, b_new in zip(bullets_v1, bullets_v2):
         # Start by matching Y/center to avoid vertical pop
         b_new.move_to(b_old.get_center())
-        # Then correct X so left edge matches exactly
+        # Then correct X so left edge matches exactly (locking the bullet position)
         dx_left = b_old.get_left()[0] - b_new.get_left()[0]
         b_new.shift(np.array([dx_left, 0.0, 0.0]))
 
     self.play(
         *[
-            TransformMatchingTex(b1, b2)
+            ReplacementTransform(b1, b2)
             for b1, b2 in zip(bullets_v1, bullets_v2)
         ],
         run_time=0.7,
@@ -152,7 +156,7 @@ def slide_40(self):
     X0 = SLIDE_LEFT + BIG_PAD
     X1 = SLIDE_RIGHT - BIG_PAD
     Y1 = usable_top_y - BIG_PAD
-    Y0 = usable_bottom_y + BIG_PAD
+    Y0 = usable_bottom_y + BIG_PAD + 0.8
 
     big_rect_lines = draw_rect_lines(
         X0, Y0, X1, Y1, color=pc.blueGreen, width=RECT_STROKE, rt=0.18
