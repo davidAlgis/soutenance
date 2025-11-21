@@ -1,184 +1,318 @@
-# thesis_slides.py (now supports selective rendering)
-# 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
-# Texte conservé exactement tel qu'écrit par l'utilisateur.
-
-# flake8: noqa: F405
-import os
-
 import numpy as np
 import palette_colors as pc
 from manim import *
-from manim import logger
-from manim_slides import Slide
-from manim_tikz import Tikz
+from manim.utils.rate_functions import linear
 from slide_registry import slide
-from sph_vis import show_sph_simulation
-from utils import (make_bullet_list, make_pro_cons, parse_selection,
-                   tikz_from_file)
 
 
 @slide(14)
 def slide_14(self):
     """
-    Slide 14 : Vitesse de l'océan
+    Couplage avec des solides — scenario updated:
+      - Wave animates continuously via dt updater.
     """
-    # --- Top bar ---------------------------------------------------------
-    bar, footer = self._top_bar("Vitesse de l'océan")
+    # --- Top bar ---
+    bar, footer = self._top_bar("Couplage avec des solides")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # ---- Usable area below the bar -------------------------------------
+    # ---- Usable area below the bar ----
     bar_rect = bar.submobjects[0]
     y_top = bar_rect.get_bottom()[1] - 0.15
     x_left = -config.frame_width / 2 + 0.6
     x_right = config.frame_width / 2 - 0.6
     y_bottom = -config.frame_height / 2 + 0.6
-    anchor_x = x_left + self.DEFAULT_PAD
+    area_w = x_right - x_left
+    area_h = y_top - y_bottom
+    y_center = 0.5 * (y_top + y_bottom)
 
-    line1 = Tex(
-        r"\mbox{La vitesse de l'eau en tout point de l'espace calculée avec le même principe de transformation}",
+    # --- Subtitle (Tex) ---
+    subtitle = Tex(
+        r"La méthode de Tessendorf ne permet pas le couplage avec des solides :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
-    line1.next_to(self._current_bar, DOWN, aligned_edge=LEFT)
-    dx = anchor_x - line1.get_left()[0]
-    line1.shift(RIGHT * dx)
-
-    line2 = Tex(
-        r"d'espace de Fourier à espace réel : "
-        r"$\tilde{v}(k,t,y)=E(k,y)\,\phi(k,t)$",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
+    subtitle.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
     )
-    line2.next_to(line1, DOWN, aligned_edge=LEFT)
-    dx2 = anchor_x - line2.get_left()[0]
-    line2.shift(RIGHT * dx2)
-    self.play(
-        FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25
-    )
+    dx_sub = (bar_rect.get_left()[0] + self.DEFAULT_PAD) - subtitle.get_left()[
+        0
+    ]
+    subtitle.shift(RIGHT * dx_sub)
+    self.play(FadeIn(subtitle, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
-    # ===================== Axis & Layout =================================
-    # Tweakables to nudge the axes where you want
-    AXIS_RIGHT_SHIFT = 0.60  # move vertical axis further to the right
-    AXIS_DOWN_SHIFT = 0.30  # move the whole axes block slightly downward
+    # --- Plot mapping (no axes) ---
+    plot_w = min(area_w * 0.88, 12.0)
+    plot_h = min(area_h * 0.48, 3.6)
+    plot_center = np.array([0.0, y_center, 0.0])
+    x_min, x_max = -10.0, 10.0
+    x_span = x_max - x_min
+    sample_n = 600
+    y_vis = 1.0
+    sx = plot_w / x_span
+    sy = (plot_h / 2.0) / y_vis
 
-    # Left-side axes spanning from just under sentences down to bottom,
-    # then apply right/down shifts.
-    axis_left_x = x_left + 0.9 + AXIS_RIGHT_SHIFT
-    axis_top_y = (line2.get_bottom()[1] - 0.30) - AXIS_DOWN_SHIFT
-    axis_bottom_y = y_bottom + 0.35
-    x_end = x_right - 0.6
+    # =========================
+    # Time tracker (CONTINUOUS)
+    # =========================
+    t = ValueTracker(0.0)
 
-    # Clamp to bounds (just in case tweaks push out of frame)
-    axis_left_x = min(axis_left_x, x_right - 1.8)
-    axis_top_y = min(axis_top_y, y_top - 0.2)
-    axis_bottom_y = max(axis_bottom_y, y_bottom + 0.2)
+    # 1. Add t to the scene so updaters run
+    self.add(t)
 
-    # Vertical axis: only downward from origin (no positive part)
-    y_axis = Arrow(
-        start=[axis_left_x, axis_top_y, 0],
-        end=[axis_left_x, axis_bottom_y, 0],
-        buff=0,
-        stroke_width=6,
-        color=BLACK,
-    )
+    # 2. Add updater: increments t by dt * speed every frame
+    # Adjust '1.0' to make the wave faster or slower
+    t.add_updater(lambda m, dt: m.increment_value(dt * 1.0))
 
-    # Horizontal axis: rightward from the same origin y
-    x_axis = Arrow(
-        start=[axis_left_x, axis_top_y, 0],
-        end=[x_end, axis_top_y, 0],
-        buff=0,
-        stroke_width=6,
-        color=BLACK,
-    )
+    # =========================
+    # Phase 1: base sinus water
+    # =========================
+    A0 = 0.1
+    k0 = 0.5
+    omega0 = 4.0
 
-    axis_group = VGroup(x_axis, y_axis)
-    self.add(axis_group)
+    def make_water_base():
+        X = np.linspace(x_min, x_max, sample_n)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(A0 * np.cos(k0 * xv - omega0 * tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        m = VMobject()
+        m.set_points_smoothly(pts)
+        m.set_stroke(color=pc.blueGreen, width=4)
+        return m
 
-    # Wave along the horizontal axis level
-    wave = ParametricFunction(
-        lambda t: np.array(
-            [
-                axis_left_x + t,
-                axis_top_y - 0.30 * np.sin(1.4 * t),
-                0.0,
-            ]
-        ),
-        t_range=[0, max(0.0, x_end - axis_left_x)],
-        color=pc.blueGreen,
-        stroke_width=6,
-    )
-    self.add(wave)
+    water_base = always_redraw(make_water_base)
+    self.play(Create(water_base), run_time=1.0)
 
-    # ===================== After first reveal ===========================
+    # =========================
+    # Phase 2: boat falls through
+    # =========================
     self.next_slide()
 
-    # ===================== Depth Levels =================================
-    depths = [0, 30, 80, 140]  # four lines
-    y_vals = np.linspace(axis_top_y, axis_bottom_y, len(depths))
+    boat_shape = [
+        [-1.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [2.0, 1.0, 0.0],
+        [0.5, 1.0, 0.0],
+        [0.0, 1.5, 0.0],
+        [-0.5, 1.0, 0.0],
+        [-2.0, 1.0, 0.0],
+    ]
+    boat1 = Polygon(
+        *[np.array(p) for p in boat_shape],
+        fill_color=pc.uclaGold,
+        fill_opacity=1.0,
+        stroke_color=pc.uclaGold,
+    ).scale(0.9)
+    start_y = y_center + 1.9
+    boat1.move_to([0.0, start_y, 0.0])
+    boat1.set_z_index(10)
+    self.play(FadeIn(boat1))
+    self.add_foreground_mobject(boat1)
 
-    dotted_lines = []
-    labels = []
+    # Because t has an updater, we just move the boat.
+    # The wave animates automatically during this run_time.
+    self.play(
+        boat1.animate.move_to([0.0, y_bottom - 2.0, 0.0]),
+        run_time=2.0,
+        rate_func=linear,
+    )
 
-    # Fixed gap from the axis to the label's RIGHT edge
-    LABEL_GAP = 0.4
-    MIN_LEFT = x_left + 0.15
+    # =========================
+    # Phase 3: remove boat1
+    # =========================
+    self.next_slide()
+    self.play(FadeOut(boat1, run_time=0.25))
 
-    for yv, d in zip(y_vals, depths):
-        # dotted line from axis to right
-        ln = DashedLine(
-            start=[axis_left_x, yv, 0],
-            end=[x_end, yv, 0],
-            dash_length=0.20,
-            color=BLACK,
-        )
-        dotted_lines.append(ln)
+    # =========================
+    # Phase 4: boat 2
+    # =========================
+    boat2 = Polygon(
+        *[np.array(p) for p in boat_shape],
+        fill_color=pc.uclaGold,
+        fill_opacity=1.0,
+        stroke_color=pc.uclaGold,
+    ).scale(0.9)
+    boat2.move_to([0.0, start_y, 0.0])
+    boat2.set_z_index(10)
 
-        # label placed so its RIGHT edge is LABEL_GAP left of the axis
-        label = MathTex(
-            rf"v(x, t, {d})",
-            font_size=self.BODY_FONT_SIZE,
-            color=BLACK,
-        )
-        label.set_y(yv)
-        right_target_x = axis_left_x - LABEL_GAP
-        current_right_x = label.get_right()[0]
-        label.shift(RIGHT * (right_target_x - current_right_x))
+    f2s_title = Tex(
+        r"Action du fluide sur le solide",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 10,
+    )
+    f2s_title.to_edge(DOWN, buff=0.3)
+    self.play(FadeIn(boat2), FadeIn(f2s_title, shift=UP))
+    self.add_foreground_mobject(boat2)
 
-        # clamp if label would go off-slide on the left
-        if label.get_left()[0] < MIN_LEFT:
-            label.shift(RIGHT * (MIN_LEFT - label.get_left()[0]))
-
-        labels.append(label)
+    # Freeze time logic for the calculation target
+    # (Note: Since t is moving, the wave will shift slightly while falling,
+    # but this approximation is usually fine for visual slides).
+    tv_now = t.get_value()
+    base_y_at_x0 = plot_center[1] + sy * (A0 * np.cos(omega0 * tv_now)) + 0.1
 
     self.play(
-        LaggedStart(
-            *[Create(m) for m in (dotted_lines + labels)],
-            lag_ratio=0.08,
-        )
+        boat2.animate.move_to([0.0, base_y_at_x0, 0.0]),
+        run_time=2.3,
     )
 
-    # ===================== Wait for user =================================
+    # Add updater for oscillation
+    # Since 't' is auto-updating, this updater will fire every frame with a new t
+    def boat2_updater(mob: Mobject):
+        tv = t.get_value()
+        # Re-calculate Y based on current t
+        y = plot_center[1] + sy * (A0 * np.cos(omega0 * tv)) + 0.1
+        # Keep X and Z, update Y
+        current_x = mob.get_center()[0]
+        mob.move_to([current_x, y, 0.0])
+
+    boat2.add_updater(boat2_updater)
+
+    # Just wait to show the oscillation
+    self.play(Wait(4.0))  # Wait allows updaters to run for 4 seconds
+
+    # Cleanup updaters if you want to stop the motion before leaving the slide
+    t.clear_updaters()
+    boat2.clear_updaters()
+
+    # =========================
+    # Phase 5: wait, then transform base curve into two symmetric decaying curves
+    # =========================
     self.next_slide()
+    self.play(FadeOut(f2s_title, shift=DOWN))
 
-    # ===================== Interpolation line ============================
-    mid_y = 0.5 * (y_vals[1] + y_vals[2])
-    interp_line = DashedLine(
-        start=[axis_left_x, mid_y, 0],
-        end=[x_end, mid_y, 0],
-        dash_length=0.08,
-        color=pc.blueGreen,
-    )
-    interp_caption = Text(
-        "Interpolation Exp",
-        font_size=self.BODY_FONT_SIZE,
+    # Decaying cosine parameters
+    x_c = 0.0
+    A_env = 0.25
+    T_env = 3.0
+    k_env = 3.0
+    omega_env = 3.0
+
+    def water_left(x_val: float, t_val: float) -> float:
+        x_rel = x_val - x_c
+        return (
+            A_env
+            * np.exp(-np.abs(x_rel) / T_env)
+            * np.cos(k_env * x_rel + omega_env * t_val)
+        )
+
+    def water_right(x_val: float, t_val: float) -> float:
+        x_rel = x_val - x_c
+        return (
+            A_env
+            * np.exp(-np.abs(x_rel) / T_env)
+            * np.cos(k_env * x_rel - omega_env * t_val)
+        )
+
+    # Take a static snapshot of the current base curve to transform from
+    base_static = make_water_base()
+    self.add(base_static)  # layered on top of the redraw temporarily
+    self.remove(water_base)  # hide the redraw version so transform is stable
+
+    # Build static targets (left/right) at current t
+    def build_static_left():
+        X = np.linspace(x_min, 0.0, sample_n // 2 + 1)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(water_left(xv, tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        m = VMobject()
+        m.set_points_smoothly(pts)
+        m.set_stroke(color=pc.blueGreen, width=4)
+        return m
+
+    def build_static_right():
+        X = np.linspace(0.0, x_max, sample_n // 2 + 1)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(water_right(xv, tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        m = VMobject()
+        m.set_points_smoothly(pts)
+        m.set_stroke(color=pc.blueGreen, width=4)
+        return m
+
+    left_static = build_static_left()
+    right_static = build_static_right()
+    target_group = VGroup(left_static, right_static)
+    s2f_title = Tex(
+        r"Action du solide sur la fluide",
         color=BLACK,
-    ).next_to(interp_line, UP, buff=0.1)
+        font_size=self.BODY_FONT_SIZE + 10,
+    )
+    s2f_title.to_edge(DOWN, buff=0.3)
 
-    self.add(interp_line, interp_caption)
-    self.play(Indicate(interp_caption, color=pc.blueGreen))
+    # Transform snapshot into the two-curve group
+    self.play(
+        ReplacementTransform(base_static, target_group),
+        FadeIn(s2f_title, shift=UP),
+        run_time=0.8,
+    )
 
-    # ===================== End slide ====================================
+    # Replace static targets with always_redraw animated versions
+    def make_water_curve_left():
+        X = np.linspace(x_min, 0.0, sample_n // 2 + 1)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(water_left(xv, tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        path = VMobject()
+        path.set_points_smoothly(pts)
+        path.set_stroke(color=pc.blueGreen, width=4)
+        return path
+
+    def make_water_curve_right():
+        X = np.linspace(0.0, x_max, sample_n // 2 + 1)
+        tv = t.get_value()
+        pts = []
+        for xv in X:
+            yv = np.clip(water_right(xv, tv), -y_vis, y_vis)
+            px = (xv - x_min) * sx - plot_w / 2.0
+            py = yv * sy
+            pts.append([plot_center[0] + px, plot_center[1] + py, 0.0])
+        path = VMobject()
+        path.set_points_smoothly(pts)
+        path.set_stroke(color=pc.blueGreen, width=4)
+        return path
+
+    water_l = always_redraw(make_water_curve_left)
+    water_r = always_redraw(make_water_curve_right)
+    self.add(water_l, water_r)
+    self.remove(target_group)
+
+    # Switch boat to follow the decaying-wave local motion at x=0
+    boat2.remove_updater(boat2_updater)
+
+    def boat2_decay_updater(mob: Mobject):
+        tv = t.get_value()
+        y = (
+            plot_center[1] + sy * (0.03 * np.cos(omega_env * tv)) + 0.2
+        )  # at x=0
+        mob.move_to([0.0, y, 0.0])
+
+    boat2.add_updater(boat2_decay_updater)
+
+    # Animate the system (time continues linearly)
+    self.play(
+        t.animate.set_rate_func(linear).increment_value(4.0 * np.pi),
+        run_time=4.0 * np.pi,
+    )
+
+    # Cleanup
+    boat2.remove_updater(boat2_decay_updater)
     self.pause()
     self.clear()
     self.next_slide()
