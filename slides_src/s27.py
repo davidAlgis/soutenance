@@ -21,7 +21,7 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(27)
 def slide_27(self):
     """
-    Slide 26 : Recherche du plus proche voisin (RPPV)
+    Slide 27 : Recherche du plus proche voisin (RPPV)
 
     CSV expected header:
         Particle,X,Y
@@ -155,7 +155,7 @@ def slide_27(self):
     self.play(FadeOut(h_text), run_time=0.2)
 
     # --- Five probe lines to random particles ------------------------------
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(1)
     pool = [i for i in range(len(particles)) if i != target_idx]
     for _ in range(min(10, len(pool))):
         j = int(rng.choice(pool))
@@ -280,6 +280,7 @@ def slide_27(self):
     for l in h_lines:
         self.play(Create(l), run_time=0.2)
     self.wait(0.1)
+
     self.next_slide()
 
     # --- NEW: Fill target cell and its 8 neighbors -------------------------
@@ -324,6 +325,17 @@ def slide_27(self):
                 *[FadeIn(r) for r in fills], lag_ratio=0.05, run_time=0.5
             )
         )
+
+    circle2 = DashedVMobject(
+        Circle(
+            radius=h_radius, arc_center=center, color=BLACK, stroke_width=4
+        ),
+        num_dashes=80,
+        dashed_ratio=0.55,
+    )
+    # [animation of draw]
+    self.play(Create(circle2), run_time=0.5)
+    self.wait(0.1)
     # -----------------------------------------------------------------------
 
     self.next_slide()
