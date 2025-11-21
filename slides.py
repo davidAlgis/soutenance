@@ -149,12 +149,6 @@ class Presentation(Slide):
         txt.scale(self.TEXT_SCALE)
         self.add(txt)
 
-    def default_end_slide(self, title):
-        self.add(self._top_bar(title))
-        self.pause()
-        self.clear()
-        self.next_slide()
-
     def construct(self):
         import os
 
