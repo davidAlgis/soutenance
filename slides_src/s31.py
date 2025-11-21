@@ -46,7 +46,7 @@ def slide_31(self):
       - Pause
       - Recolor: target (3rd) -> jellyBean, others BLACK; draw dotted circle R=15*pr
       - Pause
-      - Draw dashed vertical gates; nearest side strong, other faint
+      - Draw small dashed circles around EACH particle (replacing gates)
       - Pause
       - Emit 4 diagonal rays from target WHILE randomly revealing all particles
         inside the dotted circle to blueGreen (target stays jellyBean)
@@ -132,61 +132,48 @@ def slide_31(self):
             recolor.append(p.animate.set_color(BLACK))
     self.play(*recolor, run_time=0.35)
 
-    # --- Dotted circle around target, radius = 15×pr ---
+    # --- Dotted circle around target (NEIGHBORHOOD) R = 15*pr ---
+    # We keep this one distinct: BLACK, Thicker, Larger
     R = 15.0 * pr
     target_center = (
         particles[target_idx].get_center()
         if N > 0
         else np.array([0.0, 0.0, 0.0])
     )
-    circle = DashedVMobject(
+    neighborhood_circle = DashedVMobject(
         Circle(radius=R, color=BLACK, stroke_width=4).move_to(target_center),
         num_dashes=48,
         dashed_ratio=0.55,
     )
-    self.play(Create(circle, run_time=0.5))
+    self.play(Create(neighborhood_circle, run_time=0.5))
 
     self.wait(0.1)
     self.next_slide()
 
-    # --- Dashed vertical gates around each particle ---
-    gate_dx = 3.0 * pr
-    gate_h = 8.0 * pr  # reduced height per your request
-    stroke_w = max(2.5, pr * 7.0)
-    strong_opacity = 1.0
-    faint_opacity = 0.18
+    # --- Dashed circles around each particle (BOUNDING VOLUMES) ---
+    # UPDATED: Replaced gates with circles.
+    # Visual distinction strategy:
+    # 1. Radius: Much smaller (3.5*pr) vs Neighborhood (15*pr)
+    # 2. Color: GRAY vs BLACK
+    # 3. Stroke: Thinner (2) vs Thicker (4)
 
-    gates_vm = VGroup()
-    tx = target_center[0]
+    bound_r = 6.0 * pr
+    bounds_group = VGroup()
 
     for i, p in enumerate(particles):
-        cx, cy, _ = p.get_center()
-        L = Line(
-            [cx - gate_dx, cy - gate_h / 2.0, 0.0],
-            [cx - gate_dx, cy + gate_h / 2.0, 0.0],
+        c = Circle(
+            radius=bound_r,
+            color=pc.uclaGold,
+            stroke_width=2,
+            stroke_opacity=0.8,
         )
-        Rr = Line(
-            [cx + gate_dx, cy - gate_h / 2.0, 0.0],
-            [cx + gate_dx, cy + gate_h / 2.0, 0.0],
-        )
+        c.move_to(p.get_center())
 
-        Ld = DashedVMobject(L, num_dashes=22, dashed_ratio=0.54)
-        Rd = DashedVMobject(Rr, num_dashes=22, dashed_ratio=0.54)
+        # Use fewer dashes for smaller circles to maintain readability
+        d_c = DashedVMobject(c, num_dashes=16, dashed_ratio=0.5)
+        bounds_group.add(d_c)
 
-        dL = abs((cx - gate_dx) - tx)
-        dR = abs((cx + gate_dx) - tx)
-        Ld.set_stroke(
-            color=BLACK,
-            width=stroke_w,
-        )
-        Rd.set_stroke(
-            color=BLACK,
-            width=stroke_w,
-        )
-
-        gates_vm.add(Ld, Rd)
-
-    self.play(Create(gates_vm, run_time=0.5))
+    self.play(Create(bounds_group, run_time=0.5))
 
     self.next_slide()
 
@@ -236,7 +223,7 @@ def slide_31(self):
         ray_anims.append(draw_ray(start_pt, end_pt))
     rays_seq = LaggedStart(*ray_anims, lag_ratio=0.18)
 
-    # Identify particles inside the dotted circle (excluding target to keep jellyBean)
+    # Identify particles inside the dotted neighborhood circle (excluding target)
     centers = np.array([p.get_center() for p in particles])
     dists = np.linalg.norm(centers - target_center, axis=1)
     inside_idx = [
