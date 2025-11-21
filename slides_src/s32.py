@@ -148,8 +148,7 @@ def slide_32(self):
 
     # ------------------------------------------------ Jelly-bean rectangle (right)
     right_boat = boats[-1]
-    jb = RoundedRectangle(
-        corner_radius=0.5,
+    jb = Rectangle(
         width=right_boat.width * 2.2,
         height=right_boat.height * 2.2,
         stroke_color=pc.uclaGold,
@@ -157,7 +156,7 @@ def slide_32(self):
     )
     jb.move_to(right_boat.get_center())
     self.play(Create(jb, run_time=0.6))
-
+    self.wait(0.1)
     self.next_slide()
     # ---------------------------------------------- Clear all except the top bar
     self.play(FadeOut(VGroup(curve1, *boats, jb), run_time=0.4))
@@ -243,67 +242,6 @@ def slide_32(self):
             *[GrowArrow(a) for a in arrows], lag_ratio=0.05, run_time=1.0
         )
     )
-
-    self.wait(0.1)
-    self.next_slide()
-
-    # --------------------------------------- Remove arrows and particles (keep boat)
-    self.play(
-        FadeOut(arrows, run_time=0.3), FadeOut(VGroup(*lines), run_time=0.3)
-    )
-
-    # ------------------------------------------ Nested rectangles (zone concept)
-    outer_w = config.frame_width * 0.94
-    outer_h = config.frame_height * 0.86
-    # Lower the outer rectangle so it does not collide with the top bar
-    y_offset = -config.frame_height * 0.06
-
-    x0, y0 = -outer_w / 2.0, -outer_h / 2.0 + y_offset
-    x1, y1 = outer_w / 2.0, outer_h / 2.0 + y_offset
-
-    l1 = (
-        VMobject()
-        .set_stroke(color=pc.fernGreen, width=6)
-        .set_points_as_corners([[x0, y0, 0.0], [x1, y0, 0.0]])
-    )
-    l2 = (
-        VMobject()
-        .set_stroke(color=pc.fernGreen, width=6)
-        .set_points_as_corners([[x1, y0, 0.0], [x1, y1, 0.0]])
-    )
-    l3 = (
-        VMobject()
-        .set_stroke(color=pc.fernGreen, width=6)
-        .set_points_as_corners([[x1, y1, 0.0], [x0, y1, 0.0]])
-    )
-    l4 = (
-        VMobject()
-        .set_stroke(color=pc.fernGreen, width=6)
-        .set_points_as_corners([[x0, y1, 0.0], [x0, y0, 0.0]])
-    )
-    self.play(Create(l1, run_time=0.25))
-    self.play(Create(l2, run_time=0.25))
-    self.play(Create(l3, run_time=0.25))
-    self.play(Create(l4, run_time=0.25))
-
-    inner1 = RoundedRectangle(
-        width=outer_w * 0.78,
-        height=outer_h * 0.78,
-        corner_radius=0.0,
-        stroke_color=pc.uclaGold,
-        stroke_width=6,
-    )
-    inner1.move_to([0.0, y_offset, 0.0])
-    inner2 = RoundedRectangle(
-        width=outer_w * 0.58,
-        height=outer_h * 0.54,
-        corner_radius=0.0,
-        stroke_color=pc.blueGreen,
-        stroke_width=6,
-    )
-    inner2.move_to([0.0, y_offset, 0.0])
-    self.play(Create(inner1), run_time=0.5)
-    self.play(Create(inner2), run_time=0.5)
 
     # End of slide
     self.pause()
