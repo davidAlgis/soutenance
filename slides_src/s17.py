@@ -65,19 +65,12 @@ def slide_17(self):
     _lock_left_y(line1, line1_y)
 
     line2 = Tex(
-        "Pour la déterminer on résout l'équation d'onde 2D :",
+        "Résolution de l'équation d'onde 2D avec la méthode des différences finies :",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
     line2.next_to(line1, DOWN, buff=0.22, aligned_edge=LEFT)
     _lock_left_y(line2, line2.get_y())
-    self.play(
-        FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
-    )
-    self.wait(0.1)
-    # Attente utilisateur ------------------------------------------------------
-    self.next_slide()
-
     # --- EDP 2D (equation* + cases) ------------------------------------------
     eq_pde = Tex(
         r"""
@@ -103,83 +96,29 @@ def slide_17(self):
     )
     line3.next_to(eq_pde, DOWN, buff=0.26, aligned_edge=LEFT)
     _lock_left_y(line3, line3.get_y())
+
     self.play(
-        FadeIn(eq_pde, line3, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
+        FadeIn(line1, line2, eq_pde, line3, shift=RIGHT * self.SHIFT_SCALE),
+        run_time=0.5,
     )
     self.wait(0.1)
     self.next_slide()
 
-    line4 = Tex(
-        r"Résolution par la méthode des différences finies.",
-        font_size=self.BODY_FONT_SIZE,
-        color=BLACK,
-    )
-    line4.next_to(line3, DOWN, buff=0.18, aligned_edge=LEFT)
-    _lock_left_y(line4, line4.get_y())
+    # --- Transition : Nettoyage et Remontée de la ligne 2 ---
+    to_remove = VGroup(line1, eq_pde, line3)
 
-    line5 = Tex(
-        r"\mbox{Avec $\mathbf{x}=(i\cdot dx,\,j\cdot dx)$ et $t=dt\cdot n$, $Z$ est discrétisé autour du solide :}",
-        font_size=self.BODY_FONT_SIZE,
-        color=BLACK,
-    )
-    line5.next_to(line4, DOWN, buff=0.16, aligned_edge=LEFT)
-    _lock_left_y(line5, line5.get_y())
+    # Calcul de la position cible pour line2 (remplace line1)
+    # On garde la position X actuelle de line2, on change juste Y pour celui de line1
+    target_pos = line2.get_center()
+    target_pos[1] = line1.get_y()
+
     self.play(
-        FadeIn(line4, line5, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25
-    )
-    self.next_slide()
-
-    # --- Schéma DF initial ----------------------------------------------------
-    eq_fd = Tex(
-        r"""
-            \begin{equation*}
-            \begin{cases}
-                h_{i,j}^{n+1} = a\left(h_{i+1,j}^n+h_{i-1,j}^n+h_{i,j+1}^n+h_{i,j-1}^n-4h_{i,j}^n\right)
-                + 2h_{i,j}^n - h_{i,j}^{n-1} \quad \text{for} \quad \mathbf{x}\in Z \\[6pt]
-                h_{i,j}^n = 0 \quad \text{for} \quad \mathbf{x}\in\partial Z
-            \end{cases}
-            \end{equation*}
-            """,
-        font_size=self.BODY_FONT_SIZE + 2,
-        color=BLACK,
-    )
-    eq_fd.next_to(line5, DOWN, buff=0.26, aligned_edge=LEFT)
-    _lock_left_y(eq_fd, eq_fd.get_y())
-    _shrink_to_width_if_needed(eq_fd, area_w * 0.90)
-
-    line_a = Tex(
-        r"où $a=\dfrac{c^{2}dt^{2}}{dx^{2}}$",
-        font_size=self.BODY_FONT_SIZE,
-        color=BLACK,
-    )
-    line_a.next_to(eq_fd, DOWN, buff=0.22, aligned_edge=LEFT)
-    _lock_left_y(line_a, line_a.get_y())
-    self.play(
-        FadeIn(eq_fd, line_a, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
+        FadeOut(to_remove, shift=LEFT),
+        line2.animate.move_to(target_pos),
+        run_time=0.8,
     )
 
-    # Attente utilisateur ------------------------------------------------------
-    self.next_slide()
-
-    # --- Variante amortie: facteur d^n ----------------------------------------
-    eq_fd_damped = Tex(
-        r"""
-            \begin{equation*}
-            \begin{cases}
-                h_{i,j}^{n+1} = d^{n}a\left(h_{i+1,j}^n+h_{i-1,j}^n+h_{i,j+1}^n+h_{i,j-1}^n-4h_{i,j}^n\right)
-                + 2h_{i,j}^n - h_{i,j}^{n-1} \quad \text{for} \quad \mathbf{x}\in Z \\[6pt]
-                h_{i,j}^n = 0 \quad \text{for} \quad \mathbf{x}\in\partial Z
-            \end{cases}
-            \end{equation*}
-            """,
-        font_size=self.BODY_FONT_SIZE + 2,
-        color=BLACK,
-    )
-    # Positionner exactement où se trouve eq_fd, puis limiter la largeur
-    eq_fd_damped.move_to(eq_fd)
-    _shrink_to_width_if_needed(eq_fd_damped, area_w * 0.90)
-
-    self.play(ReplacementTransform(eq_fd, eq_fd_damped), run_time=0.6)
+    # TODO
 
     # Fin de la slide ----------------------------------------------------------
     self.pause()
