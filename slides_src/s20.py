@@ -27,7 +27,7 @@ def slide_20(self):
     - Title inside rectangle (top-left): "Océan - Méthode de Tessendorf" in pc.blueGreen.
     - Two very small top-view boats (given polygon coords), placed apart with border gap.
     - Wait for user.
-    - Draw two pc.uclaGold squares around each boat and add "SPH" label in their top-left.
+    - Draw two pc.jellyBean squares around each boat and add "SPH" label in their top-left.
     """
     # --- Top bar -----------------------------------------------------------
     bar, footer = self._top_bar("Principe de l'hybridation")
@@ -124,8 +124,8 @@ def slide_20(self):
 
     def make_boat(scale_factor: float = 0.20) -> Polygon:
         pts = [np.array(p) for p in boat_coords]
-        poly = Polygon(*pts, color=pc.oxfordBlue, stroke_width=4)
-        poly.set_fill(pc.oxfordBlue, opacity=1.0)
+        poly = Polygon(*pts, color=pc.uclaGold, stroke_width=4)
+        poly.set_fill(pc.uclaGold, opacity=1.0)
         poly.scale(scale_factor)
         return poly
 
@@ -171,12 +171,12 @@ def slide_20(self):
         h = mob.height + 2 * pad
         side = max(w, h)  # make it square
         sq = Rectangle(
-            width=side, height=side, stroke_color=pc.uclaGold, stroke_width=6
+            width=side, height=side, stroke_color=pc.jellyBean, stroke_width=6
         )
         sq.move_to(mob.get_center())
 
         # "SPH" label inside square, top-left with a small inner offset
-        lbl = Tex("SPH", color=pc.uclaGold, font_size=self.BODY_FONT_SIZE)
+        lbl = Tex("SPH", color=pc.jellyBean, font_size=self.BODY_FONT_SIZE)
         tl = sq.get_corner(UL)
         lbl.move_to(
             [
