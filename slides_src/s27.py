@@ -279,8 +279,22 @@ def slide_27(self):
         self.play(Create(l), run_time=0.2)
     for l in h_lines:
         self.play(Create(l), run_time=0.2)
-    self.wait(0.1)
+    dim_y = bottom_y - 0.15
+    cell_arrow = DoubleArrow(
+        start=np.array([left_x, dim_y, 0]),
+        end=np.array([left_x + h_radius, dim_y, 0]),
+        color=BLACK,
+        stroke_width=4,
+        tip_length=0.15,
+        buff=0.0,
+    )
+    cell_label = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
+        cell_arrow, DOWN, buff=0.1
+    )
 
+    self.play(Create(cell_arrow), Write(cell_label))
+    # -----------------------------------------------------------------------
+    self.wait(0.1)
     self.next_slide()
 
     # --- NEW: Fill target cell and its 8 neighbors -------------------------
