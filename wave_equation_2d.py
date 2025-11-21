@@ -31,20 +31,77 @@ def shift_field(field, sx, sy):
     return out
 
 
+def get_boat_shape_params():
+    """
+    Centralized parameters for boat geometry (Top-Down View).
+    """
+    return {
+        "W_half": 0.03,  # Half-width
+        "L_stern": 0.05,  # Length of the rectangular back
+        "L_bow": 0.08,  # Length of the triangular front
+    }
+
+
+def get_boat_mask(X, Y):
+    """
+    Creates a boolean mask for a boat shape (Top view).
+    Shape: 'Shield' (Rectangle stern + Triangle bow).
+    Orientation: Pointing towards +Y.
+    """
+    p = get_boat_shape_params()
+    w = p["W_half"]
+    l_stern = p["L_stern"]
+    l_bow = p["L_bow"]
+
+    # 1. Stern (Rectangle part): y in [-l_stern, 0], |x| <= w
+    mask_stern = (Y >= -l_stern) & (Y <= 0.0) & (np.abs(X) <= w)
+
+    # 2. Bow (Triangle part): y in [0, l_bow]
+    # Width decreases linearly: x_max = w * (1 - y/l_bow)
+    # Avoid division by zero if l_bow is 0 (not the case here)
+    mask_bow = (Y > 0.0) & (Y <= l_bow) & (np.abs(X) <= w * (1.0 - Y / l_bow))
+
+    return mask_stern | mask_bow
+
+
+def get_boat_vertices():
+    """
+    Returns the polygon vertices (N, 3) for the boat to be drawn in Manim.
+    Z-coordinate is 0.
+    """
+    p = get_boat_shape_params()
+    w = p["W_half"]
+    l_stern = p["L_stern"]
+    l_bow = p["L_bow"]
+
+    # Vertices in Counter-Clockwise order
+    # (x, y, z)
+    return np.array(
+        [
+            [0.0, l_bow, 0.0],  # Tip (Front)
+            [-w, 0.0, 0.0],  # Mid Left
+            [-w, -l_stern, 0.0],  # Back Left
+            [w, -l_stern, 0.0],  # Back Right
+            [w, 0.0, 0.0],  # Mid Right
+            [0.0, l_bow, 0.0],  # Close loop
+        ]
+    )
+
+
 def simulate_wave_translated(
     L=1.0,  # half-domain size
     c=1.0,  # wave speed
     A=1.0,  # source amplitude
-    radius=0.05,  # source radius
     N=151,  # grid resolution
     T=4.0,  # total time
     dt=0.01,  # output time step
-    vel_x=-1.0,  # "Flow" velocity X (Grid velocity)
+    vel_x=-1.0,  # "Flow" velocity X
     vel_y=1.0,  # "Flow" velocity Y
     damping=1.0,  # Damping factor d^n
 ):
     """
     Solves the 2D wave equation using the Algis et al. Grid Translation scheme.
+    Source is a Boat Shape.
     Returns raw data arrays instead of plotting.
     """
     if N < 3:
@@ -72,9 +129,12 @@ def simulate_wave_translated(
     nt_out = int(np.ceil(T / dt))
     H_out = np.zeros((nt_out, nx, ny), dtype=float)
 
-    # --- Source Mask ---
+    # --- Source Mask (Boat) ---
+    # X_grid corresponds to axis 0, Y_grid to axis 1
     X_grid, Y_grid = np.meshgrid(x, x, indexing="ij")
-    mask = (X_grid**2 + Y_grid**2) <= radius**2
+
+    # Create the boat mask
+    mask = get_boat_mask(X_grid, Y_grid)
 
     # --- Grid Translation State ---
     p_x, p_y = 0.0, 0.0
@@ -120,7 +180,7 @@ def simulate_wave_translated(
         # 6. Update Step
         h_next = damping * (a_coeff * lap + 2.0 * h_n_shifted - h_nm1_shifted)
 
-        # 7. Apply Fixed Source
+        # 7. Apply Fixed Source (Boat Hull)
         if A != 0.0:
             h_next[mask] = A
 
@@ -149,14 +209,21 @@ def simulate_wave_translated(
 def export_data_to_file(filename, H, x, t, params):
     """
     Saves 2D simulation results to .npz
+    Includes boat_polygon for visualization.
     """
     output_dir = os.path.dirname(filename)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     print(f"Saving simulation data to {filename}...")
+
+    # Get boat shape for export
+    boat_poly = get_boat_vertices()
+
     # H shape is (Time, X, Y)
-    np.savez_compressed(filename, H=H, x=x, t=t, **params)
+    np.savez_compressed(
+        filename, H=H, x=x, t=t, boat_polygon=boat_poly, **params
+    )
     print("Done.")
 
 
@@ -164,14 +231,13 @@ if __name__ == "__main__":
     # --- Parameters ---
     L_VAL = 1.0
     C_VAL = 0.5  # Wave Speed
-    A_VAL = 1.0  # Source Height
-    RADIUS = 0.05
-    N_VAL = 151  # Grid Size
-    T_VAL = 3.0  # Duration
-    DT_VAL = 0.015  # Output dt (keep relatively low to manage file size)
+    A_VAL = 0.5  # Source Height
+    # Radius param is technically unused now, replaced by get_boat_shape_params internal logic
+    N_VAL = 301  # Grid Size
+    T_VAL = 8.0  # Duration
+    DT_VAL = 0.007  # Output dt
 
     # Velocity setup: Source moves Bottom -> Top
-    # VEL_Y < 0 shifts the "world" down, making the source appear to move Up.
     VEL_X = 0.0
     VEL_Y = -0.8
 
@@ -193,7 +259,6 @@ if __name__ == "__main__":
             L=L_VAL,
             c=C_VAL,
             A=A_VAL,
-            radius=RADIUS,
             N=N_VAL,
             T=T_VAL,
             dt=DT_VAL,
@@ -207,7 +272,6 @@ if __name__ == "__main__":
         params = {
             "L": L_VAL,
             "A": A_VAL,
-            "radius": RADIUS,
             "vel_x": VEL_X,
             "vel_y": VEL_Y,
             "damping": d_factor,

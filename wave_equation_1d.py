@@ -22,11 +22,40 @@ def shift_array_1d(arr, shift):
     return out
 
 
+def get_boat_bottom_profile(x_grid, offset_y):
+    """
+    Computes the hull displacement profile for the simulation.
+    Based on the boat vertices:
+      - Flat bottom between x = -1 and 1 (y_local = 0)
+      - Rises linearly to y_local = 1 at x = 2 and x = -2
+    """
+    # Initialize grid with default value (e.g., 0 or the offset)
+    h_hull = np.zeros_like(x_grid)
+
+    # The boat exists between x = -2.0 and x = 2.0
+    mask = (x_grid >= -2.0) & (x_grid <= 2.0)
+
+    if not np.any(mask):
+        return h_hull, mask
+
+    x_active = x_grid[mask]
+
+    # Formula derived from vertices:
+    # y_local = 0 for |x| <= 1
+    # y_local = |x| - 1 for 1 < |x| <= 2
+    # Combined: max(0, |x| - 1)
+    y_local = np.maximum(0, np.abs(x_active) - 1.0)
+
+    # Add vertical offset (A) to position the boat height relative to water rest level (0)
+    h_hull[mask] = y_local + offset_y
+
+    return h_hull, mask
+
+
 def simulate_wave_1d_translated(
     L=10.0,  # half-domain size
     c=1.0,  # wave speed
-    A=1.0,  # source amplitude
-    radius=0.2,  # source width
+    A=0.5,  # Vertical offset of the boat bottom (Draft/Waterline)
     N=401,  # grid resolution
     T=4.0,  # total time
     dt=0.01,  # output time step
@@ -35,7 +64,7 @@ def simulate_wave_1d_translated(
 ):
     """
     Solves 1D wave equation with Algis Grid Translation.
-    Returns raw data arrays instead of plotting.
+    Uses a boat-shaped source.
     """
     nx = N
     x = np.linspace(-L, L, nx)
@@ -58,8 +87,10 @@ def simulate_wave_1d_translated(
     nt_out = int(np.ceil(T / dt))
     H_out = np.zeros((nt_out, nx), dtype=float)
 
-    # --- Source Mask ---
-    mask = np.abs(x) <= radius
+    # --- Source Profile ---
+    # We pre-calculate the shape of the boat hull on the fixed grid x
+    # This acts as a Dirichlet boundary condition wherever the boat is present.
+    source_h, source_mask = get_boat_bottom_profile(x, A)
 
     # --- Grid Translation State ---
     p = 0.0
@@ -96,9 +127,10 @@ def simulate_wave_1d_translated(
             lambda_sq * lap + 2.0 * h_n_shifted - h_nm1_shifted
         )
 
-        # 6. Apply Source
-        if A != 0.0:
-            h_next[mask] = A
+        # 6. Apply Boat Source
+        # Dirichlet BC: Force water height to match boat hull
+        if np.any(source_mask):
+            h_next[source_mask] = source_h[source_mask]
 
         # 7. Rotate & Update State
         h_nm1 = h_n
@@ -120,17 +152,34 @@ def simulate_wave_1d_translated(
 def export_data_to_file(filename, H, x, t, L, A):
     """
     Saves the simulation results to a compressed numpy format (.npz).
-    This file is easily readable by Manim.
+    Includes the boat polygon vertices for Manim visualization.
     """
     # Create directory if needed
     output_dir = os.path.dirname(filename)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
+    # Define the Boat Polygon (Local Coords)
+    boat_polygon = np.array(
+        [
+            [-1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [2.0, 1.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.0, 1.5, 0.0],
+            [-0.5, 1.0, 0.0],
+            [-2.0, 1.0, 0.0],
+        ]
+    )
+
+    # We shift the polygon so it matches the simulation offset A
+    # The bottom points (y=0) should align with A
+    boat_polygon[:, 1] += A
+
     print(f"Saving simulation data to {filename}...")
-    # We save H (wave height), x (spatial grid), t (time grid)
-    # and metadata (L, A) which might be useful for setting up Manim axes.
-    np.savez_compressed(filename, H=H, x=x, t=t, L=L, A=A)
+    np.savez_compressed(
+        filename, H=H, x=x, t=t, L=L, A=A, boat_polygon=boat_polygon
+    )
     print("Done.")
 
 
@@ -138,11 +187,16 @@ if __name__ == "__main__":
     # --- Parameters ---
     L_VAL = 10.0
     C_VAL = 1.0
-    A_VAL = 1.0
-    RADIUS = 0.2
+
+    # A_VAL is now the vertical offset (height of the flat bottom relative to rest water)
+    # Setting it to 0.0 puts the bottom at water level.
+    # Setting it to 0.5 lifts it slightly (hovercraft style).
+    # Setting it to -0.5 would submerge it.
+    A_VAL = 0.1
+
     N_VAL = 801
-    T_VAL = 8.0
-    DT_VAL = 0.02  # 50 FPS equivalent if mapped 1:1
+    T_VAL = 16.0
+    DT_VAL = 0.02
     VEL_VAL = -1.5
 
     scenarios = [
@@ -160,7 +214,6 @@ if __name__ == "__main__":
             L=L_VAL,
             c=C_VAL,
             A=A_VAL,
-            radius=RADIUS,
             N=N_VAL,
             T=T_VAL,
             dt=DT_VAL,
@@ -168,6 +221,5 @@ if __name__ == "__main__":
             damping=d_factor,
         )
 
-        # Export to .npz files in a 'data' folder
         filename = f"states_sph/wave_1d_{label}.npz"
         export_data_to_file(filename, H, x, t, L_VAL, A_VAL)
