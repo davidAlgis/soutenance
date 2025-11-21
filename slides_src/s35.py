@@ -46,10 +46,10 @@ def slide_35(self):
     ur = target.get_corner(UR) + (pad * RIGHT + pad * UP)
     lr = target.get_corner(DR) + (pad * RIGHT - pad * UP)
     ll = target.get_corner(DL) + (-pad * RIGHT - pad * UP)
-    seg_top = Line(ul, ur, color=BLACK, stroke_width=4)
-    seg_right = Line(ur, lr, color=BLACK, stroke_width=4)
-    seg_bottom = Line(lr, ll, color=BLACK, stroke_width=4)
-    seg_left = Line(ll, ul, color=BLACK, stroke_width=4)
+    seg_top = Line(ul, ur, color=pc.jellyBean, stroke_width=4)
+    seg_right = Line(ur, lr, color=pc.jellyBean, stroke_width=4)
+    seg_bottom = Line(lr, ll, color=pc.jellyBean, stroke_width=4)
+    seg_left = Line(ll, ul, color=pc.jellyBean, stroke_width=4)
     self.play(
         LaggedStart(
             Create(seg_top),
@@ -73,7 +73,7 @@ def slide_35(self):
     )
     explain1.next_to(eq, DOWN, buff=0.5)
     explain2.next_to(explain1, DOWN, buff=0.25)
-    self.play(FadeIn(explain1, explain2))
+    self.play(FadeIn(explain1, explain2, shift=RIGHT * self.SHIFT_SCALE))
     self.wait(0.1)
     self.next_slide()
 
@@ -204,7 +204,7 @@ def slide_35(self):
     )
     left_label.next_to(explain2, DOWN, buff=0.4)
     left_label.align_to(bar, LEFT).shift(RIGHT * self.DEFAULT_PAD)
-    self.add(left_label)
+    self.play(FadeIn(left_label, shift=RIGHT * self.SHIFT_SCALE))
 
     self.next_slide()
 
@@ -258,7 +258,7 @@ def slide_35(self):
     eq_pde.next_to(left_label, DOWN, buff=0.6)
     safe_left_equ = -config.frame_width / 2.0 + 1.0
     eq_pde.shift(RIGHT * (safe_left_equ - eq_pde.get_left()[0]))
-    self.play(FadeIn(eq_pde))
+    self.play(FadeIn(eq_pde, shift=RIGHT * self.SHIFT_SCALE))
 
     self.next_slide()
 
