@@ -68,22 +68,13 @@ def slide_18(self):
     line2.next_to(line1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
     line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
 
-    line3 = Tex(
-        r"le « masque du navire » qui met à jour l'onde à chaque pas de temps :",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
-    )
-    line3.next_to(line2, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    line3.shift(RIGHT * (anchor_x - line3.get_left()[0]))
-    self.play(
-        FadeIn(line2, line3, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5
-    )
+    self.play(FadeIn(line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5)
 
     # --- Wait for user before images --------------------------------------
     self.next_slide()
 
     # --- Columns layout ----------------------------------------------------
-    content_top_y = line3.get_bottom()[1] - 0.35
+    content_top_y = line2.get_bottom()[1] - 0.35
     content_bottom_y = y_bottom + 0.2
     content_h = max(1.6, content_top_y - content_bottom_y)
     content_center_y = (content_top_y + content_bottom_y) * 0.5
@@ -113,7 +104,7 @@ def slide_18(self):
         img.scale(scale)
         img.move_to([center_x, content_center_y + 0.10, 0.0])
 
-        cap = Tex(caption_tex, color=BLACK, font_size=self.BODY_FONT_SIZE)
+        cap = Tex(caption_tex, color=BLACK, font_size=self.BODY_FONT_SIZE - 5)
         cap.next_to(img, DOWN, buff=0.18)
         return Group(img, cap)
 

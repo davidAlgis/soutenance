@@ -36,7 +36,7 @@ def slide_16(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     line1 = Tex(
-        r"\mbox{La vitesse de l'eau en tout point de l'espace calculée avec le même principe de transformation}",
+        r"\mbox{La vitesse de l'eau en tout point de l'espace calculée avec le même principe }",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -45,7 +45,7 @@ def slide_16(self):
     line1.shift(RIGHT * dx)
 
     line2 = Tex(
-        r"d'espace de Fourier à espace réel : "
+        r"de transformation d'espace de Fourier à espace réel : "
         r"$\tilde{v}(k,t,y)=E(k,y)\,\phi(k,t)$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
@@ -137,7 +137,7 @@ def slide_16(self):
         # label placed so its RIGHT edge is LABEL_GAP left of the axis
         label = MathTex(
             rf"v(x, t, {d})",
-            font_size=self.BODY_FONT_SIZE,
+            font_size=self.BODY_FONT_SIZE - 8,
             color=BLACK,
         )
         label.set_y(yv)

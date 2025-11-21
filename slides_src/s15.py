@@ -101,7 +101,7 @@ def slide_15(self):
     )
     title3.set_color_by_tex("Traînée", pc.heliotropeMagenta)
     eq3 = MathTex(
-        r"\mathbf{F}_w"
+        r"\mathbf{F}_w^i"
         r" = -\tfrac{1}{2}\,C_d^w\,\rho_w\,A_i^{\perp}\,"
         r"\|\mathbf{v}^w_{i,\mathrm{rel}}\|\,\mathbf{v}^w_{i,\mathrm{rel}}",
         color=BLACK,
@@ -117,7 +117,7 @@ def slide_15(self):
     )
     title4.set_color_by_tex("Traînée", pc.jellyBean)
     eq4 = MathTex(
-        r"\mathbf{F}_a"
+        r"\mathbf{F}_a^i"
         r" = -\tfrac{1}{2}\,C_d^a\,\rho_a\,A_i^{\perp}\,"
         r"\|\mathbf{v}^a_{i,\mathrm{rel}}\|\,\mathbf{v}^a_{i,\mathrm{rel}}",
         color=BLACK,
@@ -193,12 +193,7 @@ def slide_15(self):
         return m
 
     water = always_redraw(make_water)
-    self.add(water)
-    self.play(
-        t_tracker.animate.increment_value(2 * PI),
-        rate_func=linear,
-        run_time=2.6,
-    )
+    self.play(Create(water))
 
     # Centered boat polygon (foreground)
     boat_local = [
@@ -221,7 +216,7 @@ def slide_15(self):
     boat_center = [0.0, y0 + 0.35, 0.0]
     boat.move_to(boat_center)  # slightly above the wave baseline
     boat.set_z_index(10)
-    self.add(boat)
+    self.play(FadeIn(boat))
     self.add_foreground_mobject(boat)
 
     self.play(
