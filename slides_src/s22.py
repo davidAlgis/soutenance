@@ -473,7 +473,6 @@ def slide_22(self):
         x_lbl,
         y_lbl,
         fill_group,
-        kernel_label,
     )
     self.play(FadeOut(right_group), run_time=0.45)
 
