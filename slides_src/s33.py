@@ -17,7 +17,7 @@ def slide_33(self):
     - Center and enlarge the final question text.
     """
     # --- Top bar ---
-    bar = self._top_bar("Forces d'Airy")
+    bar, footer = self._top_bar("Forces d'Airy")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
