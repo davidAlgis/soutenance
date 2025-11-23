@@ -1,3 +1,4 @@
+# flake8: noqa: F405
 import numpy as np
 import palette_colors as pc
 from manim import *
@@ -9,35 +10,45 @@ def slide_33(self):
     """
     Slide 33: Forces d'Airy.
 
-    Minimal fixes:
-    - Use MathTex with parts so we can surround only (v_i^A(t) - v_i(t)).
-    - Use pc.cornflower.
-    - Lower the dot and arrows.
-    - Place labels along arrow bodies.
-    - Center and enlarge the final question text.
+    Updates:
+    - Added step to surround tau_i(t) with uclaGold, then remove it smoothly.
+    - Surrounds (v_i^A - v_i) with apple.
+    - Vector diagrams and final question.
     """
     # --- Top bar ---
     bar, footer = self._top_bar("Forces d'Airy")
     self.add(bar)
     self.add_foreground_mobject(bar)
+    bar_rect = bar.submobjects[0]
+    y_top = bar_rect.get_bottom()[1] - 0.15
+    x_left = -config.frame_width / 2 + 0.6
+    anchor_x = x_left + self.DEFAULT_PAD
 
-    # --- Objective line ---
-    self.start_body()
-    objective = Tex(
-        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer uniformement sous la surface des vagues}",
-        # r"~d'Airy.",
-        tex_template=self.french_template,
-        font_size=self.BODY_FONT_SIZE,
+    line1 = Tex(
+        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer uniformément}",
         color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
     )
-    objective.next_to(
+    line1.next_to(
         self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
     )
-    dx = (
-        bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
-    ) - objective.get_left()[0]
-    objective.shift(RIGHT * dx)
-    self.play(FadeIn(objective, shift=RIGHT * self.SHIFT_SCALE))
+    line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
+
+    line2 = Tex(
+        r"\mbox{sous la surface des vagues d'Airy.}",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
+    line2.next_to(line1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+    line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
+
+    self.play(
+        FadeIn(line1, shift=RIGHT * self.SHIFT_SCALE),
+        FadeIn(line2, shift=RIGHT * self.SHIFT_SCALE),
+    )
+
+    # --- Wait for user -----------------------------------------------------
+    self.next_slide()
     self.wait(0.1)
     # --- Wait for input ---
     self.next_slide()
@@ -45,14 +56,16 @@ def slide_33(self):
     # --- Big centered question equation ---
     eq_question = Tex(r"$F_i^A(t) = ?$", font_size=72, color=BLACK)
     eq_question.move_to([0.0, 0.0, 0.0])
-    self.play(FadeIn(eq_question), un_time=0.3)
+    self.play(FadeIn(eq_question), run_time=0.3)
 
     # --- Wait for input ---
     self.next_slide()
 
     # --- Transform into full formula (MathTex split into parts) ---
     eq_full = MathTex(
-        r"F_i^A(t) = \frac{m}{dt} \cdot \tau_i(t) \cdot (1-\phi_i(t)) \cdot",
+        r"F_i^A(t) = \frac{m}{dt} \cdot",
+        r"\tau_i(t)",
+        r"\cdot (1-\phi_i(t)) \cdot",
         r"\left(v_i^A(t) - v_i(t)\right)",
         font_size=48,
         color=BLACK,
@@ -68,25 +81,65 @@ def slide_33(self):
     # Move the full equation a bit higher
     self.play(eq_full.animate.shift(UP * 0.8))
 
-    # Surround ONLY the (v_i^A(t) - v_i(t)) term with a rectangle
-    term = eq_full[1]  # thanks to MathTex parts
-    surround_box = SurroundingRectangle(term, buff=0.08)
-    ul = surround_box.get_corner(UL)
-    ur = surround_box.get_corner(UR)
-    lr = surround_box.get_corner(DR)
-    ll = surround_box.get_corner(DL)
+    # --- 1. Surround tau_i(t) with uclaGold ---
+    term_tau = eq_full[1]
+    box_tau = SurroundingRectangle(term_tau, buff=0.08)
 
-    seg_top = Line(ul, ur, stroke_width=4, color=pc.apple)
-    seg_right = Line(ur, lr, stroke_width=4, color=pc.apple)
-    seg_bottom = Line(lr, ll, stroke_width=4, color=pc.apple)
-    seg_left = Line(ll, ul, stroke_width=4, color=pc.apple)
+    # Get corners for manual line creation
+    ul_t = box_tau.get_corner(UL)
+    ur_t = box_tau.get_corner(UR)
+    lr_t = box_tau.get_corner(DR)
+    ll_t = box_tau.get_corner(DL)
+
+    # Create gold lines
+    seg_top_t = Line(ul_t, ur_t, stroke_width=4, color=pc.uclaGold)
+    seg_right_t = Line(ur_t, lr_t, stroke_width=4, color=pc.uclaGold)
+    seg_bottom_t = Line(lr_t, ll_t, stroke_width=4, color=pc.uclaGold)
+    seg_left_t = Line(ll_t, ul_t, stroke_width=4, color=pc.uclaGold)
 
     self.play(
         LaggedStart(
-            Create(seg_top),
-            Create(seg_right),
-            Create(seg_bottom),
-            Create(seg_left),
+            Create(seg_top_t),
+            Create(seg_right_t),
+            Create(seg_bottom_t),
+            Create(seg_left_t),
+            lag_ratio=0.15,
+        )
+    )
+
+    self.next_slide()
+
+    # --- 2. Remove Gold rectangle smoothly ---
+    self.play(
+        LaggedStart(
+            Uncreate(seg_top_t),
+            Uncreate(seg_right_t),
+            Uncreate(seg_bottom_t),
+            Uncreate(seg_left_t),
+            lag_ratio=0.15,
+        )
+    )
+
+    # --- 3. Surround (v_i^A - v_i) with apple ---
+    term_vel = eq_full[3]
+    box_vel = SurroundingRectangle(term_vel, buff=0.08)
+
+    ul_v = box_vel.get_corner(UL)
+    ur_v = box_vel.get_corner(UR)
+    lr_v = box_vel.get_corner(DR)
+    ll_v = box_vel.get_corner(DL)
+
+    seg_top_v = Line(ul_v, ur_v, stroke_width=4, color=pc.apple)
+    seg_right_v = Line(ur_v, lr_v, stroke_width=4, color=pc.apple)
+    seg_bottom_v = Line(lr_v, ll_v, stroke_width=4, color=pc.apple)
+    seg_left_v = Line(ll_v, ul_v, stroke_width=4, color=pc.apple)
+
+    self.play(
+        LaggedStart(
+            Create(seg_top_v),
+            Create(seg_right_v),
+            Create(seg_bottom_v),
+            Create(seg_left_v),
             lag_ratio=0.15,
         )
     )
@@ -142,12 +195,13 @@ def slide_33(self):
 
     # Clear everything except top bar and v_i^A(t) label, then transform it
     to_clear = VGroup(
-        objective,
+        line1,
+        line2,
         eq_full,
-        seg_top,
-        seg_right,
-        seg_bottom,
-        seg_left,
+        seg_top_v,
+        seg_right_v,
+        seg_bottom_v,
+        seg_left_v,
         dot,
         arr_vA,
         arr_v,
