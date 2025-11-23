@@ -145,7 +145,7 @@ def slide_27(self):
     )
     self.play(Create(h_arrow), run_time=0.35)
     h_text = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
-        h_arrow, RIGHT, buff=0.06
+        h_arrow, DOWN, buff=0.06
     )
     self.play(Write(h_text), run_time=0.25)
     self.wait(0.1)

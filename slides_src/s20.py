@@ -164,7 +164,7 @@ def slide_20(self):
     self.next_slide()
 
     # --- SPH squares around each boat + "SPH" labels -----------------------
-    def surround_with_sph(mob: Mobject) -> Group:
+    def surround_with_sph(mob: Mobject):
         # Padding around boat
         pad = 0.6
         w = mob.width + 2 * pad
@@ -186,12 +186,17 @@ def slide_20(self):
             ]
         )
 
-        return Group(sq, lbl)
+        return sq, lbl
 
-    sph1 = surround_with_sph(boat1)
-    sph2 = surround_with_sph(boat2)
+    sph1_sq, sph1_lbl = surround_with_sph(boat1)
+    sph2_sq, sph2_lbl = surround_with_sph(boat2)
 
-    self.play(FadeIn(sph1, run_time=0.3), FadeIn(sph2, run_time=0.3))
+    self.play(
+        Create(sph1_sq),
+        Create(sph2_sq),
+        FadeIn(sph1_lbl, sph2_lbl),
+        run_time=1.0,
+    )
 
     # --- End slide
     # ---------------------------------------------------------

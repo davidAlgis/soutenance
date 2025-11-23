@@ -226,27 +226,27 @@ def slide_04(self):
 
     g_arrow = Arrow(
         start=[boat_center[0], boat_center[1] + 0.2, 0],
-        end=[boat_center[0], boat_center[1] - 0.8, 0],
+        end=[boat_center[0], boat_center[1] - 0.7, 0],
         color=pc.apple,
         stroke_width=5,
         tip_length=0.16,
     ).set_z_index(15)
     g_lbl = (
         MathTex(r"\mathbf{F}_g", color=pc.apple, font_size=mini_fs)
-        .next_to(g_arrow, RIGHT, buff=0.06)
+        .next_to(g_arrow, RIGHT, buff=0.2)
         .set_z_index(15)
     )
 
     b_arrow = Arrow(
         start=[boat_center[0] - 0.2, boat_center[1] - 0.4, 0],
-        end=[boat_center[0] - 0.2, boat_center[1] + 0.6, 0],
+        end=[boat_center[0] - 0.2, boat_center[1] + 0.8, 0],
         color=pc.tiffanyBlue,
         stroke_width=5,
         tip_length=0.16,
     ).set_z_index(15)
     b_lbl = (
         MathTex(r"\mathbf{F}_b", color=pc.tiffanyBlue, font_size=mini_fs)
-        .next_to(b_arrow, LEFT, buff=0.06)
+        .next_to(b_arrow, LEFT, buff=0.1)
         .set_z_index(15)
     )
 
@@ -260,7 +260,7 @@ def slide_04(self):
     ).set_z_index(15)
     a_lbl = (
         MathTex(r"\mathbf{F}_a", color=pc.jellyBean, font_size=mini_fs)
-        .next_to(a_arrow_end, LEFT, buff=0.06)
+        .move_to([boat_center[0] - 0.65, boat_center[1] - 0.2, 0])
         .set_z_index(15)
     )
 
@@ -274,7 +274,7 @@ def slide_04(self):
     ).set_z_index(15)
     w_lbl = (
         MathTex(r"\mathbf{F}_w", color=pc.heliotropeMagenta, font_size=mini_fs)
-        .next_to(w_arrow_end, RIGHT, buff=0.06)
+        .next_to(w_arrow_end, RIGHT, buff=-0.05)
         .set_z_index(15)
     )
 

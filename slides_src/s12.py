@@ -142,6 +142,7 @@ def slide_12(self):
     shape_title.next_to(shape, UP, buff=0.3)
 
     self.play(FadeIn(shape), FadeIn(shape_title), run_time=0.5)
+    self.wait(0.1)
     self.next_slide()
 
     # --- Labels on the left (F, U10, theta) --------------------------------
@@ -194,7 +195,7 @@ def slide_12(self):
         rate_func=linear,  # Linear looks more like a mechanical flow
     )
 
-    self.play(FadeOut(labels_left, run_time=0.35))
+    self.play(FadeOut(labels_left, run_time=0.4))
 
     # --- Output A_i -----------------------------------------------------
     # Start inside right face
@@ -203,7 +204,7 @@ def slide_12(self):
     ai = MathTex(r"A_i", color=BLACK, font_size=self.BODY_FONT_SIZE + 10)
     ai.move_to([start_x_right, cy, 0.0])
 
-    self.play(FadeIn(ai, run_time=0.3))
+    self.play(FadeIn(ai, run_time=0.4))
     self.play(ai.animate.shift(RIGHT * 0.5), run_time=0.4)
 
     self.next_slide()

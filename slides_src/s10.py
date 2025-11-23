@@ -92,7 +92,7 @@ def slide_10(self):
     t = ValueTracker(0.0)
 
     # ---------- Curve (single VMobject, in-place update) ----------
-    curve = VMobject(stroke_color=pc.oxfordBlue, stroke_width=4)
+    curve = VMobject(stroke_color=pc.blueGreen, stroke_width=4)
 
     def update_curve(m: VMobject):
         # Adaptive sampling tied to k; no smoothing to avoid amplitude artifacts

@@ -89,8 +89,6 @@ def slide_01(self):
     self.add_foreground_mobject(para)
     self.play(FadeIn(para, shift=UP * 0.1, run_time=0.35))
 
-    self.wait(0.05)
-    self.next_slide()
     # titles = []
     # titles.append(para)
     # titles.append(card)

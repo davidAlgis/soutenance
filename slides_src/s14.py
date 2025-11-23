@@ -145,7 +145,7 @@ def slide_14(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
-    f2s_title.to_edge(DOWN, buff=0.3)
+    f2s_title.to_edge(DOWN, buff=1.0)
     self.play(FadeIn(boat2), FadeIn(f2s_title, shift=UP))
     self.add_foreground_mobject(boat2)
 
@@ -250,7 +250,7 @@ def slide_14(self):
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
-    s2f_title.to_edge(DOWN, buff=0.3)
+    s2f_title.to_edge(DOWN, buff=1.0)
 
     # Transform snapshot into the two-curve group
     self.play(
