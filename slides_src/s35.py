@@ -312,15 +312,21 @@ def slide_35(self):
         self.play(
             dots_group2.animate.scale(scale_factor).move_to(target_center2)
         )
-
     if len(dots) > 0:
         # Precompute start and target colors for each dot
         start_colors = []
         target_colors = []
 
+        # --------------------------------
+
         for i, d in enumerate(dots):
             # Safety guards in case arrays are shorter than dots
             if i >= len(types_arr) or i >= len(airy_arr):
+                start_colors.append(None)
+                target_colors.append(None)
+                continue
+
+            if i == 525 or i == 526 or i == 527:
                 start_colors.append(None)
                 target_colors.append(None)
                 continue
@@ -343,9 +349,9 @@ def slide_35(self):
             if start_col == target_col:
                 start_colors.append(None)
                 target_colors.append(None)
-            # else:
-            #     start_colors.append(start_col)
-            #     target_colors.append(target_col)
+            else:
+                start_colors.append(start_col)
+                target_colors.append(target_col)
 
         # Check if there is at least one dot to animate
         if any(c is not None for c in target_colors):
@@ -355,6 +361,10 @@ def slide_35(self):
             def update_colors(mob):
                 alpha = alpha_tracker.get_value()
                 for i, d in enumerate(dots):
+                    if i == 525 or i == 526 or i == 527:
+                        continue
+                    if types_arr[i] != 0:
+                        continue
                     sc = start_colors[i]
                     tc = target_colors[i]
                     if sc is None or tc is None:
@@ -369,7 +379,7 @@ def slide_35(self):
             # One single animation for all particles at once
             self.play(
                 alpha_tracker.animate.set_value(1.0),
-                run_time=2.0,  # keep this reasonably long to avoid tiny clips
+                run_time=2.0,
             )
 
             dot_group.remove_updater(update_colors)

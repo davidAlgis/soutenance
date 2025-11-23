@@ -21,7 +21,7 @@ config.background_color = WHITE
 # --------- Sélection des slides à rendre -----------
 # Mettre "all" pour tout rendre, ou une sélection type: "1-5,8,12-14"
 # On peut aussi surcharger via une variable d'environnement: SLIDES="1-5,8"
-SLIDES_SELECTION = "18"
+SLIDES_SELECTION = "all"
 
 
 class Presentation(Slide):
