@@ -285,10 +285,6 @@ def slide_35(self):
     )
     eq_disc.move_to(eq_sph.get_center())
     self.play(TransformMatchingTex(eq_sph, eq_disc))
-    eq_disc.shift(
-        RIGHT * (safe_left_equ - eq_disc.get_left()[0])
-    )  # keep inside slide
-
     self.next_slide()
 
     # --- Keep only bar + particles; center and scale particles to fill body for airyMod coloring ---
@@ -347,9 +343,9 @@ def slide_35(self):
             if start_col == target_col:
                 start_colors.append(None)
                 target_colors.append(None)
-            else:
-                start_colors.append(start_col)
-                target_colors.append(target_col)
+            # else:
+            #     start_colors.append(start_col)
+            #     target_colors.append(target_col)
 
         # Check if there is at least one dot to animate
         if any(c is not None for c in target_colors):
