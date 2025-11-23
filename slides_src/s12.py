@@ -210,7 +210,7 @@ def slide_12(self):
     self.next_slide()
 
     # --- Transition to Formula ------------------------------------------
-    to_fade = VGroup(*[obj for obj in self.mobjects if obj not in [bar, ai]])
+    to_fade = Group(*[obj for obj in self.mobjects if obj not in [bar, ai]])
     self.play(FadeOut(to_fade, shift=LEFT))
 
     # Transform into full formula
