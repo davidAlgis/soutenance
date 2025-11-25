@@ -85,7 +85,6 @@ def slide_09(self):
     # 2. Bullets
     items_1 = [
         "Tessendorf, \\textit{SIGGRAPH}, 2001",
-        "Dupuy et Bruneton, \\textit{SIGGRAPH Asia}, 2012",
         "Horvath, \\textit{DigiPro}, 2015",
         "Lutz \\textit{et al.}, \\textit{ACMCGIT}, 2024",
     ]
@@ -228,12 +227,9 @@ def slide_09(self):
 
     # 2. Replace Bullets
     items_3 = [
-        "Cords et Staadt, \\textit{Eurographics NPH}, 2009",
-        "Tessendorf, \\textit{Note technique}, 2014",
         "Yuksel, \\textit{ACM Trans. Graph.}, 2007",
-        "Canabal, \\textit{ACM Trans. Graph.}, 2016",
-        "Jeshke, \\textit{ACM Trans. Graph.}, 2018",
-        "Schreck \\textit{et al.}, \\textit{ACM Trans. Graph.}, 2019",
+        "Cords et Staadt, \\textit{Eurographics NPH}, 2009",
+        "Jeschke, \\textit{ACM Trans. Graph.}, 2018",
     ]
     bullets_3 = create_bullets(items_3)
     bullets_3.next_to(title_3, DOWN, buff=0.5, aligned_edge=LEFT)
