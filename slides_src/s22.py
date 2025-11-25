@@ -74,7 +74,7 @@ def slide_22(self):
     # --- Bullets ---
     bullet_items = [
         r"Densité constante : $|\hat{\rho}-\rho_0| \rightarrow 0$",
-        r"La somme des volumes des particules reste constante : $\nabla \cdot v = 0$",
+        r"La somme des volumes des particules reste constante : $\nabla \cdot v \rightarrow 0$",
     ]
     bullets = make_bullet_list(
         bullet_items,
@@ -254,9 +254,9 @@ def slide_22(self):
     )
     self.play(Create(h_arrow), run_time=0.25)
     # place 'h' next to (not on) the arrow
-    h_tex = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
-        h_arrow, RIGHT, buff=0.08
-    )
+    h_tex = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE)
+
+    h_tex.move_to(center + 0.5 * diag + [0.3, -0.2, 0.0])
     self.play(Write(h_tex), run_time=0.2)
 
     # ---------- Four nearest neighbors (plain mass sum, break line every 2 terms) ----------
@@ -401,8 +401,8 @@ def slide_22(self):
         strips.append(poly)
     fill_group = VGroup(*strips)
 
-    self.play(FadeIn(VGroup(x_axis, y_axis, x_lbl, y_lbl), run_time=0.25))
     self.play(FadeIn(fill_group, run_time=0.35))
+    self.play(FadeIn(VGroup(x_axis, y_axis, x_lbl, y_lbl), run_time=0.25))
 
     # Helper: color from distance (0..h) mapped to gradient (pc.blueGreen -> pc.jellyBean upward)
     def color_for_r(dist, h):

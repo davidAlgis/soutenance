@@ -228,15 +228,8 @@ def slide_03(self):
     self.play(FadeIn(echelle, run_time=0.25, shift=UP))
     self.next_slide()
 
-    # Triangle edges (blueGreen)
-    edge1 = Line(V_top, V_br, color=pc.blueGreen, stroke_width=8)
-    edge2 = Line(V_br, V_bl, color=pc.blueGreen, stroke_width=8)
-    edge3 = Line(V_bl, V_top, color=pc.blueGreen, stroke_width=8)
-    self.play(Create(edge1, run_time=0.30))
-    self.play(Create(edge2, run_time=0.30))
-    self.play(Create(edge3, run_time=0.30))
-    self.wait(0.1)
-    self.next_slide()
+    tri = Polygon(V_top, V_br, V_bl, stroke_color=pc.blueGreen, stroke_width=6)
+    self.play(Create(tri))
 
     # JellyBean cross at centroid
     center = (V_top + V_bl + V_br) / 3.0
@@ -256,6 +249,7 @@ def slide_03(self):
     cross = VGroup(c1, c2)
     self.play(Create(c1, run_time=0.20), Create(c2, run_time=0.20))
     self.wait(0.1)
+    self.next_slide()
 
     # Helper: dotted, semi-opaque ellipse centered on a point
     def dotted_filled_ellipse(
@@ -278,7 +272,14 @@ def slide_03(self):
         cross.get_center(), w=1.1, h=2.1, color=pc.uclaGold, alpha=0.35
     )
     self.play(FadeIn(ell_gold, run_time=0.25))
+
+    im_cfd = ImageMobject("Figures/cfd_example.jpeg")
+    im_cfd.scale(0.4)
+    im_cfd.move_to(center + [4.0, 1.7, 0.0])
+    self.play(FadeIn(im_cfd, shift=self.SHIFT_SCALE * LEFT))
+
     self.next_slide()
+    self.play(FadeOut(im_cfd, shift=self.SHIFT_SCALE * RIGHT))
 
     # Move cross to bottom-left area
     target2 = V_bl + np.array([0.45, 0.50, 0.0])
@@ -288,6 +289,10 @@ def slide_03(self):
     )
     self.play(FadeIn(ell_green, run_time=0.25))
 
+    im_sea = ImageMobject("Figures/sea_of_thieve.jpg")
+    im_sea.scale(0.3)
+    im_sea.move_to(center + [-4.0, 1.6, 0.0])
+    self.play(FadeIn(im_sea, shift=self.SHIFT_SCALE * RIGHT))
     # End slide
     self.pause()
     self.clear()

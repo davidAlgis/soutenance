@@ -158,7 +158,7 @@ def slide_19(self):
 
     # 6. Display
     self.play(FadeIn(img))
-
+    self.wait(2.0)
     self.add_credit(r"Algis \textit{et al.}, \textit{JCGT}, 2025")
 
     self.next_slide()

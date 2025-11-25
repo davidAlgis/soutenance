@@ -224,7 +224,7 @@ def slide_29(self):
     self.next_slide()
 
     # --- Keep only bar + right rectangle; fade others ----------------------
-    keep = VGroup(bar, right_rect, right_lbl)
+    keep = VGroup(bar, right_rect, right_lbl, footer)
     to_fade = Group(*[m for m in self.mobjects if m not in keep])
     self.play(FadeOut(to_fade, run_time=0.35))
 
@@ -351,7 +351,7 @@ def slide_29(self):
                 ),
             )
         )
-
+    self.wait(2.0)
     self.add_credit(r"Algis \textit{et al.}, PCDS, 2024}")
 
     # --- End slide ---------------------------------------------------------

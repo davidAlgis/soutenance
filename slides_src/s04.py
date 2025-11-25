@@ -19,7 +19,7 @@ def slide_04(self):
       while the mini-wave is animating.
     """
 
-    bar, footer = self._top_bar("Sommaires")
+    bar, footer = self._top_bar("Sommaire")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
@@ -39,7 +39,7 @@ def slide_04(self):
 
     # ==== Section title ====
     sec = Tex(
-        r"I) Couplages 3 méthodes grandes échelles",
+        r"I) Couplage 3 méthodes grandes échelles",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )
@@ -78,47 +78,27 @@ def slide_04(self):
     mini_fs_eq = mini_fs + 2
 
     # Forces (two columns)
-    t1 = Tex(r"1.\; Gravité :", color=BLACK, font_size=mini_fs)
-    t1.set_color_by_tex("Gravit{\\'e}", pc.apple)
-    e1 = MathTex(
-        r"\mathbf{F}_g=-m\,\mathbf{g}",
-        color=BLACK,
-        font_size=mini_fs_eq,
-        tex_to_color_map={r"\mathbf{F}_g": pc.apple},
+    t1 = Tex(
+        r"$\mathbf{F}_b$ : Poussée d'Archimède", color=BLACK, font_size=mini_fs
     )
-    bL1 = VGroup(t1, e1).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+    t1.set_color_by_tex(r"\mathbf{F}_b", pc.tiffanyBlue)
+    bL1 = VGroup(t1).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
 
-    t2 = Tex(r"2.\; Poussée d'Archimède :", color=BLACK, font_size=mini_fs)
-    t2.set_color_by_tex("Pouss{\\'e}e", pc.tiffanyBlue)
-    e2 = MathTex(
-        r"\mathbf{F}_b=V_w\rho_w\mathbf{g}",
-        color=BLACK,
-        font_size=mini_fs_eq,
-        tex_to_color_map={r"\mathbf{F}_b": pc.tiffanyBlue},
-    )
-    bL2 = VGroup(t2, e2).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+    t2 = Tex(r"$\mathbf{F}_a$ : Traînée air", color=BLACK, font_size=mini_fs)
+    t2.set_color_by_tex(r"\mathbf{F}_a", pc.jellyBean)
+    bL2 = VGroup(t2).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
     left_forces = VGroup(bL1, bL2).arrange(DOWN, buff=0.20, aligned_edge=LEFT)
 
-    t3 = Tex(r"3.\; Traînée eau :", color=BLACK, font_size=mini_fs)
-    t3.set_color_by_tex("Tra{\^\i}n{\\'e}e", pc.heliotropeMagenta)
-    e3 = MathTex(
-        r"\mathbf{F}_w=-\tfrac{1}{2}C_d^w\rho_wA_i^{\perp}\|\mathbf{v}^w_{i,\mathrm{rel}}\|\mathbf{v}^w_{i,\mathrm{rel}}",
-        color=BLACK,
-        font_size=mini_fs - 2,
-        tex_to_color_map={r"\mathbf{F}_w": pc.heliotropeMagenta},
-    )
-    bR1 = VGroup(t3, e3).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+    t3 = Tex(r"$\mathbf{F}_w$ : Traînée eau", color=BLACK, font_size=mini_fs)
+    t3.set_color_by_tex(r"\mathbf{F}_w", pc.heliotropeMagenta)
 
-    t4 = Tex(r"4.\; Traînée air :", color=BLACK, font_size=mini_fs)
-    t4.set_color_by_tex("Tra{\^\i}n{\\'e}e", pc.jellyBean)
-    e4 = MathTex(
-        r"\mathbf{F}_a=-\tfrac{1}{2}C_d^a\rho_aA_i^{\perp}\|\mathbf{v}^a_{i,\mathrm{rel}}\|\mathbf{v}^a_{i,\mathrm{rel}}",
-        color=BLACK,
-        font_size=mini_fs - 2,
-        tex_to_color_map={r"\mathbf{F}_a": pc.jellyBean},
-    )
+    bR1 = VGroup(t3).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+
+    t4 = Tex(r"$\mathbf{F}_g$ : Gravité", color=BLACK, font_size=mini_fs)
+    t4.set_color_by_tex(r"\mathbf{F}_g", pc.apple)
+
     right_forces = VGroup(
-        bR1, VGroup(t4, e4).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+        bR1, VGroup(t4).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
     ).arrange(DOWN, buff=0.20, aligned_edge=LEFT)
 
     forces_grid = VGroup(left_forces, right_forces).arrange(
@@ -324,8 +304,9 @@ def slide_04(self):
         V_br, DOWN, buff=0.10
     )
 
-    right_group = VGroup(tri, lab_top, lab_bl, lab_br)
+    self.play(Create(tri))
 
+    right_group = VGroup(lab_top, lab_bl, lab_br)
     self.play(
         FadeIn(right_group, run_time=0.6),
         rate_func=linear,

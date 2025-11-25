@@ -85,7 +85,7 @@ def slide_07(self):
     pros = [
         "Intuitif à programmer",
         "Outils de débogage",
-        "Performants",
+        "Performant",
         "Bénéficie des dernières technologies",
     ]
     cons = [
@@ -106,7 +106,6 @@ def slide_07(self):
     pc_list.align_to(h2, LEFT)
     pc_list.next_to(h2, DOWN, buff=0.22, aligned_edge=LEFT)
     self.play(FadeIn(pc_list, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
-    self.next_slide()
 
     # End slide
     self.pause()

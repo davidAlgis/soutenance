@@ -25,7 +25,7 @@ def slide_02(self):
     self.add_foreground_mobject(bar)  # keep the bar above everything
 
     intro = Tex(
-        r"Arc Blanc : formations manœuvres complexes sur un navire",
+        r"Arc Blanc : formation manœuvres complexes sur un navire",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )

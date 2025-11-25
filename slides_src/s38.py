@@ -23,7 +23,7 @@ def slide_38(self):
             - a small padding below the top bar (top aligned to this line).
     """
     # --- Top bar ---
-    bar, footer = self._top_bar("Résultat de l'hybridation")
+    bar, footer = self._top_bar("Résultats de l'hybridation")
     self.add(bar)
     self.add_foreground_mobject(bar)
     bar_rect = bar.submobjects[0]

@@ -25,7 +25,7 @@ def slide_33(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     line1 = Tex(
-        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer uniformément}",
+        r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer sous la}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -35,7 +35,7 @@ def slide_33(self):
     line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
 
     line2 = Tex(
-        r"\mbox{sous la surface des vagues d'Airy.}",
+        r"\mbox{surface des vagues d'Airy.}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -92,30 +92,17 @@ def slide_33(self):
     ll_t = box_tau.get_corner(DL)
 
     # Create gold lines
-    seg_top_t = Line(ul_t, ur_t, stroke_width=4, color=pc.uclaGold)
-    seg_right_t = Line(ur_t, lr_t, stroke_width=4, color=pc.uclaGold)
-    seg_bottom_t = Line(lr_t, ll_t, stroke_width=4, color=pc.uclaGold)
-    seg_left_t = Line(ll_t, ul_t, stroke_width=4, color=pc.uclaGold)
+    # Create gold polygon
+    # Vertices order ensures drawing: Top -> Right -> Bottom -> Left
+    poly_t = Polygon(ul_t, ur_t, lr_t, ll_t, color=pc.uclaGold, stroke_width=4)
 
-    self.play(
-        LaggedStart(
-            Create(seg_top_t),
-            Create(seg_right_t),
-            Create(seg_bottom_t),
-            Create(seg_left_t),
-            lag_ratio=0.15,
-        )
-    )
-
+    self.play(Create(poly_t), run_time=1.0)
     self.next_slide()
 
     # --- 2. Remove Gold rectangle smoothly ---
     self.play(
         LaggedStart(
-            Uncreate(seg_top_t),
-            Uncreate(seg_right_t),
-            Uncreate(seg_bottom_t),
-            Uncreate(seg_left_t),
+            Uncreate(poly_t),
             lag_ratio=0.15,
         )
     )
@@ -128,22 +115,10 @@ def slide_33(self):
     ur_v = box_vel.get_corner(UR)
     lr_v = box_vel.get_corner(DR)
     ll_v = box_vel.get_corner(DL)
+    # Create apple polygon
+    poly_v = Polygon(ul_v, ur_v, lr_v, ll_v, color=pc.apple, stroke_width=4)
 
-    seg_top_v = Line(ul_v, ur_v, stroke_width=4, color=pc.apple)
-    seg_right_v = Line(ur_v, lr_v, stroke_width=4, color=pc.apple)
-    seg_bottom_v = Line(lr_v, ll_v, stroke_width=4, color=pc.apple)
-    seg_left_v = Line(ll_v, ul_v, stroke_width=4, color=pc.apple)
-
-    self.play(
-        LaggedStart(
-            Create(seg_top_v),
-            Create(seg_right_v),
-            Create(seg_bottom_v),
-            Create(seg_left_v),
-            lag_ratio=0.15,
-        )
-    )
-
+    self.play(Create(poly_v), run_time=1.0)
     self.next_slide()
 
     # Large cornflower dot, placed lower on the slide
@@ -198,10 +173,7 @@ def slide_33(self):
         line1,
         line2,
         eq_full,
-        seg_top_v,
-        seg_right_v,
-        seg_bottom_v,
-        seg_left_v,
+        poly_v,
         dot,
         arr_vA,
         arr_v,

@@ -90,7 +90,7 @@ def slide_06(self):
     self.next_slide()
 
     h2 = Tex(
-        r"Avantages/Inconvénients des \textit{compute shaders}:",
+        r"Avantage/Inconvénients des \textit{compute shaders}:",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

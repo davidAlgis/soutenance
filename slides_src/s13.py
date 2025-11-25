@@ -135,7 +135,7 @@ def slide_13(self):
         tip_length=0.16,
     )
     arrow_label = MathTex(
-        r"IFFT~\mathcal{O}(N\log(N))",
+        r"\sum\sum~\mathcal{O}(N^2)",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE - 4,
     )
@@ -166,6 +166,18 @@ def slide_13(self):
     cap_r.next_to(real_img, DOWN, buff=0.18)
 
     self.play(FadeIn(border_r, real_img, cap_r, run_time=1.0))
+    # 2. Create the new IFFT label
+    # We use \text{IFFT} for proper formatting
+    ifft_label = MathTex(
+        r"\text{IFFT}~\mathcal{O}(N\log(N))",
+        color=BLACK,  # You could change this to pc.blueGreen to highlight the optimization
+        font_size=self.BODY_FONT_SIZE - 4,
+    )
+    # Position it exactly where the old label is
+    ifft_label.move_to(arrow_label.get_center())
+
+    # 3. Animate the transformation
+    self.play(ReplacementTransform(arrow_label, ifft_label))
 
     # --- End slide ---------------------------------------------------------
     self.pause()

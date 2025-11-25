@@ -161,6 +161,8 @@ def slide_31(self):
     bounds_group = VGroup()
 
     for i, p in enumerate(particles):
+        if i == target_idx:
+            continue
         c = Circle(
             radius=bound_r,
             color=pc.uclaGold,
@@ -174,6 +176,7 @@ def slide_31(self):
         bounds_group.add(d_c)
 
     self.play(Create(bounds_group, run_time=0.5))
+    self.wait(0.1)
 
     self.next_slide()
 
@@ -247,7 +250,7 @@ def slide_31(self):
 
     # Play both at the same time
     self.play(AnimationGroup(rays_seq, reveals_seq, lag_ratio=0.10))
-
+    self.wait(2.0)
     self.add_credit(r"Algis et Bramas, IJACSA, 2025}")
 
     # End

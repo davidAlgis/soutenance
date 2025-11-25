@@ -139,7 +139,7 @@ def slide_30(self):
 
     # -------- Left column: GPU grid (many squares), smaller & lower --------
     left_title = Tex(
-        r"C\oe ur g\'en\'eral", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
+        r"C\oe urs généraux", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
     )
     left_title.move_to([-config.frame_width * 0.22 - col_pad_x, 2.0, 0.0])
 
@@ -180,7 +180,7 @@ def slide_30(self):
 
     # -------- Right column: 3x3 RT cores grid in pc.apple ------------------
     right_title = Tex(
-        r"C\oe ur RT", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
+        r"C\oe urs RT", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
     )
     right_title.move_to([+config.frame_width * 0.22 + col_pad_x, +2.0, 0.0])
 

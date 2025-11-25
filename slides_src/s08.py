@@ -114,7 +114,7 @@ def slide_08(self):
     # ========= STEP 1 → 2 =========
     self.next_slide()
 
-    arrow_1 = Arrow(
+    arrow_1 = DoubleArrow(
         start=box_unity[0].get_right(),
         end=box_iuc[0].get_left(),
         buff=0.08,
@@ -139,7 +139,7 @@ def slide_08(self):
     # ========= STEP 2 → 3 =========
     self.next_slide()
 
-    arrow_2 = Arrow(
+    arrow_2 = DoubleArrow(
         start=box_iuc[0].get_right(),
         end=box_cpp[0].get_left(),
         buff=0.08,
@@ -158,6 +158,8 @@ def slide_08(self):
     )
     new_cap_3.move_to(cap)
     self.play(Transform(cap, new_cap_3), run_time=0.35)
+    self.wait(2.0)
+
     self.add_credit(r"Algis \textit{et al.}, \textit{SPE}, 2025")
     # End slide
     self.pause()

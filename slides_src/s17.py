@@ -237,7 +237,7 @@ def slide_17(self):
 
         square_size = 4.5
         bg_square = Square(
-            side_length=square_size, color=pc.blueGreen, stroke_width=2
+            side_length=square_size, color=pc.blueGreen, stroke_width=4
         )
         bg_square.set_fill(WHITE, opacity=1)
 
@@ -307,10 +307,10 @@ def slide_17(self):
 
     # --- PHASE 1: NO DAMPING ---
     group_1d_nd = create_1d_group(d1_nd, "Vue de côté")
-    group_1d_nd.move_to([col_1_center, y_anim_center, 0])
+    group_1d_nd.move_to([col_2_center, y_anim_center, 0])
 
     group_2d_nd = create_2d_group(d2_nd, "Vue du dessus")
-    group_2d_nd.move_to([col_2_center, y_anim_center, 0])
+    group_2d_nd.move_to([col_1_center, y_anim_center, 0])
 
     self.add(group_1d_nd, group_2d_nd)
 
@@ -320,10 +320,10 @@ def slide_17(self):
 
     # --- PHASE 2: WITH DAMPING ---
     group_1d_wd = create_1d_group(d1_wd, "Vue de côté (amortie)")
-    group_1d_wd.move_to([col_1_center, y_anim_center, 0])
+    group_1d_wd.move_to([col_2_center, y_anim_center, 0])
 
     group_2d_wd = create_2d_group(d2_wd, "Vue du dessus (amortie)")
-    group_2d_wd.move_to([col_2_center, y_anim_center, 0])
+    group_2d_wd.move_to([col_1_center, y_anim_center, 0])
 
     self.remove(group_1d_nd, group_2d_nd)
     self.add(group_1d_wd, group_2d_wd)

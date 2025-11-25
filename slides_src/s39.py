@@ -50,7 +50,7 @@ def slide_39(self):
         "Les interactions entre les trois méthodes",
         "L'utilisation de la mémoire partagée pour la RPPV",
         "L'utilisation des c\\oe urs RT pour la RPPV",
-        "Un modèle théorique pour l'hybridation entre des modèles de vagues et SPH",
+        "Une méthode originale pour l'hybridation entre des champs de hauteurs et SPH",
     ]
 
     bullets = make_bullet_list(

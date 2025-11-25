@@ -97,32 +97,36 @@ def slide_15(self):
 
     # Right column -------------------------------------------------------------
     title3 = Tex(
-        r"3.\; Traînée eau :", color=BLACK, font_size=self.BODY_FONT_SIZE
+        r"3.\; Résistance à l'eau :",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
     )
-    title3.set_color_by_tex("Traînée", pc.heliotropeMagenta)
+    title3.set_color_by_tex("Résistance à l'eau", pc.heliotropeMagenta)
     eq3 = MathTex(
         r"\mathbf{F}_w^i"
         r" = -\tfrac{1}{2}\,C_d^w\,\rho_w\,A_i^{\perp}\,"
         r"\|\mathbf{v}^w_{i,\mathrm{rel}}\|\,\mathbf{v}^w_{i,\mathrm{rel}}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE - 2,
-        tex_to_color_map={r"\mathbf{F}_w": pc.heliotropeMagenta},
+        tex_to_color_map={r"\mathbf{F}_w^i": pc.heliotropeMagenta},
     )
     right_block1 = VGroup(title3, eq3).arrange(
         DOWN, buff=0.22, center=False, aligned_edge=LEFT
     )
 
     title4 = Tex(
-        r"4.\; Traînée air :", color=BLACK, font_size=self.BODY_FONT_SIZE
+        r"4.\; Résistance à l'air :",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
     )
-    title4.set_color_by_tex("Traînée", pc.jellyBean)
+    title4.set_color_by_tex("Résistance à l'air", pc.jellyBean)
     eq4 = MathTex(
         r"\mathbf{F}_a^i"
         r" = -\tfrac{1}{2}\,C_d^a\,\rho_a\,A_i^{\perp}\,"
         r"\|\mathbf{v}^a_{i,\mathrm{rel}}\|\,\mathbf{v}^a_{i,\mathrm{rel}}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE - 2,
-        tex_to_color_map={r"\mathbf{F}_a": pc.jellyBean},
+        tex_to_color_map={r"\mathbf{F}_a^i": pc.jellyBean},
     )
     right_block2 = VGroup(title4, eq4).arrange(
         DOWN, buff=0.22, center=False, aligned_edge=LEFT

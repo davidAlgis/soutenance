@@ -29,7 +29,7 @@ def slide_26(self):
     # --- Body text (enumerate) ---
     self.start_body()
     lead = Tex(
-        r"Pour simuler un fluide avec SPH on doit :",
+        r"Pour simuler un fluide avec SPH :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -156,39 +156,16 @@ def slide_26(self):
     # Callback to draw the guide lines just before CSV playback starts
     def draw_world_rect(scene, dots_group: VGroup):
         stroke_w = 8
+        corners = [
+            [rect_left_x, vline_top_y, 0.0],  # 1. Start Top-Left
+            [rect_left_x, rect_bottom_y, 0.0],  # 2. Go Down to Bottom-Left
+            [rect_right_x, rect_bottom_y, 0.0],  # 3. Go Right to Bottom-Right
+            [rect_right_x, vline_top_y, 0.0],  # 4. Go Up to Top-Right
+        ]
 
-        # 1) Bottom horizontal line (exactly at rectangle bottom)
-        bottom_line = Line(
-            start=np.array([rect_left_x, rect_bottom_y, 0.0]),
-            end=np.array([rect_right_x, rect_bottom_y, 0.0]),
-            stroke_color=pc.uclaGold,
-            stroke_width=stroke_w,
-        )
-
-        # 2) Left vertical line (cropped under the top bar)
-        left_vline = Line(
-            start=np.array([rect_left_x, rect_bottom_y, 0.0]),
-            end=np.array([rect_left_x, vline_top_y, 0.0]),
-            stroke_color=pc.uclaGold,
-            stroke_width=stroke_w,
-        )
-
-        # 3) Right vertical line (cropped under the top bar)
-        right_vline = Line(
-            start=np.array([rect_right_x, rect_bottom_y, 0.0]),
-            end=np.array([rect_right_x, vline_top_y, 0.0]),
-            stroke_color=pc.uclaGold,
-            stroke_width=stroke_w,
-        )
-
-        scene.play(
-            Create(bottom_line, run_time=0.25),
-            Create(left_vline, run_time=0.25),
-            Create(right_vline, run_time=0.25),
-        )
-        scene.add_foreground_mobject(bottom_line)
-        scene.add_foreground_mobject(left_vline)
-        scene.add_foreground_mobject(right_vline)
+        vmob = VMobject(stroke_color=pc.uclaGold, stroke_width=stroke_w)
+        vmob.set_points_as_corners(corners)
+        self.play(Create(vmob))
         self.wait(0.1)
         self.next_slide()
 

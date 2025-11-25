@@ -36,7 +36,7 @@ def slide_12(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     intro = Tex(
-        r"Comment calculer les $\omega_i$, $k_i$ et $A_i$ ?",
+        r"Comment calculer les $k_i$, $\omega_i$ et $A_i$ ?",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -67,6 +67,56 @@ def slide_12(self):
     self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
     self.next_slide()
 
+    # --- Sampling Interval Representation ----------------------------------
+    # Calculate center of remaining vertical space
+    y_bullets_bottom = bullets.get_bottom()[1]
+    y_screen_bottom = -config.frame_height / 2 + 0.5
+    y_center = (y_bullets_bottom + y_screen_bottom) / 2
+
+    # Configuration for the axis
+    tick_step = 1.5
+    num_ticks = 6  # 0 to 5
+    width = tick_step * (num_ticks - 1)
+
+    # Create the horizontal line
+    axis_line = Line(
+        start=LEFT * (width / 2),
+        end=RIGHT * (width / 2),
+        color=BLACK,
+        stroke_width=3,
+    ).move_to([0, y_center, 0])
+
+    # Create ticks and labels
+    ticks = VGroup()
+    labels = VGroup()
+
+    # Labels text content: k0, k1, k2, ..., kN-1, kN
+    tex_strings = ["k_0", "k_1", "k_2", r"\dots", "k_{N-1}", "k_N"]
+
+    for i in range(num_ticks):
+        x_pos = axis_line.get_left()[0] + i * tick_step
+
+        # Tick mark
+        tick = Line(
+            UP * 0.15, DOWN * 0.15, color=BLACK, stroke_width=3
+        ).move_to([x_pos, y_center, 0])
+        ticks.add(tick)
+
+        # Label above tick
+        lbl = MathTex(
+            tex_strings[i], color=BLACK, font_size=self.BODY_FONT_SIZE
+        )
+        lbl.next_to(tick, UP, buff=0.2)
+        labels.add(lbl)
+
+    # Group everything
+    sampling_viz = VGroup(axis_line, ticks, labels)
+
+    self.play(Create(axis_line), Create(ticks), Write(labels), run_time=0.6)
+    self.wait(0.1)
+    self.next_slide()
+
+    self.play(FadeOut(sampling_viz, shift=self.SHIFT_SCALE * DOWN))
     # --- ISOMETRIC CUBE SHAPE -----------------------------------------
 
     # 1. Define Unit Vertices
@@ -141,7 +191,11 @@ def slide_12(self):
     )
     shape_title.next_to(shape, UP, buff=0.3)
 
-    self.play(FadeIn(shape), FadeIn(shape_title), run_time=0.5)
+    self.play(
+        FadeIn(shape, shift=self.SHIFT_SCALE * UP),
+        FadeIn(shape_title, shift=self.SHIFT_SCALE * UP),
+        run_time=0.5,
+    )
     self.wait(0.1)
     self.next_slide()
 
@@ -210,12 +264,14 @@ def slide_12(self):
     self.next_slide()
 
     # --- Transition to Formula ------------------------------------------
-    to_fade = Group(*[obj for obj in self.mobjects if obj not in [bar, ai]])
+    to_fade = Group(
+        *[obj for obj in self.mobjects if obj not in [bar, ai, footer]]
+    )
     self.play(FadeOut(to_fade, shift=LEFT))
 
     # Transform into full formula
     eq_tessendorf_1 = MathTex(
-        r"h(x,t) = \sum_i^N A_i\cos(kx-\omega t)",
+        r"h(x,t) = \sum_i^N A_i\cos(k_ix-\omega_i t)",
         font_size=self.BODY_FONT_SIZE + 10,
         color=BLACK,
     )
@@ -308,14 +364,14 @@ def slide_12(self):
     self.next_slide()
 
     eq_tessendorf_3 = MathTex(
-        r"h(\mathbf x,t)=\sum_{\mathbf{k}} \tilde{h}(t, \mathbf{k}) \exp\left( i \mathbf{k}\cdot \mathbf x\right)",
+        r"h(x,z,t)=\sum_{k_x}\sum_{k_z} \tilde{h}(t, k_x, k_z) \exp\left( i (k_xx + k_zz)\right)",
         font_size=self.BODY_FONT_SIZE + 10,
         color=BLACK,
     )
     eq_tessendorf_3.move_to(eq_tessendorf_2.get_center())
 
     img2 = ImageMobject("Figures/wave_surface_rendered.jpeg")
-    img2.scale(0.6)
+    img2.scale(0.55)
     img2.next_to(eq_tessendorf_3, DOWN, buff=0.4)
 
     self.play(
