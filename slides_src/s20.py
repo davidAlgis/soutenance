@@ -1,7 +1,3 @@
-# thesis_slides.py (now supports selective rendering)
-# 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
-# Texte conservé exactement tel qu'écrit par l'utilisateur.
-
 # flake8: noqa: F405
 import os
 
@@ -21,19 +17,82 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 def slide_20(self):
     """
     Slide 20: Principe de l'hybridation
-    - Top bar + 3 body lines (Tex).
-    - Wait for user.
-    - Draw a pc.blueGreen rectangle filling most of remaining space.
-    - Title inside rectangle (top-left): "Océan - Méthode de Tessendorf" in pc.blueGreen.
-    - Two very small top-view boats (given polygon coords), placed apart with border gap.
-    - Wait for user.
-    - Draw two pc.jellyBean squares around each boat and add "SPH" label in their top-left.
+    - Phase 1: State of the art (Text + Bullets + Image)
+    - Phase 2: Tessendorf Domain (BlueGreen Rect)
+    - Phase 3: SPH Domains (JellyBean Squares around boats)
     """
     # --- Top bar -----------------------------------------------------------
     bar, footer = self._top_bar("Principe de l'hybridation")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
+    # --- Layout Calculations -----------------------------------------------
+    bar_rect = bar.submobjects[0]
+    y_top = bar_rect.get_bottom()[1] - 0.15
+    x_left = -config.frame_width / 2 + 0.6
+    x_right = config.frame_width / 2 - 0.6
+    y_bottom = -config.frame_height / 2 + 0.6
+
+    # Text alignment
+    text_anchor_x = x_left + 0.2
+
+    # =======================================================================
+    # PHASE 1: État de l'art (Intro)
+    # =======================================================================
+
+    # 1. Title
+    title = Tex(
+        "État de l'art de l'hybridation :",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
+    title.next_to(bar_rect, DOWN, buff=0.4, aligned_edge=LEFT)
+    dx = text_anchor_x - title.get_left()[0]
+    title.shift(RIGHT * dx)
+
+    # 2. Bullets
+    bullet_items = [
+        "Kassiotis \\textit{et al.}, \\textit{SPHERIC}, 2011",
+        "Chentanez \\textit{et al.}, \\textit{IEEE TVCG}, 2015",
+        "Schreck et Wojtan, \\textit{Computer Graphics Forum}, 2022",
+    ]
+    bullets = make_bullet_list(
+        bullet_items,
+        bullet_color=pc.blueGreen,
+        font_size=self.BODY_FONT_SIZE,
+        line_gap=0.18,
+        left_pad=0.22,
+    )
+    bullets.next_to(title, DOWN, buff=0.5, aligned_edge=LEFT)
+    bullets.shift(RIGHT * 0.2)  # Indent slightly relative to title
+
+    # Image alignment (Right side)
+    img_center = np.array([0.0, (y_top + y_bottom) / 2 - 1.5, 0])
+
+    # 3. Image
+    img_path = "Figures/chentanez_hybrid.jpeg"
+    if os.path.exists(img_path):
+        img = ImageMobject(img_path)
+        img.move_to(img_center)
+    else:
+        img = VMobject()
+
+    # Animation: Text fades in from Right (shift=RIGHT), Image from Left (shift=LEFT)
+    self.play(
+        FadeIn(title, shift=RIGHT * self.SHIFT_SCALE),
+        FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE),
+        FadeIn(img, shift=UP * self.SHIFT_SCALE),
+    )
+
+    self.next_slide()
+
+    # Fade Out: Image to Right, Text to Left
+    self.play(
+        FadeOut(img, shift=DOWN * self.SHIFT_SCALE),
+        FadeOut(bullets, shift=LEFT * self.SHIFT_SCALE),
+        FadeOut(title, shift=LEFT * self.SHIFT_SCALE),
+        run_time=0.5,
+    )
     # --- Usable area below the bar ----------------------------------------
     bar_rect = bar.submobjects[0]
     y_top = bar_rect.get_bottom()[1] - 0.15
@@ -44,8 +103,6 @@ def slide_20(self):
     area_h = y_top - y_bottom
     anchor_x = x_left + self.DEFAULT_PAD
 
-    # --- Body text (Tex) ---------------------------------------------------
-    self.start_body()
     l1 = Tex(
         r"\mbox{Méthode de Tessendorf pour les grandes étendues et pour le couplage}",
         color=BLACK,
