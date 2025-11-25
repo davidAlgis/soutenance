@@ -11,6 +11,7 @@ from manim import *
 from manim import logger
 from manim_slides import Slide
 from manim_tikz import Tikz
+from PIL import Image, ImageSequence
 from slide_registry import slide
 from sph_vis import show_sph_simulation
 from utils import (make_bullet_list, make_pro_cons, parse_selection,
@@ -20,9 +21,11 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(9)
 def slide_09(self):
     """
-    Present three major ocean-simulation approaches with centered labels.
-    Each ellipse appears after user input. Layout: one centered on top,
-    two at the bottom (left and right).
+    Slide 9: State of the art methods.
+    3 Phases:
+      1. Surface Simulation (Static Image)
+      2. Fluid -> Solid (GIF)
+      3. Solid -> Fluid (Static Image)
     """
     # --- Top bar ---------------------------------------------------------
     bar, footer = self._top_bar(
@@ -30,6 +33,237 @@ def slide_09(self):
     )
     self.add(bar)
     self.add_foreground_mobject(bar)
+
+    # --- Layout Calculations ---------------------------------------------
+    bar_rect = bar.submobjects[0]
+    y_top = bar_rect.get_bottom()[1] - 0.15
+    x_left = -config.frame_width / 2 + 0.6
+    x_right = config.frame_width / 2 - 0.6
+
+    # Split screen: Left side for Text, Right side for Image
+    mid_x = 0.0
+    text_anchor_x = x_left + 0.2
+
+    # Placeholder for Image Positioning (Right side, centered vertically in remaining space)
+    y_bottom = -config.frame_height / 2 + 0.6
+    img_center = np.array([x_right - 3.5, (y_top + y_bottom) / 2 - 1.0, 0])
+    img_width_max = 6.0
+
+    # Helper to create the title text
+    def create_title(text_str):
+        t = Tex(
+            text_str,
+            color=BLACK,
+            font_size=self.BODY_FONT_SIZE,
+        )
+        # Left align to margin, Top align below bar
+        t.next_to(bar_rect, DOWN, buff=0.4, aligned_edge=LEFT)
+        # Correct X alignment manually if needed to match padding
+        dx = text_anchor_x - t.get_left()[0]
+        t.shift(RIGHT * dx)
+        return t
+
+    # Helper to create bullet lists
+    def create_bullets(items):
+        lst = make_bullet_list(
+            items,
+            bullet_color=pc.blueGreen,
+            font_size=self.BODY_FONT_SIZE - 4,  # Slightly smaller to fit names
+            line_gap=0.35,
+            left_pad=0.22,
+        )
+        return lst
+
+    # =====================================================================
+    # PHASE 1: Surface Simulation
+    # =====================================================================
+
+    # 1. Title
+    title_1 = create_title("État de l'art de la simulation de surface :")
+    self.play(FadeIn(title_1, shift=RIGHT * self.SHIFT_SCALE))
+
+    # 2. Bullets
+    items_1 = [
+        "Tessendorf, \\textit{SIGGRAPH}, 2001",
+        "Dupuy et Bruneton, \\textit{SIGGRAPH Asia}, 2012",
+        "Horvath, \\textit{DigiPro}, 2015",
+        "Lutz \\textit{et al.}, \\textit{ACMCGIT}, 2024",
+    ]
+    bullets_1 = create_bullets(items_1)
+    bullets_1.next_to(title_1, DOWN, buff=0.5, aligned_edge=LEFT)
+    # Align bullets left edge to title left edge + indent
+    bullets_1.shift(RIGHT * 0.2)
+
+    self.play(FadeIn(bullets_1, shift=RIGHT * self.SHIFT_SCALE))
+
+    # 3. Image (Lutz)
+    img_path_1 = "Figures/lutz_ocean.jpeg"
+    if os.path.exists(img_path_1):
+        img_1 = ImageMobject(img_path_1)
+        img_1.width = img_width_max
+        img_1.move_to(img_center)
+        self.play(FadeIn(img_1, shift=LEFT * self.SHIFT_SCALE))
+    else:
+        img_1 = VMobject()  # Placeholder if missing
+
+    self.next_slide()
+
+    # --- Transition 1 -> 2 ---
+    self.play(FadeOut(img_1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.4)
+
+    # =====================================================================
+    # PHASE 2: Fluid -> Solid (GIF)
+    # =====================================================================
+
+    # 1. Replace Title
+    title_2 = create_title(
+        "État de l'art de l'action du fluide sur le solide :"
+    )
+    # Align exactly where title_1 was for smooth replacement
+    title_2.move_to(title_1.get_center())
+    # Re-align left edge just in case length differs significantly centering logic
+    title_2.align_to(title_1, LEFT)
+
+    # 2. Replace Bullets
+    items_2 = [
+        "Yuksel, \\textit{thèse de doctorat}, 2010",
+        "Kellomäki, \\textit{IJCGT}, 2014",
+        "Kerner, \\textit{Game Developer}, 2016",
+    ]
+    bullets_2 = create_bullets(items_2)
+    bullets_2.next_to(title_2, DOWN, buff=0.5, aligned_edge=LEFT)
+    bullets_2.shift(RIGHT * 0.2)
+
+    self.play(
+        TransformMatchingTex(title_1, title_2),
+        FadeOut(bullets_1, shift=LEFT * self.SHIFT_SCALE),
+        FadeIn(bullets_2, shift=RIGHT * self.SHIFT_SCALE),
+    )
+
+    # 3. GIF Loading Logic (Kerner)
+    gif_path = "Figures/kerner.gif"
+    display_gif = Group()  # Empty container if fail
+
+    pil_img = Image.open(gif_path)
+    pil_frames = []
+    durations = []
+    for frame in ImageSequence.Iterator(pil_img):
+        dur_ms = frame.info.get("duration", 100)
+        durations.append(max(0.01, dur_ms / 1000.0))
+        pil_frames.append(frame.convert("RGBA"))
+
+    # No transparency needed for this specific GIF usually,
+    # but using standard loading.
+    frames_mobs = []
+    for fr in pil_frames:
+        arr = np.array(fr, dtype=np.uint8)
+        mob = ImageMobject(arr)
+        mob.width = img_width_max
+        mob.move_to(img_center)
+        frames_mobs.append(mob)
+
+    if frames_mobs:
+        # Create the display object
+        display_gif = frames_mobs[0].copy()
+        self.play(FadeIn(display_gif, shift=LEFT * self.SHIFT_SCALE))
+
+        # Animation logic
+        durations_np = np.array(durations, dtype=float)
+        cum = np.cumsum(durations_np)
+        total = float(cum[-1])
+        t_track = ValueTracker(0.0)
+
+        def idx_from_time(tt: float) -> int:
+            if total <= 0.0:
+                return 0
+            x = tt % total
+            i = int(np.searchsorted(cum, x, side="right"))
+            return min(i, len(frames_mobs) - 1)
+
+        def gif_updater(m):
+            idx = idx_from_time(t_track.get_value())
+            m.become(frames_mobs[idx])
+
+        display_gif.add_updater(gif_updater)
+        # Add a continuous animation to drive the tracker
+        self.add(display_gif)
+        # We need to advance time manually or rely on slide wait time
+        # Here we attach the tracker to the scene timeline implicitly via always_redraw
+        # or just let it run if we added it to scene.
+        # BUT: ValueTracker doesn't auto-animate. We need a persistent animation.
+        # Hack for ManimSlides: just let it sit.
+        # To make it PLAY, we need an updater that uses `dt`.
+
+        # Better updater using dt for real-time playback
+        # Removing previous approach to use standard dt-based updater
+        display_gif.remove_updater(gif_updater)
+        display_gif.time_elapsed = 0.0
+
+        def dt_updater(mob, dt):
+            mob.time_elapsed += dt
+            idx = idx_from_time(mob.time_elapsed)
+            mob.become(frames_mobs[idx])
+
+        display_gif.add_updater(dt_updater)
+
+    self.next_slide()
+
+    # --- Transition 2 -> 3 ---
+    display_gif.clear_updaters()  # Stop GIF
+    self.play(
+        FadeOut(display_gif, shift=RIGHT * self.SHIFT_SCALE), run_time=0.4
+    )
+
+    # =====================================================================
+    # PHASE 3: Solid -> Fluid (Static Image)
+    # =====================================================================
+
+    # 1. Replace Title
+    title_3 = create_title(
+        "État de l'art de l'action du solide sur le fluide :"
+    )
+    title_3.move_to(title_2.get_center())
+    title_3.align_to(title_2, LEFT)
+
+    # 2. Replace Bullets
+    items_3 = [
+        "Cords et Staadt, \\textit{Eurographics NPH}, 2009",
+        "Tessendorf, \\textit{Note technique}, 2014",
+        "Yuksel, \\textit{ACM Trans. Graph.}, 2007",
+        "Canabal, \\textit{ACM Trans. Graph.}, 2016",
+        "Jeshke, \\textit{ACM Trans. Graph.}, 2018",
+        "Schreck \\textit{et al.}, \\textit{ACM Trans. Graph.}, 2019",
+    ]
+    bullets_3 = create_bullets(items_3)
+    bullets_3.next_to(title_3, DOWN, buff=0.5, aligned_edge=LEFT)
+    bullets_3.shift(RIGHT * 0.2)
+
+    self.play(
+        TransformMatchingTex(title_2, title_3),
+        FadeOut(bullets_2, shift=LEFT * self.SHIFT_SCALE),
+        FadeIn(bullets_3, shift=RIGHT * self.SHIFT_SCALE),
+    )
+
+    # 3. Image (Schreck)
+    img_path_3 = "Figures/schreck_waves.jpeg"
+    if os.path.exists(img_path_3):
+        img_3 = ImageMobject(img_path_3)
+        img_3.width = img_width_max
+        img_3.move_to(img_center)
+        self.play(FadeIn(img_3, shift=LEFT * self.SHIFT_SCALE))
+    else:
+        img_3 = VMobject()
+
+    self.next_slide()
+
+    # --- Final Clear ---
+    self.play(
+        FadeOut(img_3, shift=RIGHT * self.SHIFT_SCALE),
+        FadeOut(bullets_3, shift=LEFT * self.SHIFT_SCALE),
+        FadeOut(title_3, shift=LEFT * self.SHIFT_SCALE),
+        run_time=0.5,
+    )
+
     # --- Ellipses (same spirit as slide 9) --------------------------------
     ell_w = 3.6
     ell_h = 2.8
