@@ -116,7 +116,50 @@ def slide_12(self):
     self.wait(0.1)
     self.next_slide()
 
+    # 1. Define the new text
+    new_line_tex = r"$\omega(k_i)$ : sont déterminés à partir des $k_i$ avec la relation de dispersion"
+
+    # 2. Create the object (using same style as make_bullet_list)
+    new_text_obj = Tex(
+        new_line_tex, color=BLACK, font_size=self.BODY_FONT_SIZE
+    )
+
+    # 3. Locate the old text
+    # bullets[1] is the 2nd row.
+    # bullets[1][1] is typically the text part (bullets[1][0] is the triangle/dot).
+    old_text_obj = bullets[1][1]
+
+    # 4. Align the new text exactly where the old one is
+    new_text_obj.align_to(old_text_obj, UL)
+
+    intro_v2 = Tex(
+        r"Comment calculer les $k_i$, $\omega(k_i)$ et $A_i$ ?",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
+    # Ensure exact alignment with the previous text
+    intro_v2.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    )
+    dx = anchor_x - intro_v2.get_left()[0]
+    intro_v2.shift(RIGHT * dx)
+    # Update the variable so subsequent FadeOuts work correctly
+
+    # 5. Animate the change
+    self.play(
+        TransformMatchingTex(old_text_obj, new_text_obj),
+        TransformMatchingTex(intro, intro_v2),
+        run_time=0.5,
+    )
+
+    intro = intro_v2
+    # Update the reference in the group so it behaves correctly if faded out later
+    bullets[1].remove(old_text_obj)
+    bullets[1].add(new_text_obj)
+
     self.play(FadeOut(sampling_viz, shift=self.SHIFT_SCALE * DOWN))
+
+    self.next_slide()
     # --- ISOMETRIC CUBE SHAPE -----------------------------------------
 
     # 1. Define Unit Vertices
@@ -214,11 +257,11 @@ def slide_12(self):
     # Start X position (Left of the shape)
     start_x = shape.get_left()[0] - 1.0
 
-    lbl_f = MathTex(r"F", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
+    lbl_f = MathTex(r"k_i", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
     lbl_u10 = MathTex(
-        r"U_{10}", color=BLACK, font_size=self.BODY_FONT_SIZE + 6
+        r"\vdots", color=BLACK, font_size=self.BODY_FONT_SIZE + 6
     )
-    lbl_th = MathTex(r"\theta", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
+    lbl_th = MathTex(r"U_{10}", color=BLACK, font_size=self.BODY_FONT_SIZE + 6)
 
     lbl_f.move_to([start_x, pos_top[1], 0])
     lbl_u10.move_to([start_x, pos_mid[1], 0])
@@ -253,12 +296,47 @@ def slide_12(self):
 
     # --- Output A_i -----------------------------------------------------
     # Start inside right face
-    start_x_right = shape.get_right()[0] + 0.5
+    start_x_right = shape.get_right()[0] + 0.6
 
-    ai = MathTex(r"A_i", color=BLACK, font_size=self.BODY_FONT_SIZE + 10)
+    # 3. Locate the old text
+    # bullets[1] is the 2nd row.
+    # bullets[1][1] is typically the text part (bullets[1][0] is the triangle/dot).
+    old_text_obj = bullets[2][1]
+
+    # 1. Define the new text
+    new_line_tex = r"$A(k_i)$ : sont définis par un spectre d'océan"
+
+    # 2. Create the object (using same style as make_bullet_list)
+    new_text_obj = Tex(
+        new_line_tex, color=BLACK, font_size=self.BODY_FONT_SIZE
+    )
+    # 4. Align the new text exactly where the old one is
+    new_text_obj.align_to(old_text_obj, UL)
+    intro_v3 = Tex(
+        r"Comment calculer les $k_i$, $\omega(k_i)$ et $A(k_i)$ ?",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
+    # Ensure exact alignment with the previous text
+    intro_v3.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    )
+    dx = anchor_x - intro_v3.get_left()[0]
+    intro_v3.shift(RIGHT * dx)
+
+    ai = MathTex(r"A(k_i)", color=BLACK, font_size=self.BODY_FONT_SIZE + 10)
     ai.move_to([start_x_right, cy, 0.0])
 
-    self.play(FadeIn(ai, run_time=0.4))
+    self.play(
+        FadeIn(ai),
+        TransformMatchingTex(old_text_obj, new_text_obj),
+        TransformMatchingTex(intro, intro_v3),
+        run_time=0.5,
+    )
+    intro = intro_v3
+    # Update the reference in the group so it behaves correctly if faded out later
+    bullets[2].remove(old_text_obj)
+    bullets[2].add(new_text_obj)
     self.play(ai.animate.shift(RIGHT * 0.5), run_time=0.4)
 
     self.next_slide()
@@ -271,7 +349,7 @@ def slide_12(self):
 
     # Transform into full formula
     eq_tessendorf_1 = MathTex(
-        r"h(x,t) = \sum_i^N A_i\cos(k_ix-\omega_i t)",
+        r"h(x,t) = \sum_i^N A(k_i)\cos(k_ix-\omega(k_i) t)",
         font_size=self.BODY_FONT_SIZE + 10,
         color=BLACK,
     )
