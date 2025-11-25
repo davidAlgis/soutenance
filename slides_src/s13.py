@@ -164,7 +164,8 @@ def slide_13(self):
         font_size=self.BODY_FONT_SIZE,
     )
     cap_r.next_to(real_img, DOWN, buff=0.18)
-
+    self.wait(0.1)
+    self.next_slide()
     self.play(FadeIn(border_r, real_img, cap_r, run_time=1.0))
     # 2. Create the new IFFT label
     # We use \text{IFFT} for proper formatting
