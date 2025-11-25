@@ -140,80 +140,81 @@ def slide_09(self):
         FadeIn(bullets_2, shift=RIGHT * self.SHIFT_SCALE),
     )
 
+    self.next_slide()
     # 3. GIF Loading Logic (Kerner)
     gif_path = "Figures/kerner.gif"
     display_gif = Group()  # Empty container if fail
 
-    pil_img = Image.open(gif_path)
-    pil_frames = []
-    durations = []
-    for frame in ImageSequence.Iterator(pil_img):
-        dur_ms = frame.info.get("duration", 100)
-        durations.append(max(0.01, dur_ms / 1000.0))
-        pil_frames.append(frame.convert("RGBA"))
+    if os.path.isfile(gif_path):
+        pil_img = Image.open(gif_path)
+        pil_frames = []
+        durations = []
+        for frame in ImageSequence.Iterator(pil_img):
+            # Default to 100ms if duration is missing
+            dur_ms = frame.info.get("duration", 100)
+            durations.append(max(0.01, dur_ms / 1000.0))
+            pil_frames.append(frame.convert("RGBA"))
 
-    # No transparency needed for this specific GIF usually,
-    # but using standard loading.
-    frames_mobs = []
-    for fr in pil_frames:
-        arr = np.array(fr, dtype=np.uint8)
-        mob = ImageMobject(arr)
-        mob.width = img_width_max
-        mob.move_to(img_center)
-        frames_mobs.append(mob)
+        # Convert frames to ImageMobjects
+        frames_mobs = []
+        for fr in pil_frames:
+            arr = np.array(fr, dtype=np.uint8)
+            mob = ImageMobject(arr)
+            mob.width = img_width_max
+            mob.move_to(img_center)
+            frames_mobs.append(mob)
 
-    if frames_mobs:
-        # Create the display object
-        display_gif = frames_mobs[0].copy()
-        self.play(FadeIn(display_gif, shift=LEFT * self.SHIFT_SCALE))
+        if frames_mobs:
+            # Create the display object
+            display_gif = frames_mobs[0].copy()
+            self.add(display_gif)
 
-        # Animation logic
-        durations_np = np.array(durations, dtype=float)
-        cum = np.cumsum(durations_np)
-        total = float(cum[-1])
-        t_track = ValueTracker(0.0)
+            # --- GIF DATA SETUP ---
+            display_gif.frames = frames_mobs
+            display_gif.durations = np.array(durations, dtype=float)
+            display_gif.cum_durations = np.cumsum(display_gif.durations)
+            display_gif.total_time = display_gif.cum_durations[-1]
+            display_gif.time_elapsed = 0.0
 
-        def idx_from_time(tt: float) -> int:
-            if total <= 0.0:
-                return 0
-            x = tt % total
-            i = int(np.searchsorted(cum, x, side="right"))
-            return min(i, len(frames_mobs) - 1)
+            # --- UPDATER ---
+            def update_gif(mob, dt):
+                mob.time_elapsed += dt
+                # Loop the time
+                t = mob.time_elapsed % mob.total_time
+                # Find which frame corresponds to this time
+                idx = np.searchsorted(mob.cum_durations, t, side="right")
+                idx = min(idx, len(mob.frames) - 1)
+                mob.become(mob.frames[idx])
 
-        def gif_updater(m):
-            idx = idx_from_time(t_track.get_value())
-            m.become(frames_mobs[idx])
+            display_gif.add_updater(update_gif)
+            self.add(display_gif)
 
-        display_gif.add_updater(gif_updater)
-        # Add a continuous animation to drive the tracker
-        self.add(display_gif)
-        # We need to advance time manually or rely on slide wait time
-        # Here we attach the tracker to the scene timeline implicitly via always_redraw
-        # or just let it run if we added it to scene.
-        # BUT: ValueTracker doesn't auto-animate. We need a persistent animation.
-        # Hack for ManimSlides: just let it sit.
-        # To make it PLAY, we need an updater that uses `dt`.
+            # --- CRITICAL FIX FOR ANIMATION ---
+            # 1. Tell slides to loop this section
+            self.next_slide(loop=True)
 
-        # Better updater using dt for real-time playback
-        # Removing previous approach to use standard dt-based updater
-        display_gif.remove_updater(gif_updater)
-        display_gif.time_elapsed = 0.0
+            # 2. Actually RENDER the animation for the duration of the GIF.
+            # Manim will run the updater for 'total_time' seconds, creating
+            # a video clip of the GIF playing exactly once.
+            # Manim-slides will then loop this clip during the presentation.
+            self.wait(display_gif.total_time)
 
-        def dt_updater(mob, dt):
-            mob.time_elapsed += dt
-            idx = idx_from_time(mob.time_elapsed)
-            mob.become(frames_mobs[idx])
+    else:
+        # Fallback text
+        missing_txt = Text("GIF Missing", color=RED).move_to(img_center)
+        self.add(missing_txt)
+        display_gif = missing_txt
+        self.next_slide()
 
-        display_gif.add_updater(dt_updater)
+    # --- Transition 2 -> 3 ---
+    display_gif.remove_updater(update_gif)
 
     self.next_slide()
 
-    # --- Transition 2 -> 3 ---
-    display_gif.clear_updaters()  # Stop GIF
+    # Stop updater to prevent errors during fade out
     self.play(
         FadeOut(display_gif, shift=RIGHT * self.SHIFT_SCALE), run_time=0.4
     )
-
     # =====================================================================
     # PHASE 3: Solid -> Fluid (Static Image)
     # =====================================================================
