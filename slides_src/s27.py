@@ -131,23 +131,24 @@ def slide_27(self):
     )
     # [animation of draw]
     self.play(Create(circle), run_time=0.5)
-
+    diag = np.array(
+        [(np.sqrt(2)) / 2 * h_radius, (np.sqrt(2)) / 2 * h_radius, 0.0]
+    )
     h_arrow = DoubleArrow(
         start=center,
-        end=center
-        + np.array(
-            [(np.sqrt(2)) / 2 * h_radius, (np.sqrt(2)) / 2 * h_radius, 0.0]
-        ),
+        end=center + diag,
         stroke_width=6,
         color=BLACK,
         tip_length=0.16,
         buff=0.0,
     )
     self.play(Create(h_arrow), run_time=0.35)
-    h_text = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE).next_to(
-        h_arrow, DOWN, buff=0.06
-    )
-    self.play(Write(h_text), run_time=0.25)
+    h_text = Tex("h", color=BLACK, font_size=self.BODY_FONT_SIZE)
+
+    # h_text.next_to(h_arrow, DOWN, buff=0.06)
+
+    h_text.move_to(center + 0.5 * diag + [0.3, -0.2, 0.0])
+    self.play(FadeIn(h_text), run_time=0.25)
     self.wait(0.1)
     self.next_slide()
 
@@ -207,16 +208,10 @@ def slide_27(self):
     complex_pos = np.array(
         [x_right - 2.4, (y_top + y_bottom) * 0.5 + 0.2, 0.0]
     )
-    t_30 = MathTex(
-        r"\mathcal{O}(30^{2})", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
-    ).move_to(complex_pos)
-    self.play(Write(t_30), run_time=0.35)
-    self.next_slide()
-
     t_n2 = MathTex(
         r"\mathcal{O}(N^{2})", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
     ).move_to(complex_pos)
-    self.play(ReplacementTransform(t_30, t_n2), run_time=0.35)
+    self.play(Write(t_n2), run_time=0.35)
     self.next_slide()
 
     # Remove complexity label and the dotted circle + arrow
@@ -325,13 +320,29 @@ def slide_27(self):
         fills.append(c)
 
     # 8-neighborhood
+    # for di in (-1, 0, 1):
+    #     for dj in (-1, 0, 1):
+    #         if di == 0 and dj == 0:
+    #             continue
+    #         rct = cell_rect(i0 + di, j0 + dj, pc.cornflower, 0.35)
+    #         if rct is not None:
+    #             fills.append(rct)
+
+    # 8-neighborhood
+    neighbor_cells_idx = []  # Keep track of valid neighbor cells (i, j)
     for di in (-1, 0, 1):
         for dj in (-1, 0, 1):
             if di == 0 and dj == 0:
                 continue
-            rct = cell_rect(i0 + di, j0 + dj, pc.cornflower, 0.35)
+            # Store indices
+            ni, nj = i0 + di, j0 + dj
+            rct = cell_rect(ni, nj, pc.cornflower, 0.35)
             if rct is not None:
                 fills.append(rct)
+                neighbor_cells_idx.append((ni, nj))
+
+    # Also add the center cell to valid search list
+    neighbor_cells_idx.append((i0, j0))
 
     if fills:
         self.play(
@@ -359,11 +370,25 @@ def slide_27(self):
     for i, p in enumerate(particles):
         if i == target_idx:
             continue
+        pos = p.get_center()
         d = float(np.linalg.norm(p.get_center() - center))
+        # Calculate which grid cell this particle is in
+        pi = int(np.floor((pos[0] - left_x) / h_radius))
+        pj = int(np.floor((pos[1] - bottom_y) / h_radius))
+
+        in_neighbor_cell = (pi, pj) in neighbor_cells_idx
+
         if d <= h_radius:
             anims.append(
                 p.animate.set_color(pc.blueGreen).set_fill(
                     pc.blueGreen, opacity=0.85
+                )
+            )
+        elif in_neighbor_cell:
+            # Case 2: In Neighbor Grid Cell BUT Outside Radius (Gold)
+            anims.append(
+                p.animate.set_color(pc.uclaGold).set_fill(
+                    pc.uclaGold, opacity=0.85
                 )
             )
         else:
@@ -381,7 +406,6 @@ def slide_27(self):
         r"\mathcal{O}(1)", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
     ).move_to(complex_pos)
     self.play(Write(t_o1), run_time=0.35)
-    self.next_slide()
 
     # End
     self.pause()

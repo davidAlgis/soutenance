@@ -36,26 +36,14 @@ def slide_16(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     line1 = Tex(
-        r"\mbox{La vitesse de l'eau en tout point de l'espace calculée avec le même principe }",
+        r"\mbox{IFFT pour calculer la vitesse de l'eau $v(x,t,y)=\sum_k E(k,y)\phi(k,t)\exp(ikx)$}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
     line1.next_to(self._current_bar, DOWN, aligned_edge=LEFT)
     dx = anchor_x - line1.get_left()[0]
     line1.shift(RIGHT * dx)
-
-    line2 = Tex(
-        r"de transformation d'espace de Fourier à espace réel : "
-        r"$v(x,t,y)=\sum_k E(k,y)\phi(k,t)\exp(ikx)$",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
-    )
-    line2.next_to(line1, DOWN, aligned_edge=LEFT)
-    dx2 = anchor_x - line2.get_left()[0]
-    line2.shift(RIGHT * dx2)
-    self.play(
-        FadeIn(line1, line2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25
-    )
+    self.play(FadeIn(line1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # ===================== Axis & Layout =================================
     # Tweakables to nudge the axes where you want
@@ -65,7 +53,7 @@ def slide_16(self):
     # Left-side axes spanning from just under sentences down to bottom,
     # then apply right/down shifts.
     axis_left_x = x_left + 0.9 + AXIS_RIGHT_SHIFT
-    axis_top_y = (line2.get_bottom()[1] - 0.30) - AXIS_DOWN_SHIFT
+    axis_top_y = (line1.get_bottom()[1] - 0.30) - AXIS_DOWN_SHIFT
     axis_bottom_y = y_bottom + 0.35
     x_end = x_right - 0.6
 

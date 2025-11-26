@@ -63,7 +63,7 @@ def slide_20(self):
         line_gap=0.18,
         left_pad=0.22,
     )
-    bullets.next_to(title, DOWN, buff=0.5, aligned_edge=LEFT)
+    bullets.next_to(title, DOWN, buff=0.2, aligned_edge=LEFT)
     bullets.shift(RIGHT * 0.2)  # Indent slightly relative to title
 
     # Image alignment (Right side)
@@ -103,31 +103,47 @@ def slide_20(self):
     area_h = y_top - y_bottom
     anchor_x = x_left + self.DEFAULT_PAD
 
-    l1 = Tex(
-        r"\mbox{Méthode de Tessendorf pour les grandes étendues et pour le couplage}",
-        color=BLACK,
+    # 2. Bullets
+    bullet_items_2 = [
+        "Méthode de Tessendorf pour les grandes étendues",
+        r"Méthode \textit{smoothed particles hydrodynamics} (SPH) pour couplage avec solides",
+    ]
+    bullets_2 = make_bullet_list(
+        bullet_items_2,
+        bullet_color=pc.blueGreen,
         font_size=self.BODY_FONT_SIZE,
+        line_gap=0.18,
+        left_pad=0.22,
     )
-    l1.next_to(
-        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
-    )
-    l1.shift(RIGHT * (anchor_x - l1.get_left()[0]))
+    bullets_2.next_to(bar_rect, DOWN, buff=0.4, aligned_edge=LEFT)
 
-    l2 = Tex(
-        r"avec les solides on utilise la méthode \textit{smoothed particles hydrodynamics} (SPH)",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE,
-    )
-    l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
-    l2.shift(RIGHT * (anchor_x - l2.get_left()[0]))
+    bullets_2.shift(RIGHT * dx)  # Indent slightly relative to title
 
-    self.play(FadeIn(l1, l2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
+    # l1 = Tex(
+    #     r"\mbox{Méthode de Tessendorf pour les grandes étendues, méthode \textit{smoothed}}",
+    #     color=BLACK,
+    #     font_size=self.BODY_FONT_SIZE,
+    # )
+    # l1.next_to(
+    #     self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    # )
+    # l1.shift(RIGHT * (anchor_x - l1.get_left()[0]))
+
+    # l2 = Tex(
+    #     r"\textit{particles hydrodynamics} (SPH) pour couplage avec les solides",
+    #     color=BLACK,
+    #     font_size=self.BODY_FONT_SIZE,
+    # )
+    # l2.next_to(l1, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT)
+    # l2.shift(RIGHT * (anchor_x - l2.get_left()[0]))
+
+    self.play(FadeIn(bullets_2, shift=RIGHT * self.SHIFT_SCALE), run_time=0.25)
 
     # --- Wait for user -----------------------------------------------------
     self.next_slide()
 
     # --- Big blueGreen rectangle (most of remaining space) -----------------
-    content_top_y = l2.get_bottom()[1] - 0.35
+    content_top_y = bullets_2.get_bottom()[1] - 0.35
     content_bottom_y = y_bottom + 0.2
     rect_h = max(2.0, content_top_y - content_bottom_y)
     rect_w = area_w * 0.96
