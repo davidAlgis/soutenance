@@ -246,7 +246,7 @@ def slide_14(self):
     right_static = build_static_right()
     target_group = VGroup(left_static, right_static)
     s2f_title = Tex(
-        r"Action du solide sur la fluide",
+        r"Action du solide sur le fluide",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )

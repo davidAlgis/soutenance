@@ -155,7 +155,7 @@ def slide_03(self):
 
     # 1) Fade out the ellipse, keep the existing "Précision" text object
     self.play(FadeOut(ell, run_time=0.35))
-    self.next_slide()
+    # self.next_slide()
 
     # ---- Safe drawing area (inside the frame, under top bar) ----
     SAFE_PAD_X = 0.7

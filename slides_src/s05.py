@@ -334,9 +334,9 @@ def slide_05(self):
         FadeIn(gpu_title, run_time=0.3),
     )
     # Batch grid appearances to keep rendering robust on Windows
-    self.play(FadeIn(cpu_group, run_time=0.4))
-    self.play(FadeIn(gpu_group, run_time=0.5))
-
+    self.play(Create(cpu_group, run_time=1.0))
+    self.play(Create(gpu_group, run_time=1.0))
+    self.wait(0.1)
     # --- End the slide ---
     self.clear()
     self.next_slide()

@@ -240,7 +240,6 @@ def slide_10(self):
         rate_func=linear,
         run_time=5.0,
     )
-    self.next_slide()
 
     # ---------- End ----------
     self.pause()

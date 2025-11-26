@@ -90,8 +90,8 @@ def slide_12(self):
     ticks = VGroup()
     labels = VGroup()
 
-    # Labels text content: k0, k1, k2, ..., kN-1, kN
-    tex_strings = ["k_0", "k_1", "k_2", r"\dots", "k_{N-1}", "k_N"]
+    # Labels text content: k1, k1, k2, ..., kN-1, kN
+    tex_strings = ["k_1", "k_1", "k_2", r"\dots", "k_{N-1}", "k_N"]
 
     for i in range(num_ticks):
         x_pos = axis_line.get_left()[0] + i * tick_step
@@ -361,7 +361,7 @@ def slide_12(self):
     self.play(
         TransformMatchingTex(ai, eq_tessendorf_1),
     )
-
+    self.wait(0.1)
     self.next_slide()
 
     # --- Rest of the slide (kept identical) ---

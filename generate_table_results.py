@@ -5,8 +5,7 @@ from pdf2image import convert_from_path
 
 # 1. Define the LaTeX content
 latex_code = r"""
-% CHANGE HERE: varwidth=16cm gives the page enough "canvas" to hold your 21cm columns
-\documentclass[preview,varwidth=16cm]{standalone} 
+\documentclass[preview,varwidth=16cm]{standalone}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -14,40 +13,56 @@ latex_code = r"""
 \usepackage{array}
 \usepackage[table]{xcolor}
 \usepackage{colortbl}
+\usepackage{hhline} % <--- REQUIRED FOR LINES OVER COLORS
 
-% Define the custom color
+% Define the custom colors
 \definecolor{blueGreen}{rgb}{0.12,0.61,0.73}
+\definecolor{cornFlower}{rgb}{0.55,0.79,0.90}
 
 \begin{document}
 
-% You set this to 21cm (A4 width), so the table calculates widths based on this.
-\setlength{\columnwidth}{15cm} 
+\setlength{\columnwidth}{15cm}
 \renewcommand{\arraystretch}{1.3}
 
 \begin{figure}
     \centering
-    % The sum of your columns is 0.28+0.24+0.14+0.14 = 0.8 (80% of columnwidth)
     \begin{tabular}{|p{0.28\columnwidth}|p{0.24\columnwidth}|>{\centering\arraybackslash}p{0.14\columnwidth}|>{\centering\arraybackslash}p{0.14\columnwidth}|}
         \hline
-        & & 1 solides & 10 solides \\
+        \rowcolor{blueGreen} & & 1 solide & 10 solides \\
         \hline
         Méthode de Tessendorf & Hauteur & 0{,}376 & 0{,}376 \\
-        \cline{2-4}
+        
+        % REPLACED \cline{2-4} WITH \hhline
+        % ~ means "no line in this column"
+        % - means "line in this column"
+        % | preserves the vertical bars
+        \hhline{~|-|-|-|} 
+        
         & Vitesse & 1{,}175 & 1{,}175 \\
-        \cline{2-4}
-        & Total & 1{,}551 & 1{,}551 \\
+        
+        \hhline{~|-|-|-|}
+        
+        & \cellcolor{cornFlower}Total &\cellcolor{cornFlower} 1{,}551 & \cellcolor{cornFlower}1{,}551 \\
         \hline
         Couplage fluide-solide & Géométrie & 1{,}125 & 4{,}588 \\
-        \cline{2-4}
+        
+        \hhline{~|-|-|-|}
+        
         & Forces & 0{,}406 & 3{,}677 \\
-        \cline{2-4}
-        & Total & 1{,}531 & 8{,}265 \\
+        
+        \hhline{~|-|-|-|}
+        
+        & \cellcolor{cornFlower}Total & \cellcolor{cornFlower}1{,}531 & \cellcolor{cornFlower}8{,}265 \\
         \hline
         Couplage solide-fluide & MDF & 0{,}100 & 0{,}831 \\
-        \cline{2-4}
+        
+        \hhline{~|-|-|-|}
+        
         & Masque & 0{,}238 & 1{,}656 \\
-        \cline{2-4}
-        & Total & 0{,}338 & 2{,}487 \\
+        
+        \hhline{~|-|-|-|}
+        
+        & \cellcolor{cornFlower}Total & \cellcolor{cornFlower}0{,}338 & \cellcolor{cornFlower}2{,}487 \\
         \hline
         \rowcolor{blueGreen}\textbf{Total} & & \textbf{3{,}414} & \textbf{12{,}297} \\
         \hline

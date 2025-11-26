@@ -40,7 +40,7 @@ def slide_15(self):
     area_w = x_right - x_left
 
     l1 = Tex(
-        r"\mbox{Action du fluide sur le solide approximée par 4 forces appliquée sur le maillage }",
+        r"\mbox{Action du fluide sur le solide approximée par 4 forces appliquées sur le maillage }",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

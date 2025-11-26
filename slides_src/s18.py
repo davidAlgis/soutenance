@@ -80,11 +80,10 @@ def slide_18(self):
     content_center_y = (content_top_y + content_bottom_y) * 0.5
 
     col_gap = area_w * 0.06
-    col_w = (area_w - 2 * col_gap) / 3.0
+    col_w = (area_w - 2 * col_gap) / 2.0
 
     cx1 = x_left + col_w * 0.5
     cx2 = cx1 + col_w + col_gap
-    cx3 = cx2 + col_w + col_gap
 
     caption_h = 0.35
     max_side_w = col_w * 0.92
@@ -119,22 +118,11 @@ def slide_18(self):
     # --- Wait for user -----------------------------------------------------
     self.next_slide()
 
-    # --- Column 2 ----------------------------------------------------------
-    col2 = place_image_with_caption(
-        "Figures/MaskHeightMap.jpeg",
-        cx2,
-        r"Vue du dessus dans le stockage",
-    )
-    self.play(FadeIn(col2, run_time=0.4))
-
-    # --- Wait for user -----------------------------------------------------
-    self.next_slide()
-
     # --- Column 3 ----------------------------------------------------------
     col3 = place_image_with_caption(
         "Figures/Mask3D-contrast.jpeg",
-        cx3,
-        r"Vue avec une mer plate",
+        cx2,
+        r"Vue de l'entrée",
     )
     self.play(FadeIn(col3, run_time=0.4))
 

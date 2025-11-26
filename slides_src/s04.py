@@ -39,7 +39,7 @@ def slide_04(self):
 
     # ==== Section title ====
     sec = Tex(
-        r"I) Couplage 3 méthodes grandes échelles",
+        r"I) Couplage 3 méthodes à grande échelle",
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,
     )

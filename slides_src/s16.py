@@ -46,7 +46,7 @@ def slide_16(self):
 
     line2 = Tex(
         r"de transformation d'espace de Fourier à espace réel : "
-        r"$\tilde{v}(k,t,y)=E(k,y)\,\phi(k,t)$",
+        r"$v(x,t,y)=\sum_k E(k,y)\phi(k,t)\exp(ikx)$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
