@@ -97,6 +97,7 @@ def slide_33(self):
     poly_t = Polygon(ul_t, ur_t, lr_t, ll_t, color=pc.uclaGold, stroke_width=4)
 
     self.play(Create(poly_t), run_time=1.0)
+    self.wait(0.1)
     self.next_slide()
 
     # --- 2. Remove Gold rectangle smoothly ---
@@ -119,6 +120,7 @@ def slide_33(self):
     poly_v = Polygon(ul_v, ur_v, lr_v, ll_v, color=pc.apple, stroke_width=4)
 
     self.play(Create(poly_v), run_time=1.0)
+    self.wait(0.1)
     self.next_slide()
 
     # Large cornflower dot, placed lower on the slide

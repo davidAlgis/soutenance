@@ -50,7 +50,7 @@ def slide_39(self):
         "Les interactions entre les trois méthodes",
         "L'utilisation de la mémoire partagée pour la RPPV",
         "L'utilisation des c\\oe urs RT pour la RPPV",
-        "Une méthode originale pour l'hybridation entre des champs de hauteurs et SPH",
+        "Une méthode originale pour l'hybridation entre champs de hauteurs et SPH",
     ]
 
     bullets = make_bullet_list(
@@ -68,7 +68,6 @@ def slide_39(self):
 
     # A tiny animation to satisfy manim-slides before pausing
     self.play(FadeIn(bullets, shift=RIGHT * self.SHIFT_SCALE))
-    self.next_slide()
     self.pause()
     self.clear()
     self.next_slide()

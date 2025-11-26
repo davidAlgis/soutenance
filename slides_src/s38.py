@@ -63,16 +63,16 @@ def slide_38(self):
         mob.move_to(center_img)
         return mob
 
-    # --- 1) First still image
-    im1_path = "Figures/surface_particles_mean.jpeg"
-    im1 = image_fit_center(im1_path)
-    self.play(FadeIn(im1, run_time=0.3))  # ensure at least one animation
-    self.next_slide()
+    # # --- 1) First still image
+    # im1_path = "Figures/surface_particles_mean.jpeg"
+    # im1 = image_fit_center(im1_path)
+    # self.play(FadeIn(im1, run_time=0.3))  # ensure at least one animation
+    # self.next_slide()
 
     # --- 2) Second still image (swap)
     im2_path = "Figures/rb_pos.jpeg"
     im2 = image_fit_center(im2_path)
-    self.play(FadeOut(im1, run_time=0.25), FadeIn(im2, run_time=0.25))
+    self.play(FadeIn(im2, run_time=0.25))
     self.next_slide()
 
     # --- 3) GIF with white made transparent, filling the slide width (no L/R/B padding),

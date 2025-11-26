@@ -67,7 +67,7 @@ def slide_35(self):
         font_size=self.BODY_FONT_SIZE,
     )
     explain2 = Tex(
-        r"\mbox{Objectif : les particules en contact d'un solide devrait moins subir la force d'Airy}",
+        r"\mbox{Objectif : les particules proche d'un solide devrait moins subir la force d'Airy}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -237,6 +237,7 @@ def slide_35(self):
         im.scale(scale).move_to(img_center)
         # Show only the image (no extra shapes), then keep for cleanup
         self.play(FadeIn(im))
+        self.wait(1.0)
         shown_imgs.append(im)
 
     # Remove only the images (no rectangle exists)

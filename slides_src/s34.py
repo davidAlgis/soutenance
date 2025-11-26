@@ -94,7 +94,7 @@ def slide_34(self):
 
     # ----------------------------- intro text (ensure at least one animation before pause)
     intro = Tex(
-        "Version lagrangienne d'Airy :",
+        r"$h(x,t)=A\cos(kx-\omega t)$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -102,8 +102,6 @@ def slide_34(self):
     dy_intro = top_y - intro.get_top()[1]
     intro.shift(np.array([0.0, dy_intro, 0.0]))
     self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE), run_time=0.2)
-    self.wait(0.3)
-    self.next_slide()
 
     # ----------------------------- CSV load
     # CSV header: index_p;time;label_x;label_y;pos_x;pos_y;vel_x;vel_y
@@ -244,11 +242,13 @@ def slide_34(self):
         return curve
 
     wave_curve = make_wave_curve()
-    self.add(wave_curve)
+    self.play(Create(wave_curve))
+    self.wait(0.1)
+    self.next_slide()
 
     # Left equation for h
     eq_h = Tex(
-        r"$h(x,t)=A\cos(kx-\omega t)$",
+        r"Version lagrangienne d'Airy :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
