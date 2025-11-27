@@ -124,6 +124,28 @@ def slide_31(self):
 
     # --- Recolor: target = 3rd -> jellyBean; others BLACK ---
     target_idx = 2 if N >= 3 else (N - 1 if N > 0 else 0)
+    bound_r = 6.0 * pr
+    bounds_group = VGroup()
+
+    for i, p in enumerate(particles):
+        if i == target_idx:
+            continue
+        c = Circle(
+            radius=bound_r,
+            color=pc.uclaGold,
+            stroke_width=2,
+            stroke_opacity=0.8,
+        )
+        c.move_to(p.get_center())
+
+        # Use fewer dashes for smaller circles to maintain readability
+        d_c = DashedVMobject(c, num_dashes=16, dashed_ratio=0.5)
+        bounds_group.add(d_c)
+
+    self.play(Create(bounds_group, run_time=0.5))
+    self.wait(0.1)
+    self.next_slide()
+
     recolor = []
     for i, p in enumerate(particles):
         if i == target_idx:
@@ -148,7 +170,6 @@ def slide_31(self):
     self.play(Create(neighborhood_circle, run_time=0.5))
 
     self.wait(0.1)
-    self.next_slide()
 
     # --- Dashed circles around each particle (BOUNDING VOLUMES) ---
     # UPDATED: Replaced gates with circles.
@@ -156,27 +177,6 @@ def slide_31(self):
     # 1. Radius: Much smaller (3.5*pr) vs Neighborhood (15*pr)
     # 2. Color: GRAY vs BLACK
     # 3. Stroke: Thinner (2) vs Thicker (4)
-
-    bound_r = 6.0 * pr
-    bounds_group = VGroup()
-
-    for i, p in enumerate(particles):
-        if i == target_idx:
-            continue
-        c = Circle(
-            radius=bound_r,
-            color=pc.uclaGold,
-            stroke_width=2,
-            stroke_opacity=0.8,
-        )
-        c.move_to(p.get_center())
-
-        # Use fewer dashes for smaller circles to maintain readability
-        d_c = DashedVMobject(c, num_dashes=16, dashed_ratio=0.5)
-        bounds_group.add(d_c)
-
-    self.play(Create(bounds_group, run_time=0.5))
-    self.wait(0.1)
 
     self.next_slide()
 
