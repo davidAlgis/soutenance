@@ -100,9 +100,6 @@ def slide_37(self):
         .set_stroke(color=pc.oxfordBlue, width=4)
     )
     self.play(Create(curve))
-    self.wait(0.1)
-    # Pause
-    self.next_slide()
 
     # --- Particles generation (Y sampled around the curve at each X) ---
     rng = random.Random(1)
@@ -136,12 +133,9 @@ def slide_37(self):
         y = max(body_bottom, min(y, body_top - 0.05))
         dense_dots.append(mkdot(x, y, pc.blueGreen))
 
-    all_dots = dots + dense_dots
-    self.play(
-        LaggedStart(*[GrowFromCenter(d) for d in all_dots], lag_ratio=0.05)
-    )
+    # --- FILTERING LOGIC MOVED HERE (Before Animation) ---
 
-    # Hide 8 right-side under-curve particles ("hole")
+    # Identify the dots that should be holes
     right_candidates = [
         d for d in dots if d.get_center()[0] > (x_lo + 0.6 * (x_hi - x_lo))
     ]
@@ -152,10 +146,19 @@ def slide_37(self):
         x, y, _ = d.get_center()
         if y < (y_center + 0.3 * np.cos(0.2 * x)):
             hole_dots.append(d)
-    for d in hole_dots:
-        d.set_fill(opacity=0.0)
-        d.set_stroke(opacity=0.0)
 
+    # Combine lists, but EXCLUDE the hole_dots
+    all_generated = dots + dense_dots
+    visible_dots = [d for d in all_generated if d not in hole_dots]
+
+    # --- ANIMATION ---
+
+    # Only animate the visible ones
+    self.play(
+        LaggedStart(*[GrowFromCenter(d) for d in visible_dots], lag_ratio=0.05)
+    )
+
+    self.wait(0.1)
     # Pause
     self.next_slide()
 
@@ -170,7 +173,7 @@ def slide_37(self):
 
     # Recolor particles above the curve to jellyBean
     above = []
-    for d in all_dots:
+    for d in visible_dots:
         if not is_visible(d):
             continue
         x, y, _ = d.get_center()
@@ -210,7 +213,7 @@ def slide_37(self):
         font_size=40,
         color=BLACK,
     )
-    rho_tex.next_to(VGroup(*all_dots), UP, buff=0.3)
+    rho_tex.next_to(VGroup(*visible_dots), UP, buff=0.3)
     self.play(FadeIn(rho_tex))
 
     # Pause
