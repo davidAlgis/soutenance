@@ -158,7 +158,7 @@ def slide_27(self):
     # --- Five probe lines to random particles ------------------------------
     rng = np.random.default_rng(1)
     pool = [i for i in range(len(particles)) if i != target_idx]
-    for _ in range(min(10, len(pool))):
+    for _ in range(min(29, len(pool))):
         j = int(rng.choice(pool))
         pool.remove(j)
         pj = particles[j].get_center()
@@ -403,7 +403,7 @@ def slide_27(self):
     # --- Write O(1) --------------------------------------------------------
     complex_pos = np.array([x_right - 2.4, (y_top + y_bottom) * 0.5, 0.0])
     t_o1 = MathTex(
-        r"\mathcal{O}(1)", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
+        r"\mathcal{O}(N)", color=BLACK, font_size=self.BODY_FONT_SIZE + 10
     ).move_to(complex_pos)
     self.play(Write(t_o1), run_time=0.35)
 
