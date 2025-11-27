@@ -31,7 +31,7 @@ def slide_24(self):
     4) Wait, then transform the equation to the detailed SPH form.
     """
     # --- Top bar -----------------------------------------------------------
-    bar, footer = self._top_bar("Diffusion et forces de viscosités")
+    bar, footer = self._top_bar("Diffusion et forces de viscosité")
     self.add(bar)
     self.add_foreground_mobject(bar)
 

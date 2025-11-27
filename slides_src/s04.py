@@ -147,7 +147,7 @@ def slide_04(self):
     box = Rectangle(
         width=left_block.width + 2 * box_pad,
         height=left_block.height + 2 * box_pad,
-        stroke_color=BLACK,
+        stroke_color=pc.blueGreen,
         stroke_width=2,
     )
     left_group = VGroup(box, left_block)

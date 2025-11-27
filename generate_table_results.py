@@ -30,7 +30,7 @@ latex_code = r"""
         \hline
         \rowcolor{blueGreen} & & 1 solide & 10 solides \\
         \hline
-        Méthode de Tessendorf & Hauteur & 0{,}376 & 0{,}376 \\
+        Méthode de Tessendorf & Hauteur & 0{,}3 & 0{,}3 \\
         
         % REPLACED \cline{2-4} WITH \hhline
         % ~ means "no line in this column"
@@ -38,33 +38,33 @@ latex_code = r"""
         % | preserves the vertical bars
         \hhline{~|-|-|-|} 
         
-        & Vitesse & 1{,}175 & 1{,}175 \\
+        & Vitesse & 1{,}1 & 1{,}1 \\
         
         \hhline{~|-|-|-|}
         
-        & \cellcolor{cornFlower}Total &\cellcolor{cornFlower} 1{,}551 & \cellcolor{cornFlower}1{,}551 \\
+        & \cellcolor{cornFlower}Total &\cellcolor{cornFlower} 1{,}5 & \cellcolor{cornFlower}1{,}5 \\
         \hline
-        Couplage fluide-solide & Géométrie & 1{,}125 & 4{,}588 \\
+        Couplage fluide-solide & Géométrie & 1{,}1 & 4{,}5 \\
         
         \hhline{~|-|-|-|}
         
-        & Forces & 0{,}406 & 3{,}677 \\
+        & Forces & 0{,}4 & 3{,}6 \\
         
         \hhline{~|-|-|-|}
         
-        & \cellcolor{cornFlower}Total & \cellcolor{cornFlower}1{,}531 & \cellcolor{cornFlower}8{,}265 \\
+        & \cellcolor{cornFlower}Total & \cellcolor{cornFlower}1{,}5 & \cellcolor{cornFlower}8{,}2 \\
         \hline
-        Couplage solide-fluide & MDF & 0{,}100 & 0{,}831 \\
+        Couplage solide-fluide & MDF & 0{,}1 & 0{,}8 \\
         
         \hhline{~|-|-|-|}
         
-        & Masque & 0{,}238 & 1{,}656 \\
+        & Masque & 0{,}2 & 1{,}6 \\
         
         \hhline{~|-|-|-|}
         
-        & \cellcolor{cornFlower}Total & \cellcolor{cornFlower}0{,}338 & \cellcolor{cornFlower}2{,}487 \\
+        & \cellcolor{cornFlower}Total & \cellcolor{cornFlower}0{,}3 & \cellcolor{cornFlower}2{,}4 \\
         \hline
-        \rowcolor{blueGreen}\textbf{Total} & & \textbf{3{,}414} & \textbf{12{,}297} \\
+        \rowcolor{blueGreen}\textbf{Total} & & \textbf{3{,}4} & \textbf{12{,}2} \\
         \hline
     \end{tabular}
 \end{figure}
