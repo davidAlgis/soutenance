@@ -422,9 +422,8 @@ def slide_34(self):
     # Animate transform to velocity equations (split earlier; broken line)
     vel_cases_tex = Tex(
         r"$\begin{cases}"
-        r"v_x(a,b,t) = A \omega e^{kb} \cos(ka - \omega t), \\"
-        r"v_y(a,b,t) = A e^{kb} \sin(ka - \omega t \\"
-        r"~~~~+ k\xi(a,b,t))\left(\omega - k v_x(a,b,t)\right)"
+        r"v_x(a,b,t) = A e^{kb} \psi(a, t), \\"
+        r"v_y(a,b,t) = A e^{kb} \nu(a,t)"
         r"\end{cases}$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
@@ -473,8 +472,8 @@ def slide_34(self):
     # --- Convert velocity cases to vector form **in place** (no recentre), then animate shift to top
     vel_vector_tex = Tex(
         r"$v_i^A = \begin{pmatrix}"
-        r"A \omega e^{kb} \cos(ka - \omega t), \\ "
-        r"A e^{kb} \sin\!\left(ka - \omega t + k\xi(a,b,t)\right)\left(\omega - k v_x(a,b,t)\right)"
+        r"A e^{kb} \psi(a, t), \\ "
+        r"A e^{kb} \nu(a,t)"
         r"\end{pmatrix}$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
