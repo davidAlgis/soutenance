@@ -37,8 +37,8 @@ def slide_05(self):
     # numberplane = NumberPlane(color=BLACK)
     # self.add(numberplane)
     # --- Data for the example ---
-    a_vals = [1, 4, 2, 3, 5]
-    b_vals = [3, 1, 6, 2, 4]
+    a_vals = [1, 0, 2, 1, 2]
+    b_vals = [2, 1, 2, 0, 3]
     n = len(a_vals)
     c_vals = [a_vals[i] + b_vals[i] for i in range(n)]
 

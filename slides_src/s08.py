@@ -158,7 +158,59 @@ def slide_08(self):
     )
     new_cap_3.move_to(cap)
     self.play(Transform(cap, new_cap_3), run_time=0.35)
-    self.wait(2.0)
+
+    self.wait(0.1)
+    self.next_slide()
+
+    # 1. Group the entire pipeline diagram (boxes, arrows, moving image, caption)
+    pipeline_group = Group(
+        box_unity,
+        box_iuc,
+        box_cpp,
+        arrow_1,
+        arrow_2,
+    )
+
+    # 2. Animate scaling and moving    # 2. Animate scaling and moving (Vertically only)
+    pipeline_group.generate_target()
+    pipeline_group.target.scale(0.9)
+
+    # Calculate vertical position relative to line2
+    # (Note: next_to changes X and Y, so we must reset X immediately after)
+    pipeline_group.target.next_to(line2, DOWN, buff=0.5)
+    pipeline_group.target.set_x(
+        pipeline_group.get_x()
+    )  # Restore original X position
+
+    self.play(
+        FadeOut(new_cap_3, shift=self.SHIFT_SCALE * RIGHT),
+        # FadeOut(box_cpp, shift=self.SHIFT_SCALE * RIGHT),
+        FadeOut(cap, shift=self.SHIFT_SCALE * RIGHT),
+        FadeOut(img, shift=self.SHIFT_SCALE * RIGHT),
+        # FadeOut(arrow_1),
+        # FadeOut(arrow_2),
+        # FadeOut(box_iuc, shift=self.SHIFT_SCALE * DOWN),
+        # FadeOut(box_unity, shift=self.SHIFT_SCALE * LEFT),
+        run_time=1.0,
+    )
+    self.play(MoveToTarget(pipeline_group), run_time=1.0)
+
+    bullet_items = [
+        "Cadre de développement basé sur un patron de conception",
+        "Continuité mémoire entre les processus",
+        "Philosophie générale d'interopérabilité",
+    ]
+    lst = make_bullet_list(
+        bullet_items,
+        bullet_color=pc.blueGreen,
+        font_size=self.BODY_FONT_SIZE,
+        line_gap=0.18,
+        left_pad=0.22,
+    )
+    # stack under h1
+    lst.align_to(line2, LEFT)
+    lst.next_to(line2, DOWN, buff=2.5, aligned_edge=LEFT)
+    self.play(FadeIn(lst, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
 
     self.add_credit(r"Algis \textit{et al.}, \textit{SPE}, 2025")
     # End slide
