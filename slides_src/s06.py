@@ -97,13 +97,12 @@ def slide_06(self):
     h2.align_to(h1, LEFT)
     h2.next_to(lst, DOWN, buff=1.0, aligned_edge=LEFT)
     self.play(FadeIn(h2, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
-    self.next_slide()
 
     pros = ["Multi-support"]
     cons = [
         "Ne bénéficie pas dernières technologies",
         "Complexe à programmer",
-        "Difficile à débogger",
+        "Difficile à déboguer",
         "...",
     ]
     pc_list = make_pro_cons(

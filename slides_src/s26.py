@@ -58,7 +58,7 @@ def slide_26(self):
 
     # 2.
     l2 = Tex(
-        r"2. Calcul des forces de viscosité : $F^v$",
+        r"2. Calculer les forces de viscosité : $F^v$",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -75,7 +75,7 @@ def slide_26(self):
     )
     l3.next_to(l2, DOWN, buff=self.BODY_LINE_BUFF + 0.1, aligned_edge=LEFT)
     l4 = Tex(
-        r"4. Solveur de « volume constante » : $F^p_1$ pour vérifier $\nabla \cdot v\rightarrow 0$",
+        r"4. Solveur de « volume constant » : $F^p_1$ pour vérifier $\nabla \cdot v\rightarrow 0$",
         tex_template=self.french_template,
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,

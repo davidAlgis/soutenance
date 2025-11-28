@@ -79,7 +79,6 @@ def slide_07(self):
     h2.align_to(h1, LEFT)
     h2.next_to(h1, DOWN, buff=0.5, aligned_edge=LEFT)
     self.play(FadeIn(h2, shift=RIGHT * self.SHIFT_SCALE), run_time=1.0)
-    self.next_slide()
 
     # Pros / Cons
     pros = [
@@ -90,7 +89,7 @@ def slide_07(self):
     ]
     cons = [
         "Uniquement sur carte Nvidia",
-        "Pas accessible dans Unity",
+        "Inaccessible dans Unity",
     ]
     pc_list = make_pro_cons(
         pros,

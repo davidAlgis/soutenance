@@ -64,8 +64,6 @@ def slide_37(self):
     )
     label_fern = Tex("Zone statique", color=pc.fernGreen, font_size=36)
     label_fern.next_to([x_fern, body_top, 0.0], RIGHT, buff=0.2)
-    self.play(Transform(fern_line, fern_line.saved_state))
-    self.play(FadeIn(label_fern))
 
     x_gold = -frame_w / 2.0 + 0.75 * frame_w
     gold_line = Line(
@@ -86,8 +84,6 @@ def slide_37(self):
     label_gold = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
     label_gold.next_to([x_gold, body_top, 0.0], RIGHT, buff=0.2)
 
-    self.play(Transform(gold_line, gold_line.saved_state))
-    self.play(FadeIn(label_gold))
     # --- Cosine curve across width at ~3/4 of body height ---
     x_min = -frame_w / 2.0
     x_max = frame_w / 2.0
@@ -99,7 +95,14 @@ def slide_37(self):
         .set_points_smoothly(np.column_stack([X, Y, np.zeros_like(X)]))
         .set_stroke(color=pc.oxfordBlue, width=4)
     )
-    self.play(Create(curve))
+
+    self.play(
+        Transform(fern_line, fern_line.saved_state),
+        FadeIn(label_fern),
+        Transform(gold_line, gold_line.saved_state),
+        FadeIn(label_gold),
+        Create(curve),
+    )
 
     # --- Particles generation (Y sampled around the curve at each X) ---
     rng = random.Random(1)

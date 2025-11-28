@@ -68,7 +68,7 @@ def slide_17(self):
     # --- Corps de texte (Tex) -------------------------------------------------
     self.start_body()
     line1 = Tex(
-        "L'action du solide sur le fluide est approximée comme une simple « onde ».",
+        "L'action du solide sur le fluide est approximée par une onde.",
         tex_template=self.french_template,
         font_size=self.BODY_FONT_SIZE,
         color=BLACK,

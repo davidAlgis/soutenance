@@ -35,7 +35,7 @@ def slide_33(self):
     line1.shift(RIGHT * (anchor_x - line1.get_left()[0]))
 
     line2 = Tex(
-        r"\mbox{surface des vagues d'Airy.}",
+        r"\mbox{surface de la vague d'Airy.}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

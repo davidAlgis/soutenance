@@ -472,7 +472,7 @@ def slide_34(self):
     # --- Convert velocity cases to vector form **in place** (no recentre), then animate shift to top
     vel_vector_tex = Tex(
         r"$v_i^A = \begin{pmatrix}"
-        r"A e^{kb} \psi(a, t), \\ "
+        r"A e^{kb} \psi(a, t) \\ "
         r"A e^{kb} \nu(a,t)"
         r"\end{pmatrix}$",
         color=BLACK,

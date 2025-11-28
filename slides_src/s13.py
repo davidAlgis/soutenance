@@ -48,7 +48,7 @@ def slide_13(self):
     anchor_x = x_left + self.DEFAULT_PAD
 
     line1 = Tex(
-        r"\mbox{Le calcul de la somme $h_T(x,t)$ est coûteux, donc on va utiliser une transformée }",
+        r"\mbox{Le calcul de la somme $h_T(x,t)$ est coûteux, donc on utilise une transformée }",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -107,6 +107,8 @@ def slide_13(self):
         FadeIn(border_f, fourier_img, cap_f, shift=UP * self.SHIFT_SCALE),
         run_time=1.0,
     )
+
+    self.wait(0.1)
 
     # --- Wait for user -----------------------------------------------------
     self.next_slide()

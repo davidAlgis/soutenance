@@ -46,16 +46,11 @@ def slide_35(self):
     ur = target.get_corner(UR) + (pad * RIGHT + pad * UP)
     lr = target.get_corner(DR) + (pad * RIGHT - pad * UP)
     ll = target.get_corner(DL) + (-pad * RIGHT - pad * UP)
-    seg_top = Line(ul, ur, color=pc.jellyBean, stroke_width=4)
-    seg_right = Line(ur, lr, color=pc.jellyBean, stroke_width=4)
-    seg_bottom = Line(lr, ll, color=pc.jellyBean, stroke_width=4)
-    seg_left = Line(ll, ul, color=pc.jellyBean, stroke_width=4)
+
+    seg_phi = Polygon(ul, ur, lr, ll, color=pc.jellyBean, stroke_width=4)
     self.play(
         LaggedStart(
-            Create(seg_top),
-            Create(seg_right),
-            Create(seg_bottom),
-            Create(seg_left),
+            Create(seg_phi),
             lag_ratio=0.15,
         )
     )
@@ -67,7 +62,7 @@ def slide_35(self):
         font_size=self.BODY_FONT_SIZE,
     )
     explain2 = Tex(
-        r"\mbox{Objectif : les particules proche d'un solide devrait moins subir la force d'Airy}",
+        r"\mbox{Objectif : les particules proches d'un solide devraient moins subir la force d'Airy}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )
@@ -80,10 +75,7 @@ def slide_35(self):
     # --- Keep only objective; move it under the bar, left-aligned with padding ---
     self.play(
         FadeOut(eq),
-        FadeOut(seg_top),
-        FadeOut(seg_right),
-        FadeOut(seg_bottom),
-        FadeOut(seg_left),
+        FadeOut(seg_phi),
         FadeOut(explain1),
     )
     explain2.generate_target()

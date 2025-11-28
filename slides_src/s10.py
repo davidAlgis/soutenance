@@ -47,7 +47,7 @@ def slide_10(self):
 
     # ---------- Intro ----------
     intro = Tex(
-        "Modèle linéaire qui simule l'océan comme une simple vague :",
+        "Modèle linéaire qui simule l'océan comme une vague :",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE,
     )

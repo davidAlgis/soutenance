@@ -183,8 +183,7 @@ def slide_20(self):
         ]
     )
     self.play(Create(ocean_rect), FadeIn(ocean_label), run_time=0.5)
-    self.wait(0.1)
-    self.next_slide()
+
     # --- Boats (very small, top view) --------------------------------------
     boat_coords = [
         [0.0, -1.0, 0.0],
@@ -232,9 +231,6 @@ def slide_20(self):
     boat2.move_to(right_center + np.array([0.2, -0.1, 0.0]))
 
     self.play(FadeIn(boat1, boat2), run_time=0.5)
-
-    # --- Wait for user -----------------------------------------------------
-    self.next_slide()
 
     # --- SPH squares around each boat + "SPH" labels -----------------------
     def surround_with_sph(mob: Mobject):

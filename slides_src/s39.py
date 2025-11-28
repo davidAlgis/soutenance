@@ -45,12 +45,12 @@ def slide_39(self):
     items = [
         "La bibliothèque InteropUnityCUDA",
         "Le calcul de la vitesse de l'océan en temps réel",
-        "Les expressions des forces de résistances pour le couplage fluide vers solides",
+        "Les expressions des forces de résistance pour le couplage fluide vers solides",
         "Le masque pour l'entrée du couplage solides vers fluide",
         "Les interactions entre les trois méthodes",
         "L'utilisation de la mémoire partagée pour la RPPV",
         "L'utilisation des c\\oe urs RT pour la RPPV",
-        "Une méthode originale pour l'hybridation entre champs de hauteurs et SPH",
+        "Une méthode originale pour l'hybridation entre champs de hauteur et SPH",
     ]
 
     bullets = make_bullet_list(

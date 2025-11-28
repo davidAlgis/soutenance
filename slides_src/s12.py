@@ -25,7 +25,7 @@ def slide_12(self):
     - Inputs enter purely horizontally
     """
     # --- Top bar -----------------------------------------------------------
-    bar, footer = self._top_bar("Spectres d'océans")
+    bar, footer = self._top_bar("Spectre d'océan")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
@@ -50,9 +50,9 @@ def slide_12(self):
 
     # --- Bullet points ---------------------------------------------------
     items = [
-        r"$k_i$ : sont échantillonnés sur un intervalle",
-        r"$\omega_i$ : sont déterminés à partir des $k_i$ avec la relation de dispersion",
-        r"$A_i$ : sont définis par un spectre d'océan",
+        r"$k_i$ : sont échantillonnées sur un intervalle",
+        r"$\omega_i$ : sont déterminées à partir des $k_i$ avec la relation de dispersion",
+        r"$A_i$ : sont définies par un spectre d'océan",
     ]
     bullets = make_bullet_list(
         items,

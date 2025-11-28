@@ -94,22 +94,27 @@ def slide_36(self):
     o_right = Line(outer_ur, outer_lr, color=pc.fernGreen, stroke_width=6)
     o_bottom = Line(outer_lr, outer_ll, color=pc.fernGreen, stroke_width=6)
     o_left = Line(outer_ll, outer_ul, color=pc.fernGreen, stroke_width=6)
-
+    o_static = Polygon(
+        outer_ul,
+        outer_ur,
+        outer_lr,
+        outer_ll,
+        color=pc.fernGreen,
+        stroke_width=6,
+    )
     label_static = Tex("Zone statique", color=pc.fernGreen, font_size=36)
     label_static.next_to(o_top, DOWN, buff=0.18).align_to(o_left, LEFT).shift(
         RIGHT * 0.18
     )
     self.play(
         LaggedStart(
-            Create(o_top),
-            Create(o_right),
-            Create(o_bottom),
-            Create(o_left),
+            Create(o_static),
             lag_ratio=0.15,
         ),
         FadeIn(label_static),
     )
 
+    self.wait(0.1)
     # Pause
     self.next_slide()
 
@@ -125,6 +130,9 @@ def slide_36(self):
     i_right = Line(in_ur, in_lr, color=pc.blueGreen, stroke_width=6)
     i_bottom = Line(in_lr, in_ll, color=pc.blueGreen, stroke_width=6)
     i_left = Line(in_ll, in_ul, color=pc.blueGreen, stroke_width=6)
+    i_sph = Polygon(
+        in_ul, in_ur, in_lr, in_ll, color=pc.blueGreen, stroke_width=6
+    )
 
     label_sph = Tex("Zone SPH", color=pc.blueGreen, font_size=36)
     label_sph.next_to(i_top, DOWN, buff=0.14).align_to(i_left, LEFT).shift(
@@ -133,15 +141,13 @@ def slide_36(self):
 
     self.play(
         LaggedStart(
-            Create(i_top),
-            Create(i_right),
-            Create(i_bottom),
-            Create(i_left),
+            Create(i_sph),
             lag_ratio=0.15,
         ),
         FadeIn(label_sph),
     )
 
+    self.wait(0.1)
     # Pause
     self.next_slide()
 
@@ -159,7 +165,9 @@ def slide_36(self):
     g_right = Line(g_ur, g_lr, color=pc.uclaGold, stroke_width=6)
     g_bottom = Line(g_lr, g_ll, color=pc.uclaGold, stroke_width=6)
     g_left = Line(g_ll, g_ul, color=pc.uclaGold, stroke_width=6)
-
+    g_tampon = Polygon(
+        g_ul, g_ur, g_lr, g_ll, color=pc.uclaGold, stroke_width=6
+    )
     label_buffer = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
     label_buffer.next_to(g_top, DOWN, buff=0.16).align_to(g_left, LEFT).shift(
         RIGHT * 0.16
@@ -167,15 +175,13 @@ def slide_36(self):
 
     self.play(
         LaggedStart(
-            Create(g_top),
-            Create(g_right),
-            Create(g_bottom),
-            Create(g_left),
+            Create(g_tampon),
             lag_ratio=0.15,
         ),
         FadeIn(label_buffer),
     )
 
+    self.wait(0.1)
     # --- End of slide ---
     self.pause()
     self.clear()
