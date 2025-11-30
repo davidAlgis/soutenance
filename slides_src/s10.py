@@ -159,7 +159,7 @@ def slide_10(self):
         run_time=0.2,
     )
     self.play(
-        t.animate.set_value(2 * PI), rate_func=there_and_back, run_time=4.0
+        t.animate.set_value(2 * PI), rate_func=there_and_back, run_time=3.0
     )
     self.next_slide()
 
@@ -181,7 +181,7 @@ def slide_10(self):
         pair_A.animate.set_opacity(1.0),
         run_time=0.2,
     )
-    self.play(A.animate.set_value(2.0), rate_func=there_and_back, run_time=4.0)
+    self.play(A.animate.set_value(2.0), rate_func=there_and_back, run_time=3.0)
     self.next_slide()
 
     # ===================== Step 4: h = A cos(kx + t) =========================
@@ -204,7 +204,7 @@ def slide_10(self):
     )
     # Frequency sweep with constant amplitude (no breathing thanks to set_points_as_corners)
     self.play(
-        k.animate.set_value(10.0), rate_func=there_and_back, run_time=5.0
+        k.animate.set_value(10.0), rate_func=there_and_back, run_time=3.0
     )
     self.next_slide()
 
@@ -238,7 +238,7 @@ def slide_10(self):
             lag_ratio=0.0,
         ),
         rate_func=linear,
-        run_time=5.0,
+        run_time=3.0,
     )
 
     # ---------- End ----------
