@@ -27,6 +27,7 @@ def slide_33(self):
     line1 = Tex(
         r"\mbox{Objectif : faire « tendre » les particules SPH pour se distribuer sous la}",
         color=BLACK,
+        tex_template=self.french_template,
         font_size=self.BODY_FONT_SIZE,
     )
     line1.next_to(
@@ -49,17 +50,11 @@ def slide_33(self):
 
     # --- Wait for user -----------------------------------------------------
     self.next_slide()
-    self.wait(0.1)
-    # --- Wait for input ---
-    self.next_slide()
 
     # --- Big centered question equation ---
     eq_question = Tex(r"$F_i^A(t) = ?$", font_size=72, color=BLACK)
     eq_question.move_to([0.0, 0.0, 0.0])
-    self.play(FadeIn(eq_question), run_time=0.3)
-
-    # --- Wait for input ---
-    self.next_slide()
+    self.play(FadeIn(eq_question), run_time=1.0)
 
     # --- Transform into full formula (MathTex split into parts) ---
     eq_full = MathTex(
