@@ -1,232 +1,220 @@
-# thesis_slides.py (now supports selective rendering)
-# 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
-# Texte conservé exactement tel qu'écrit par l'utilisateur.
-
-# flake8: noqa: F405
-import os
-
 import numpy as np
 import palette_colors as pc
 from manim import *
-from manim import logger
-from manim_slides import Slide
-from manim_tikz import Tikz
 from slide_registry import slide
-from sph_vis import show_sph_simulation
-from utils import (make_bullet_list, make_pro_cons, parse_selection,
-                   tikz_from_file)
 
 
 @slide(28)
 def slide_28(self):
-    """
-    Slide 28 : Mémoire partagée (shared memory)
-    Fixes requested:
-      1) From "Mémoire globale" draw ONE vertical line down to mid-height,
-         then two horizontal arrows from that point to each grid.
-      2) Move the two "Mémoire partagée" rectangles so their centers are
-         vertically halfway between the top rectangle and the grids.
-    """
     # --- Top bar -----------------------------------------------------------
-    bar, footer = self._top_bar("Mémoire partagée")
+    bar, footer = self._top_bar("Lancer de rayon et cœur RT")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # --- Usable area -------------------------------------------------------
+    # ==== Intro line ====
+    intro = Tex(
+        r"Le lancer de rayon : une technique de rendu",
+        font_size=self.BODY_FONT_SIZE,
+        color=BLACK,
+    )
+    intro.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    )
+    dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - intro.get_left()[0]
+    intro.shift(RIGHT * (dx + 0.6))
+
+    # ---------------- Camera + Circle layout -------------------------------
     bar_rect = bar.submobjects[0]
-    y_top = bar_rect.get_bottom()[1] - 0.15
+    y_top = bar_rect.get_bottom()[1] - 0.20
     x_left = -config.frame_width / 2 + 0.6
     x_right = config.frame_width / 2 - 0.6
     y_bottom = -config.frame_height / 2 + 0.6
     area_w = x_right - x_left
     area_h = y_top - y_bottom
-    mid_x = 0.0
 
-    # Helper: 4x4 grid
-    def make_grid(center, w, h, stroke=6):
-        outer = Rectangle(
-            width=w, height=h, color=BLACK, stroke_width=stroke
-        ).move_to(center)
-        lines = []
-        for i in range(1, 4):
-            x = outer.get_left()[0] + i * (w / 4.0)
-            lines.append(
-                Line(
-                    [x, outer.get_bottom()[1], 0],
-                    [x, outer.get_top()[1], 0],
-                    color=BLACK,
-                    stroke_width=stroke,
-                )
-            )
-        for i in range(1, 4):
-            y = outer.get_bottom()[1] + i * (h / 4.0)
-            lines.append(
-                Line(
-                    [outer.get_left()[0], y, 0],
-                    [outer.get_right()[0], y, 0],
-                    color=BLACK,
-                    stroke_width=stroke,
-                )
-            )
-        return VGroup(outer, *lines)
+    # Camera triangle (left, pointing RIGHT; aperture side on the RIGHT)
+    cam_w = min(1.6, area_w * 0.18)
+    cam_h = cam_w * 0.85
+    cam_center = np.array(
+        [x_left + cam_w * 1.1, (y_top + y_bottom) / 2.0 - 0.1, 0.0]
+    )
+    p_apex = cam_center + np.array([-cam_w * 0.58, 0.0, 0.0])  # rightmost
+    p_bl = cam_center + np.array(
+        [+cam_w * 0.58, -cam_h * 0.58, 0.0]
+    )  # back bottom-left
+    p_tl = cam_center + np.array(
+        [+cam_w * 0.58, +cam_h * 0.58, 0.0]
+    )  # back top-left
 
-    # --- Top: large "Mémoire globale" rectangle ----------------------------
-    top_rect_w = area_w * 0.55
-    top_rect_h = area_h * 0.14
-    top_rect_y = y_top - top_rect_h * 0.5 - 0.10
-    global_rect = RoundedRectangle(
-        width=top_rect_w,
-        height=top_rect_h,
-        corner_radius=0.18,
-        stroke_color=pc.blueGreen,
-        stroke_width=6,
-        fill_opacity=0.0,
-    ).move_to([mid_x, top_rect_y, 0.0])
-    global_label = Tex(
-        r"Mémoire globale",
-        color=pc.blueGreen,
-        font_size=self.BODY_FONT_SIZE + 6,
-    ).move_to(global_rect.get_center())
-    self.play(Create(global_rect), Create(global_label), run_time=0.5)
-    self.wait(0.1)
-    self.next_slide()
-    # --- Grids (left and right) -------------------------------------------
-    grid_w = min(5.2, area_w * 0.34)
-    grid_h = min(3.8, area_h * 0.30)
-    grids_y = y_bottom + grid_h * 0.5 + 0.60
-    gap_lr = area_w * 0.10
-    left_center = np.array([mid_x - (grid_w + gap_lr) * 0.6, grids_y, 0.0])
-    right_center = np.array([mid_x + (grid_w + gap_lr) * 0.6, grids_y, 0.0])
+    camera_tri = Polygon(p_apex, p_bl, p_tl, color=BLACK, stroke_width=4)
+    camera_label = Text(
+        "Camera", color=BLACK, weight=BOLD, font_size=self.BODY_FONT_SIZE
+    ).next_to(camera_tri, UP, buff=0.20)
 
-    grid_left = make_grid(left_center, grid_w, grid_h)
-    grid_right = make_grid(right_center, grid_w, grid_h)
-    self.play(Create(grid_left), Create(grid_right), run_time=0.5)
-    # --- Central vertical line + horizontal arrows (lent/large) ------------
-    # Vertical line from bottom of global_rect to mid-height between rect and grids
-    grid_top_y = grid_left[0].get_top()[1]
-    y_mid = 0.5 * (global_rect.get_bottom()[1] + grid_top_y)
-    # --- "Mémoire partagée" rectangles centered vertically between top+grids
-    small_w = grid_w * 0.55
-    small_h = grid_h * 0.28
+    # Big circle (right)
+    circle_r = min(area_h * 0.35, area_w * 0.25)
+    circle_center = np.array([x_right - circle_r * 0.8, cam_center[1], 0.0])
+    obj_circle = Circle(
+        radius=circle_r, color=pc.blueGreen, stroke_width=6
+    ).move_to(circle_center)
 
-    shared_y = y_mid  # centered vertically as requested
-
-    shared_left = RoundedRectangle(
-        width=small_w,
-        height=small_h,
-        corner_radius=0.18,
-        stroke_color=pc.jellyBean,
-        stroke_width=6,
-        fill_opacity=0.0,
-    ).move_to([left_center[0], shared_y, 0.0])
-
-    shared_right = RoundedRectangle(
-        width=small_w,
-        height=small_h,
-        corner_radius=0.18,
-        stroke_color=pc.jellyBean,
-        stroke_width=6,
-        fill_opacity=0.0,
-    ).move_to([right_center[0], shared_y, 0.0])
-
-    txt_shared_l = Tex(
-        r"Mémoire partagée",
-        color=pc.jellyBean,
-        font_size=self.BODY_FONT_SIZE - 6,
-    ).move_to(shared_left.get_center())
-    txt_shared_r = Tex(
-        r"Mémoire partagée",
-        color=pc.jellyBean,
-        font_size=self.BODY_FONT_SIZE - 6,
-    ).move_to(shared_right.get_center())
-
+    self.play(FadeIn(intro, shift=RIGHT))
+    # Draw geometry
     self.play(
-        Create(shared_left),
-        Create(shared_right),
-        FadeIn(txt_shared_l),
-        FadeIn(txt_shared_r),
-        run_time=1.0,
+        AnimationGroup(
+            Create(camera_tri, run_time=0.5),
+            FadeIn(camera_label, run_time=0.3),
+            Create(obj_circle, run_time=0.6),
+            lag_ratio=0.15,
+        ),
     )
 
     self.wait(0.1)
     self.next_slide()
 
-    central_line = Line(
-        [mid_x, global_rect.get_bottom()[1], 0.0],
-        [mid_x, grids_y, 0.0],
-        color=BLACK,
-        stroke_width=6,
-    )
+    # ---------------- Rays: start along the aperture edge ------------------
+    # Define a small "aperture segment" near the apex on the right side,
+    # then emit 3 rays from different points on that segment.
+    edge_top = p_tl
+    edge_bot = p_bl
+    start_pts = [
+        (1.0 - t) * edge_top + t * edge_bot for t in (0.15, 0.50, 0.85)
+    ]
 
-    # Horizontal arrows from the end of the vertical line to each grid center (x)
-    arrow_left = Arrow(
-        start=[mid_x, grids_y, 0.0],
-        end=[left_center[0] + 0.5 * grid_w, grids_y, 0.0],
-        color=BLACK,
-        stroke_width=6,
-        buff=0.0,
-    )
-    arrow_right = Arrow(
-        start=[mid_x, grids_y, 0.0],
-        end=[right_center[0] - 0.5 * grid_w, grids_y, 0.0],
-        color=BLACK,
-        stroke_width=6,
-        buff=0.0,
-    )
+    # Hit points on the LEFT side of the circle (angles around pi)
+    impact_angles = [np.pi * 0.92, np.pi, np.pi * 1.08]
+    impact_points = [
+        circle_center + circle_r * np.array([np.cos(a), np.sin(a), 0.0])
+        for a in impact_angles
+    ]
 
-    lbl_slow_l = Tex(
-        r"Débit lent\\Stockage large",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 4,
-    ).next_to(central_line, RIGHT, buff=0.12)
-    # lbl_slow_r = Tex(r"Débit lent\\Stockage large", color=BLACK, font_size=self.BODY_FONT_SIZE-4)\
-    # .next_to(central_line, LEFT, buff=0.12)
+    def grow_and_flash(start_pt, end_pt):
+        seg = VMobject().set_stroke(pc.uclaGold, width=6)
+        seg.set_points_as_corners(
+            np.vstack([start_pt, start_pt]).astype(float)
+        )
+        dot = Dot(end_pt, color=pc.uclaGold, radius=0.06)
 
-    self.play(
-        Create(central_line),
-        Create(arrow_left),
-        Create(arrow_right),
-        FadeIn(lbl_slow_l),
-        run_time=0.5,
-    )
+        def _update(
+            mob, alpha, s=start_pt.astype(float), e=end_pt.astype(float)
+        ):
+            p = s + (e - s) * alpha
+            mob.set_points_as_corners(np.vstack([s, p]))
+
+        return Succession(
+            FadeIn(seg, run_time=0.01),
+            UpdateFromAlphaFunc(seg, _update, run_time=0.50, rate_func=smooth),
+            Flash(dot, color=pc.uclaGold, flash_radius=0.18, time_width=0.25),
+            FadeOut(seg, run_time=0.25),
+            FadeOut(dot, run_time=0.20),
+        )
+
+    ray_sequences = [
+        grow_and_flash(s, e) for s, e in zip(start_pts, impact_points)
+    ]
+    self.play(LaggedStart(*ray_sequences, lag_ratio=0.22))
     self.wait(0.1)
-
-    # --- Wait for user -----------------------------------------------------
     self.next_slide()
 
-    # --- Fast/small arrows from shared boxes down to grids -----------------
-    fast_arrow_l = Arrow(
-        start=[left_center[0], shared_left.get_bottom()[1] - 0.02, 0.0],
-        end=[left_center[0], grid_left[0].get_top()[1] + 0.02, 0.0],
-        stroke_width=6,
-        color=BLACK,
-        buff=0.0,
+    # ---------------- Clear (keep bar) -------------------------------------
+    for mob in [intro, camera_tri, camera_label, obj_circle]:
+        if mob in self.mobjects:
+            self.remove(mob)
+
+    # ---------------- GPU title + two-column layout ------------------------
+    gpu_title = Text(
+        "GPU", color=BLACK, weight=BOLD, font_size=self.BODY_FONT_SIZE + 10
     )
-    fast_arrow_r = Arrow(
-        start=[right_center[0], shared_right.get_bottom()[1] - 0.02, 0.0],
-        end=[right_center[0], grid_right[0].get_top()[1] + 0.02, 0.0],
-        stroke_width=6,
-        color=BLACK,
-        buff=0.0,
+    gpu_title.next_to(self._current_bar, DOWN, buff=0.35)
+    self.play(FadeIn(gpu_title, run_time=0.3))
+
+    # Column centers
+    col_pad_x = 0.8
+    left_center = np.array(
+        [-config.frame_width * 0.22 - col_pad_x, -0.35, 0.0]
+    )
+    right_center = np.array(
+        [+config.frame_width * 0.22 + col_pad_x, -0.15, 0.0]
     )
 
-    lbl_fast_l = Tex(
-        r"Débit rapide\\Stockage léger",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 4,
-    ).next_to(fast_arrow_l, LEFT, buff=0.18)
-    lbl_fast_r = Tex(
-        r"Débit rapide\\Stockage léger",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE - 4,
-    ).next_to(fast_arrow_r, RIGHT, buff=0.18)
+    # -------- Left column: GPU grid (many squares), smaller & lower --------
+    left_title = Tex(
+        r"C\oe urs généraux", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
+    )
+    left_title.move_to([-config.frame_width * 0.22 - col_pad_x, 2.0, 0.0])
+
+    L_rows, L_cols = 8, 10
+    L_box_w, L_box_h = 0.42, 0.42  # smaller
+    L_gap = 0.07
+    L_total_w = L_cols * L_box_w + (L_cols - 1) * L_gap
+    L_total_h = L_rows * L_box_h + (L_rows - 1) * L_gap
+    L_top_left = left_center + np.array(
+        [-L_total_w / 2.0, +L_total_h / 2.0, 0.0]
+    )
+
+    left_boxes = []
+    for r in range(L_rows):
+        for c in range(L_cols):
+            x = L_top_left[0] + c * (L_box_w + L_gap) + L_box_w / 2.0
+            y = L_top_left[1] - r * (L_box_h + L_gap) - L_box_h / 2.0
+            rect = Rectangle(
+                width=L_box_w,
+                height=L_box_h,
+                stroke_opacity=1.0,
+                fill_opacity=0.03,
+                color=pc.blueGreen,
+            ).move_to([x, y, 0.0])
+            left_boxes.append(rect)
+
+    left_group = VGroup(*left_boxes)
 
     self.play(
-        Create(fast_arrow_l),
-        Create(fast_arrow_r),
-        FadeIn(lbl_fast_l),
-        FadeIn(lbl_fast_r),
-        run_time=1.0,
+        AnimationGroup(
+            FadeIn(left_title, run_time=0.3),
+            FadeIn(left_group, run_time=0.5),
+            lag_ratio=0.1,
+        )
+    )
+
+    self.next_slide()
+
+    # -------- Right column: 3x3 RT cores grid in pc.apple ------------------
+    right_title = Tex(
+        r"C\oe urs RT", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
+    )
+    right_title.move_to([+config.frame_width * 0.22 + col_pad_x, +2.0, 0.0])
+
+    R_rows, R_cols = 3, 3
+    R_box_w, R_box_h = 0.85, 0.85
+    R_gap = 0.12
+    R_total_w = R_cols * R_box_w + (R_cols - 1) * R_gap
+    R_total_h = R_rows * R_box_h + (R_rows - 1) * R_gap
+    R_top_left = right_center + np.array(
+        [-R_total_w / 2.0, +R_total_h / 2.0, 0.0]
+    )
+
+    right_boxes = []
+    for r in range(R_rows):
+        for c in range(R_cols):
+            x = R_top_left[0] + c * (R_box_w + R_gap) + R_box_w / 2.0
+            y = R_top_left[1] - r * (R_box_h + R_gap) - R_box_h / 2.0
+            rect = Rectangle(
+                width=R_box_w,
+                height=R_box_h,
+                stroke_opacity=1.0,
+                fill_opacity=0.10,
+                color=pc.apple,
+            ).move_to([x, y, 0.0])
+            right_boxes.append(rect)
+
+    right_group = VGroup(*right_boxes)
+
+    self.play(
+        AnimationGroup(
+            FadeIn(right_title, run_time=0.3),
+            FadeIn(right_group, run_time=0.5),
+            lag_ratio=0.1,
+        )
     )
 
     # --- End slide ---------------------------------------------------------

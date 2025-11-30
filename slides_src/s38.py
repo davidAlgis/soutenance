@@ -1,173 +1,274 @@
-import os
-
 import numpy as np
-from manim import (FadeIn, FadeOut, ImageMobject, Tex, ValueTracker, VGroup,
-                   config)
+import palette_colors as pc
+from manim import (BLACK, DOWN, LEFT, ORIGIN, RIGHT, UP, Create, FadeIn,
+                   FadeOut, Polygon, ReplacementTransform, Tex,
+                   TransformMatchingTex, VGroup, VMobject, config)
 from slide_registry import slide
+from utils import make_bullet_list  # Import the bullet list utility
 
 
 @slide(38)
 def slide_38(self):
     """
-    Résultat de l'hybridation (slide 38).
-
-    Steps:
-      1) Top bar.
-      2) Show 'Figures/surface_particles_mean.jpeg' centered, scaled to fit
-         within the slide with a small padding on all sides.
-      3) Next slide -> remove the first figure, show 'Figures/rb_pos.jpeg'
-         with the same padding rule.
-      4) Next slide -> remove the second figure, then play 'Figures/hybrid.gif'
-         with near-white set transparent. The GIF fills the slide horizontally:
-            - no padding on left, right, and bottom,
-            - a small padding below the top bar (top aligned to this line).
+    Perspectives (slide 40) — fixes:
+    - Uses utils.make_bullet_list to match slide 39 (BlueGreen Triangles).
+    - Lock bullet left-edges during transform so "Airy" keeps the same X.
+    - Increase outer padding for the big blueGreen rectangle.
     """
-    # --- Top bar ---
-    bar, footer = self._top_bar("Résultats de l'hybridation")
-    self.add(bar)
-    self.add_foreground_mobject(bar)
-    bar_rect = bar.submobjects[0]
 
-    # Slide geometry
+    # ---------- Layout & helpers
     full_w = config.frame_width
     full_h = config.frame_height
 
-    # Small generic padding for still images
-    PAD_ALL = 0.3
+    SLIDE_LEFT = -full_w * 0.5
+    SLIDE_RIGHT = full_w * 0.5
+    SLIDE_BOTTOM = -full_h * 0.5
 
-    # For the GIF: no padding on left/right/bottom, keep a small top padding
-    TOP_GIF_PAD = 0.15
+    LEFT_MARGIN = 0.6  # slide left margin for intro + bullets
+    TOP_PAD = 0.15  # spacing under bar
+    EDGE_INSET = 0.06  # tiny guard from absolute screen edges
+    BIG_PAD = 0.35  # << increased padding for the big blue rectangle >>
+    RECT_STROKE = 6
+    TEXT_FS = self.BODY_FONT_SIZE
+    LINE_BUFF = 0.35
 
-    # Usable rect for still images (with padding on all sides)
-    left_x_img = -full_w * 0.5 + PAD_ALL
-    right_x_img = full_w * 0.5 - PAD_ALL
-    bottom_y_img = -full_h * 0.5 + PAD_ALL
-    top_y_img = bar_rect.get_bottom()[1] - PAD_ALL
+    bar, footer = self._top_bar("Perspectives")
+    self.add(bar)
+    self.add_foreground_mobject(bar)
+    bar_rect = bar.submobjects[0]
+    usable_top_y = bar_rect.get_bottom()[1] - TOP_PAD
+    usable_bottom_y = SLIDE_BOTTOM + EDGE_INSET
 
-    usable_w_img = max(0.01, right_x_img - left_x_img)
-    usable_h_img = max(0.01, top_y_img - bottom_y_img)
-    center_img = np.array([0.0, 0.5 * (top_y_img + bottom_y_img), 0.0])
+    def left_align_to_slide(mobj, y_top):
+        """Left-align 'mobj' to slide margin; set its top Y to y_top."""
+        target_left = SLIDE_LEFT + LEFT_MARGIN
+        dx = target_left - mobj.get_left()[0]
+        dy = y_top - mobj.get_top()[1]
+        mobj.shift(np.array([dx, dy, 0.0]))
+        return mobj
 
-    # Helper to load/show a still image to fit in the padded area
-    def image_fit_center(path: str):
-        if not os.path.isfile(path):
-            msg = Tex(f"Fichier manquant : {path}", font_size=36)
-            msg.move_to(center_img)
-            return msg
-        mob = ImageMobject(path)
-        # Scale to fit within usable rect (preserve aspect)
-        if mob.width > 0:
-            mob.scale(usable_w_img / mob.width)
-        if mob.height > usable_h_img:
-            mob.scale(usable_h_img / mob.height)
-        mob.move_to(center_img)
-        return mob
+    def left_align_below(mobj, above, buff=LINE_BUFF):
+        """Left-align below 'above' with same slide margin."""
+        target_left = SLIDE_LEFT + LEFT_MARGIN
+        mobj.next_to(above, DOWN, buff=buff, aligned_edge=LEFT)
+        dx = target_left - mobj.get_left()[0]
+        mobj.shift(np.array([dx, 0.0, 0.0]))
+        return mobj
 
-    # # --- 1) First still image
-    # im1_path = "Figures/surface_particles_mean.jpeg"
-    # im1 = image_fit_center(im1_path)
-    # self.play(FadeIn(im1, run_time=0.3))  # ensure at least one animation
-    # self.next_slide()
+    def draw_rect_lines(x0, y0, x1, y1, color, width=RECT_STROKE, rt=0.22):
+        """Draw a rectangle line-by-line using 4 segments."""
+        l1 = (
+            VMobject()
+            .set_stroke(color=color, width=width)
+            .set_points_as_corners([[x0, y0, 0], [x1, y0, 0]])
+        )
+        l2 = (
+            VMobject()
+            .set_stroke(color=color, width=width)
+            .set_points_as_corners([[x1, y0, 0], [x1, y1, 0]])
+        )
+        l3 = (
+            VMobject()
+            .set_stroke(color=color, width=width)
+            .set_points_as_corners([[x1, y1, 0], [x0, y1, 0]])
+        )
+        l4 = (
+            VMobject()
+            .set_stroke(color=color, width=width)
+            .set_points_as_corners([[x0, y1, 0], [x0, y0, 0]])
+        )
+        self.play(Create(l1, run_time=rt))
+        self.play(Create(l2, run_time=rt))
+        self.play(Create(l3, run_time=rt))
+        self.play(Create(l4, run_time=rt))
+        return VGroup(l1, l2, l3, l4)
 
-    # --- 2) Second still image (swap)
-    im2_path = "Figures/rb_pos.jpeg"
-    im2 = image_fit_center(im2_path)
-    self.play(FadeIn(im2, run_time=0.25))
+    def place_label_top_left_of_rect(
+        label_tex, x0, y0, x1, y1, inset=(0.25, 0.22)
+    ):
+        """Left-align the label to the rectangle's top-left corner (x0,y1) with a small inset."""
+        target_left = x0 + inset[0]
+        target_top = y1 - inset[1]
+        dx = target_left - label_tex.get_left()[0]
+        dy = target_top - label_tex.get_top()[1]
+        label_tex.shift(np.array([dx, dy, 0.0]))
+        return label_tex
+
+    # ---------- Intro (left-aligned to slide)
+    intro = Tex(
+        "Passage de la preuve de concept à l'utilisation en production :",
+        color=BLACK,
+        font_size=TEXT_FS,
+    )
+    left_align_to_slide(intro, usable_top_y)
+    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE))
+
     self.next_slide()
 
-    # --- 3) GIF with white made transparent, filling the slide width (no L/R/B padding),
-    #         aligned so the top sits just under the bar (keep small top padding).
-    # Remove second image
-    self.play(FadeOut(im2, run_time=0.25))
+    # ---------- Bullets V1 (BlueGreen Triangles)
+    bullets_v1 = make_bullet_list(
+        ["2D", "Airy"],
+        bullet_color=pc.blueGreen,
+        font_size=TEXT_FS,
+        line_gap=LINE_BUFF,
+        left_pad=0.25,
+    )
+    left_align_below(bullets_v1, intro, buff=LINE_BUFF)
 
-    # GIF usable "frame"
-    left_x_gif = -full_w * 0.5
-    right_x_gif = full_w * 0.5
-    bottom_y_gif = -full_h * 0.5
-    top_y_gif = bar_rect.get_bottom()[1] - TOP_GIF_PAD
+    self.add(bullets_v1)
+    self.wait(0.1)
+    self.next_slide()
 
-    usable_w_gif = max(0.01, right_x_gif - left_x_gif)  # == full_w
-    # Height is not constrained; we align top to top_y_gif and allow it to extend downward.
+    # ---------- Bullets V2 (BlueGreen Triangles with Arrows)
+    bullets_v2 = make_bullet_list(
+        [r"2D $\rightarrow$ 3D", r"Airy $\rightarrow$ Tessendorf"],
+        bullet_color=pc.blueGreen,
+        font_size=TEXT_FS,
+        line_gap=LINE_BUFF,
+        left_pad=0.25,
+    )
 
-    # Load GIF frames and build transparent ImageMobjects
-    from PIL import Image, ImageSequence
+    # --- Lock left edges before Transform so the left X doesn't move off-slide
+    # This loops over the rows (each row is a VGroup of [bullet, text])
+    for b_old, b_new in zip(bullets_v1, bullets_v2):
+        # Start by matching Y/center to avoid vertical pop
+        b_new.move_to(b_old.get_center())
+        # Then correct X so left edge matches exactly (locking the bullet position)
+        dx_left = b_old.get_left()[0] - b_new.get_left()[0]
+        b_new.shift(np.array([dx_left, 0.0, 0.0]))
 
-    gif_path = "Figures/hybrid.gif"
-    if not os.path.isfile(gif_path):
-        # Graceful fallback
-        msg = Tex("Fichier manquant : Figures/hybrid.gif", font_size=36)
-        msg.move_to(np.array([0.0, 0.5 * (top_y_gif + bottom_y_gif), 0.0]))
-        self.play(FadeIn(msg, run_time=0.2))
-        self.next_slide()
-        return
+    self.play(
+        *[
+            ReplacementTransform(b1, b2)
+            for b1, b2 in zip(bullets_v1, bullets_v2)
+        ],
+        run_time=0.7,
+    )
+    bullets_v1 = bullets_v2
 
-    pil_img = Image.open(gif_path)
-    pil_frames = []
-    durations = []
-    for frame in ImageSequence.Iterator(pil_img):
-        dur_ms = frame.info.get("duration", 100)
-        durations.append(max(0.01, dur_ms / 1000.0))
-        pil_frames.append(frame.convert("RGBA"))
+    self.next_slide()
 
-    # Key near-white to transparent
-    def rgba_white_to_alpha(arr_rgba: np.ndarray, tol=14) -> np.ndarray:
-        arr = arr_rgba.copy()
-        rgb = arr[..., :3]
-        a = arr[..., 3]
-        mask = (
-            (rgb[..., 0] >= 255 - tol)
-            & (rgb[..., 1] >= 255 - tol)
-            & (rgb[..., 2] >= 255 - tol)
-        )
-        a[mask] = 0
-        arr[..., 3] = a
-        return arr
+    # ---------- Clear (keep bar)
+    self.play(FadeOut(VGroup(intro, bullets_v1), run_time=0.4))
 
-    # Build ImageMobjects for each frame, scaled to fill FULL WIDTH.
-    # Then align each frame's TOP to top_y_gif (small padding under the bar).
-    frames_mobs = []
-    for fr in pil_frames:
-        arr = np.array(fr, dtype=np.uint8)
-        arr = rgba_white_to_alpha(arr, tol=14)
-        mob = ImageMobject(arr)
-        if mob.width > 0:
-            mob.scale(usable_w_gif / mob.width)  # force full width
-        # Align top to the padded top line
-        dy = top_y_gif - mob.get_top()[1]
-        mob.shift(np.array([0.0, dy, 0.0]))
-        frames_mobs.append(mob)
+    # ---------- Big blueGreen rectangle with INCREASED padding from slide edges
+    # Leave a bigger margin on all sides under the bar
+    X0 = SLIDE_LEFT + BIG_PAD
+    X1 = SLIDE_RIGHT - BIG_PAD
+    Y1 = usable_top_y - BIG_PAD
+    Y0 = usable_bottom_y + BIG_PAD + 0.8
 
-    if not frames_mobs:
-        msg = Tex("Impossible de lire : Figures/hybrid.gif", font_size=36)
-        msg.move_to(np.array([0.0, 0.5 * (top_y_gif + bottom_y_gif), 0.0]))
-        self.play(FadeIn(msg, run_time=0.2))
-        self.next_slide()
-        return
+    big_rect_lines = draw_rect_lines(
+        X0, Y0, X1, Y1, color=pc.blueGreen, width=RECT_STROKE, rt=0.18
+    )
 
-    # Single display object driven by time
-    display = frames_mobs[0].copy()
-    self.add(display)
+    # ---------- "Tessendorf" label (left-aligned to big-rect top-left)
+    big_label = Tex("Tessendorf", color=pc.blueGreen, font_size=TEXT_FS)
+    place_label_top_left_of_rect(big_label, X0, Y0, X1, Y1)
+    self.add(big_label)
 
-    durations = np.array(durations, dtype=float)
-    cum = np.cumsum(durations)
-    total = float(cum[-1])
-    t = ValueTracker(0.0)
+    x_min = -config.frame_width / 2.0
+    x_max = config.frame_width / 2.0
+    sample_n = 800
+    X = np.linspace(x_min, x_max, sample_n)
+    Y = 0.2 * np.cos(1.2 * X)
+    pts = np.column_stack([X, Y, np.zeros_like(X)])
+    wave = (
+        VMobject()
+        .set_points_smoothly(pts)
+        .set_stroke(color=pc.blueGreen, width=4)
+    )
+    self.play(Create(wave))
 
-    def idx_from_time(tt: float) -> int:
-        if total <= 0.0:
-            return 0
-        x = tt % total
-        i = int(np.searchsorted(cum, x, side="right"))
-        return min(i, len(frames_mobs) - 1)
+    self.wait(0.1)
+    self.next_slide()
 
-    def updater(m):
-        m.become(frames_mobs[idx_from_time(t.get_value())])
+    # --- Boat centered on the curve at x=0 (slightly scaled down) ---
+    boat_shape = [
+        [-1.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [2.0, 1.0, 0.0],
+        [0.5, 1.0, 0.0],
+        [0.0, 1.5, 0.0],
+        [-0.5, 1.0, 0.0],
+        [-2.0, 1.0, 0.0],
+    ]
+    boat = Polygon(
+        *[np.array(p) for p in boat_shape], color=pc.uclaGold, stroke_width=4
+    )
+    boat.set_fill(pc.uclaGold, opacity=1.0)
+    boat.move_to(np.array([0.0, 0.2 * np.cos(0.0), 0.0]))
+    boat.scale(0.4)  # fix: reduce boat size a bit
+    self.add_foreground_mobject(boat)
+    self.add(boat)
 
-    display.add_updater(updater)
+    # ---------- Center small uclaGold rectangle + label "SPH"
+    w_big = X1 - X0
+    h_big = Y1 - Y0
+    small_w = w_big * 0.55
+    small_h = h_big * 0.55
+    cx, cy = (X0 + X1) * 0.5, (Y0 + Y1) * 0.5
+    sx0, sy0 = cx - small_w * 0.5, cy - small_h * 0.5
+    sx1, sy1 = cx + small_w * 0.5, cy + small_h * 0.5
 
-    # Play one full pass
-    self.play(t.animate.set_value(total), run_time=total)
-    # --- End of slide ---
+    small_rect_lines = draw_rect_lines(
+        sx0, sy0, sx1, sy1, color=pc.uclaGold, width=RECT_STROKE, rt=0.16
+    )
+
+    small_label = Tex("SPH", color=pc.uclaGold, font_size=TEXT_FS)
+    place_label_top_left_of_rect(small_label, sx0, sy0, sx1, sy1)
+    self.add(small_label)
+
+    self.wait(0.1)
+    self.next_slide()
+
+    # ---------- Small rect: to fernGreen; "SPH" -> "LBM" (fernGreen)
+    self.play(
+        *[
+            l.animate.set_stroke(color=pc.fernGreen, width=RECT_STROKE)
+            for l in small_rect_lines
+        ],
+        run_time=0.4,
+    )
+    lbm_label = Tex("LBM", color=pc.fernGreen, font_size=TEXT_FS)
+    lbm_label.move_to(small_label.get_center())
+    self.play(TransformMatchingTex(small_label, lbm_label), run_time=0.5)
+    place_label_top_left_of_rect(lbm_label, sx0, sy0, sx1, sy1)
+    small_label = lbm_label
+
+    self.wait(0.1)
+    self.next_slide()
+
+    # ---------- "LBM" -> "?" (jellyBean), rect -> jellyBean, scale up, keep "?" at new top-left
+    SCALE = 1.4
+    new_w = small_w * SCALE
+    new_h = small_h * SCALE
+    nsx0, nsy0 = cx - new_w * 0.5, cy - new_h * 0.5
+    nsx1, nsy1 = cx + new_w * 0.5, cy + new_h * 0.5
+
+    # target top-left for label after scaling
+    target_tl = np.array([nsx0 + 0.25, nsy1 - 0.22, 0.0])
+
+    q_label = Tex("?", color=pc.jellyBean, font_size=TEXT_FS)
+    q_label.move_to(small_label.get_center())
+
+    self.play(
+        *[
+            l.animate.set_stroke(color=pc.jellyBean, width=RECT_STROKE)
+            for l in small_rect_lines
+        ],
+        TransformMatchingTex(small_label, q_label),
+        run_time=0.45,
+    )
+    small_label = q_label
+
+    self.play(
+        small_rect_lines.animate.scale(
+            SCALE, about_point=np.array([cx, cy, 0.0])
+        ),
+        small_label.animate.move_to(target_tl),
+        run_time=0.6,
+    )
     self.pause()
     self.clear()
     self.next_slide()

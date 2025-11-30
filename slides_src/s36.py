@@ -1,187 +1,172 @@
+import os
+
 import numpy as np
-import palette_colors as pc
-from manim import *
+from manim import (FadeIn, FadeOut, ImageMobject, Tex, ValueTracker, VGroup,
+                   config)
 from slide_registry import slide
 
 
 @slide(36)
 def slide_36(self):
     """
-    Slide 36: Découpage du domaine en zones.
+    Résultat de l'hybridation (slide 38).
 
-    Fixes:
-      1) Wave fills full horizontal span of the frame.
-      2) fernGreen outer rectangle top stays below the intro line.
-      3) Boat slightly scaled down.
-      4) Add final pause/clear/next_slide.
+    Steps:
+      1) Top bar.
+      2) Show 'Figures/surface_particles_mean.jpeg' centered, scaled to fit
+         within the slide with a small padding on all sides.
+      3) Next slide -> remove the first figure, show 'Figures/rb_pos.jpeg'
+         with the same padding rule.
+      4) Next slide -> remove the second figure, then play 'Figures/hybrid.gif'
+         with near-white set transparent. The GIF fills the slide horizontally:
+            - no padding on left, right, and bottom,
+            - a small padding below the top bar (top aligned to this line).
     """
     # --- Top bar ---
-    bar, footer = self._top_bar("Découpage du domaine en zones")
+    bar, footer = self._top_bar("Résultats de l'hybridation")
     self.add(bar)
     self.add_foreground_mobject(bar)
+    bar_rect = bar.submobjects[0]
 
-    # --- Intro line ---
-    self.start_body()
-    intro = Tex(
-        r"Découpage en trois zones :",
-        font_size=self.BODY_FONT_SIZE,
-        color=BLACK,
-    )
-    intro.next_to(
-        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
-    )
-    dx = (
-        bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
-    ) - intro.get_left()[0]
-    intro.shift(RIGHT * dx)
-    self.play(FadeIn(intro, shift=RIGHT * self.SHIFT_SCALE))
+    # Slide geometry
+    full_w = config.frame_width
+    full_h = config.frame_height
 
-    # Pause
+    # Small generic padding for still images
+    PAD_ALL = 0.3
+
+    # For the GIF: no padding on left/right/bottom, keep a small top padding
+    TOP_GIF_PAD = 0.15
+
+    # Usable rect for still images (with padding on all sides)
+    left_x_img = -full_w * 0.5 + PAD_ALL
+    right_x_img = full_w * 0.5 - PAD_ALL
+    bottom_y_img = -full_h * 0.5 + PAD_ALL
+    top_y_img = bar_rect.get_bottom()[1] - PAD_ALL
+
+    usable_w_img = max(0.01, right_x_img - left_x_img)
+    usable_h_img = max(0.01, top_y_img - bottom_y_img)
+    center_img = np.array([0.0, 0.5 * (top_y_img + bottom_y_img), 0.0])
+
+    # Helper to load/show a still image to fit in the padded area
+    def image_fit_center(path: str):
+        if not os.path.isfile(path):
+            msg = Tex(f"Fichier manquant : {path}", font_size=36)
+            msg.move_to(center_img)
+            return msg
+        mob = ImageMobject(path)
+        # Scale to fit within usable rect (preserve aspect)
+        if mob.width > 0:
+            mob.scale(usable_w_img / mob.width)
+        if mob.height > usable_h_img:
+            mob.scale(usable_h_img / mob.height)
+        mob.move_to(center_img)
+        return mob
+
+    # # --- 1) First still image
+    # im1_path = "Figures/surface_particles_mean.jpeg"
+    # im1 = image_fit_center(im1_path)
+    # self.play(FadeIn(im1, run_time=0.3))  # ensure at least one animation
+    # self.next_slide()
+
+    # --- 2) Second still image (swap)
+    im2_path = "Figures/rb_pos.jpeg"
+    im2 = image_fit_center(im2_path)
+    self.play(FadeIn(im2, run_time=0.25))
     self.next_slide()
 
-    # --- Wave curve: y = 0.2*cos(1.2 x), spanning full frame width ---
-    x_min = -config.frame_width / 2.0
-    x_max = config.frame_width / 2.0
-    sample_n = 800
-    X = np.linspace(x_min, x_max, sample_n)
-    Y = 0.2 * np.cos(1.2 * X)
-    pts = np.column_stack([X, Y, np.zeros_like(X)])
-    wave = (
-        VMobject()
-        .set_points_smoothly(pts)
-        .set_stroke(color=pc.blueGreen, width=4)
-    )
-    self.play(Create(wave))
+    # --- 3) GIF with white made transparent, filling the slide width (no L/R/B padding),
+    #         aligned so the top sits just under the bar (keep small top padding).
+    # Remove second image
+    self.play(FadeOut(im2, run_time=0.25))
 
-    # --- Boat centered on the curve at x=0 (slightly scaled down) ---
-    boat_shape = [
-        [-1.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [2.0, 1.0, 0.0],
-        [0.5, 1.0, 0.0],
-        [0.0, 1.5, 0.0],
-        [-0.5, 1.0, 0.0],
-        [-2.0, 1.0, 0.0],
-    ]
-    boat = Polygon(
-        *[np.array(p) for p in boat_shape], color=pc.uclaGold, stroke_width=4
-    )
-    boat.set_fill(pc.uclaGold, opacity=1.0)
-    boat.move_to(np.array([0.0, 0.2 * np.cos(0.0), 0.0]))
-    boat.scale(0.4)  # fix: reduce boat size a bit
-    self.add_foreground_mobject(boat)
-    self.play(FadeIn(boat))
-    self.wait(0.1)
+    # GIF usable "frame"
+    left_x_gif = -full_w * 0.5
+    right_x_gif = full_w * 0.5
+    bottom_y_gif = -full_h * 0.5
+    top_y_gif = bar_rect.get_bottom()[1] - TOP_GIF_PAD
 
-    # Pause
-    self.next_slide()
+    usable_w_gif = max(0.01, right_x_gif - left_x_gif)  # == full_w
+    # Height is not constrained; we align top to top_y_gif and allow it to extend downward.
 
-    # --- fernGreen border rectangle, top kept below the intro text ---
-    margin_lr = 0.3
-    margin_bottom = 0.3
-    top_gap = 0.25  # distance below intro line
-    top_y = intro.get_bottom()[1] - top_gap
-    left_x = -config.frame_width / 2.0 + margin_lr
-    right_x = config.frame_width / 2.0 - margin_lr
-    bottom_y = -config.frame_height / 2.0 + margin_bottom + 0.5
+    # Load GIF frames and build transparent ImageMobjects
+    from PIL import Image, ImageSequence
 
-    outer_ul = np.array([left_x, top_y, 0.0])
-    outer_ur = np.array([right_x, top_y, 0.0])
-    outer_lr = np.array([right_x, bottom_y, 0.0])
-    outer_ll = np.array([left_x, bottom_y, 0.0])
+    gif_path = "Figures/hybrid.gif"
+    if not os.path.isfile(gif_path):
+        # Graceful fallback
+        msg = Tex("Fichier manquant : Figures/hybrid.gif", font_size=36)
+        msg.move_to(np.array([0.0, 0.5 * (top_y_gif + bottom_y_gif), 0.0]))
+        self.play(FadeIn(msg, run_time=0.2))
+        self.next_slide()
+        return
 
-    o_top = Line(outer_ul, outer_ur, color=pc.fernGreen, stroke_width=6)
-    o_right = Line(outer_ur, outer_lr, color=pc.fernGreen, stroke_width=6)
-    o_bottom = Line(outer_lr, outer_ll, color=pc.fernGreen, stroke_width=6)
-    o_left = Line(outer_ll, outer_ul, color=pc.fernGreen, stroke_width=6)
-    o_static = Polygon(
-        outer_ul,
-        outer_ur,
-        outer_lr,
-        outer_ll,
-        color=pc.fernGreen,
-        stroke_width=6,
-    )
-    label_static = Tex("Zone statique", color=pc.fernGreen, font_size=36)
-    label_static.next_to(o_top, DOWN, buff=0.18).align_to(o_left, LEFT).shift(
-        RIGHT * 0.18
-    )
-    self.play(
-        LaggedStart(
-            Create(o_static),
-            lag_ratio=0.15,
-        ),
-        FadeIn(label_static),
-    )
+    pil_img = Image.open(gif_path)
+    pil_frames = []
+    durations = []
+    for frame in ImageSequence.Iterator(pil_img):
+        dur_ms = frame.info.get("duration", 100)
+        durations.append(max(0.01, dur_ms / 1000.0))
+        pil_frames.append(frame.convert("RGBA"))
 
-    self.wait(0.1)
-    # Pause
-    self.next_slide()
+    # Key near-white to transparent
+    def rgba_white_to_alpha(arr_rgba: np.ndarray, tol=14) -> np.ndarray:
+        arr = arr_rgba.copy()
+        rgb = arr[..., :3]
+        a = arr[..., 3]
+        mask = (
+            (rgb[..., 0] >= 255 - tol)
+            & (rgb[..., 1] >= 255 - tol)
+            & (rgb[..., 2] >= 255 - tol)
+        )
+        a[mask] = 0
+        arr[..., 3] = a
+        return arr
 
-    # --- Inner blueGreen rectangle surrounding the (now smaller) boat ---
-    pad_y = 0.6
-    pad_x = 1.2
-    in_ul = boat.get_corner(UL) + np.array([-pad_x, pad_y, 0.0])
-    in_ur = boat.get_corner(UR) + np.array([pad_x, pad_y, 0.0])
-    in_lr = boat.get_corner(DR) + np.array([pad_x, -pad_y, 0.0])
-    in_ll = boat.get_corner(DL) + np.array([-pad_x, -pad_y, 0.0])
+    # Build ImageMobjects for each frame, scaled to fill FULL WIDTH.
+    # Then align each frame's TOP to top_y_gif (small padding under the bar).
+    frames_mobs = []
+    for fr in pil_frames:
+        arr = np.array(fr, dtype=np.uint8)
+        arr = rgba_white_to_alpha(arr, tol=14)
+        mob = ImageMobject(arr)
+        if mob.width > 0:
+            mob.scale(usable_w_gif / mob.width)  # force full width
+        # Align top to the padded top line
+        dy = top_y_gif - mob.get_top()[1]
+        mob.shift(np.array([0.0, dy, 0.0]))
+        frames_mobs.append(mob)
 
-    i_top = Line(in_ul, in_ur, color=pc.blueGreen, stroke_width=6)
-    i_right = Line(in_ur, in_lr, color=pc.blueGreen, stroke_width=6)
-    i_bottom = Line(in_lr, in_ll, color=pc.blueGreen, stroke_width=6)
-    i_left = Line(in_ll, in_ul, color=pc.blueGreen, stroke_width=6)
-    i_sph = Polygon(
-        in_ul, in_ur, in_lr, in_ll, color=pc.blueGreen, stroke_width=6
-    )
+    if not frames_mobs:
+        msg = Tex("Impossible de lire : Figures/hybrid.gif", font_size=36)
+        msg.move_to(np.array([0.0, 0.5 * (top_y_gif + bottom_y_gif), 0.0]))
+        self.play(FadeIn(msg, run_time=0.2))
+        self.next_slide()
+        return
 
-    label_sph = Tex("Zone SPH", color=pc.blueGreen, font_size=36)
-    label_sph.next_to(i_top, DOWN, buff=0.14).align_to(i_left, LEFT).shift(
-        RIGHT * 0.14
-    )
+    # Single display object driven by time
+    display = frames_mobs[0].copy()
+    self.add(display)
 
-    self.play(
-        LaggedStart(
-            Create(i_sph),
-            lag_ratio=0.15,
-        ),
-        FadeIn(label_sph),
-    )
+    durations = np.array(durations, dtype=float)
+    cum = np.cumsum(durations)
+    total = float(cum[-1])
+    t = ValueTracker(0.0)
 
-    self.wait(0.1)
-    # Pause
-    self.next_slide()
+    def idx_from_time(tt: float) -> int:
+        if total <= 0.0:
+            return 0
+        x = tt % total
+        i = int(np.searchsorted(cum, x, side="right"))
+        return min(i, len(frames_mobs) - 1)
 
-    # --- Intermediate uclaGold rectangle between inner and outer ---
-    # Interpolate between inner corners and outer corners so it sits between.
-    def mid(a, b, t=0.5):
-        return (1.0 - t) * a + t * b
+    def updater(m):
+        m.become(frames_mobs[idx_from_time(t.get_value())])
 
-    g_ul = mid(in_ul, outer_ul, t=0.5)
-    g_ur = mid(in_ur, outer_ur, t=0.5)
-    g_lr = mid(in_lr, outer_lr, t=0.5)
-    g_ll = mid(in_ll, outer_ll, t=0.5)
+    display.add_updater(updater)
 
-    g_top = Line(g_ul, g_ur, color=pc.uclaGold, stroke_width=6)
-    g_right = Line(g_ur, g_lr, color=pc.uclaGold, stroke_width=6)
-    g_bottom = Line(g_lr, g_ll, color=pc.uclaGold, stroke_width=6)
-    g_left = Line(g_ll, g_ul, color=pc.uclaGold, stroke_width=6)
-    g_tampon = Polygon(
-        g_ul, g_ur, g_lr, g_ll, color=pc.uclaGold, stroke_width=6
-    )
-    label_buffer = Tex("Zone tampon", color=pc.uclaGold, font_size=36)
-    label_buffer.next_to(g_top, DOWN, buff=0.16).align_to(g_left, LEFT).shift(
-        RIGHT * 0.16
-    )
-
-    self.play(
-        LaggedStart(
-            Create(g_tampon),
-            lag_ratio=0.15,
-        ),
-        FadeIn(label_buffer),
-    )
-
-    self.wait(0.1)
+    # Play one full pass
+    self.play(t.animate.set_value(total), run_time=total)
     # --- End of slide ---
     self.pause()
     self.clear()

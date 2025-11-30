@@ -1,3 +1,7 @@
+# thesis_slides.py (now supports selective rendering)
+# 41 slides pour manim-slides, 1 slide = 1 méthode, aucun effet ni animation.
+# Texte conservé exactement tel qu'écrit par l'utilisateur.
+
 # flake8: noqa: F405
 import os
 
@@ -16,244 +20,203 @@ from utils import (make_bullet_list, make_pro_cons, parse_selection,
 @slide(23)
 def slide_23(self):
     """
-    Slide 23 — Incompressibilité et forces de pressions
-    CSV expected at states_sph/particles.csv with columns:
-      Particle,X,Y,color r,color g,color b,"X quincunx","Y quincunx"
-    All X/Y/quincunx in [0,1].
+    Slide 24: Diffusion et forces de viscosités.
+
+    Steps:
+    1) Top bar + two left-aligned lines.
+    2) Wait, then split remaining area into two columns with a vertical line
+       (animated bottom-to-top). Left: "Faiblement visqueux" + bullets.
+       Right: "Hautement visqueux" + bullets.
+    3) Wait, then clear columns and divider; show center equation.
+    4) Wait, then transform the equation to the detailed SPH form.
     """
-    import csv
-
-    import numpy as np
-    from manim.utils.color import interpolate_color, rgb_to_color
-    from manim.utils.rate_functions import linear
-
-    # ---------- Top bar ----------
-    bar, footer = self._top_bar("Incompressibilité et forces de pression")
+    # --- Top bar -----------------------------------------------------------
+    bar, footer = self._top_bar("Diffusion et forces de viscosité")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # ---- Usable area below the bar ----
+    # --- Usable area below bar --------------------------------------------
     bar_rect = bar.submobjects[0]
     y_top = bar_rect.get_bottom()[1] - 0.15
     x_left = -config.frame_width / 2 + 0.6
     x_right = config.frame_width / 2 - 0.6
     y_bottom = -config.frame_height / 2 + 0.6
-    area_w = x_right - x_left
+    anchor_x = x_left + self.DEFAULT_PAD
 
-    # ---------- Equation (center under bar) ----------
-    eq_center = np.array([x_left + 0.5 * area_w, y_top - 0.35, 0.0])
-    eq = MathTex(
-        r"\left|\hat{\rho}-\rho_0\right| \;=\; ?",
+    # Prefix (placed exactly like your original code using anchor_x and the top bar)
+    line1_prefix = Tex(
+        "Propriété de l'eau : ",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 10,
-    ).move_to(eq_center)
-    self.play(Write(eq), run_time=0.45)
-    self.wait(0.1)
+        font_size=self.BODY_FONT_SIZE,
+    )
+    line1_prefix.next_to(
+        self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
+    )
+    line1_prefix.shift(RIGHT * (anchor_x - line1_prefix.get_left()[0]))
+
+    self.play(
+        FadeIn(line1_prefix, shift=self.SHIFT_SCALE * RIGHT, run_time=0.3)
+    )
     self.next_slide()
 
-    eq2 = MathTex(
-        r"\left|\hat{\rho}-1027\right| \;=\; ?",
+    # Suffix appended; keep zero horizontal gap to look like a single sentence
+    line1_suffix = Tex(
+        " faiblement visqueux.",
         color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 10,
-    ).move_to(eq_center)
-    self.play(Transform(eq, eq2), run_time=0.45)
-    # self.wait(0.1)
-    # self.next_slide()
-    # self.remove(eq, eq2)
-    # ---------- Load particles (cap to 30) ----------
-    pts, cols, qxqy = [], [], []
+        font_size=self.BODY_FONT_SIZE,
+    )
+    line1_suffix.next_to(line1_prefix, RIGHT, buff=0.1).align_to(
+        line1_prefix, DOWN
+    )
 
-    with open(
-        "states_sph/particles.csv", "r", encoding="utf-8", newline=""
-    ) as f:
-        rd = csv.DictReader(f)
-        for row in rd:
-            if len(pts) >= 30:
-                break
-            x = float(row["X"])
-            y = float(row["Y"])
-            pts.append((x, y))
+    # Animate only the new part
+    self.play(Write(line1_suffix, run_time=0.35))
 
-            cr = float(row.get("color r", "0.0"))
-            cg = float(row.get("color g", "0.0"))
-            cb = float(row.get("color b", "0.0"))
-            if max(cr, cg, cb) > 1.0:
-                cr, cg, cb = cr / 255.0, cg / 255.0, cb / 255.0
-            cols.append((cr, cg, cb))
+    line2 = Tex(
+        r"La viscosité représente la résistance à l'écoulement.",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE,
+    )
+    line2.next_to(
+        line1_prefix, DOWN, buff=self.BODY_LINE_BUFF, aligned_edge=LEFT
+    )
+    line2.shift(RIGHT * (anchor_x - line2.get_left()[0]))
 
-            qx = float(row.get("X quincunx", x))
-            qy = float(row.get("Y quincunx", y))
-            qxqy.append((qx, qy))
+    self.play(FadeIn(line2, shift=self.SHIFT_SCALE * RIGHT), run_time=0.5)
 
-    # ---------- Field rect (below equation) ----------
-    field_top = eq_center[1] - 0.45
-    field_bottom = y_bottom
-    field_left = x_left
-    field_right = x_right
-    fw = field_right - field_left
-    fh = field_top - field_bottom
+    # --- Wait for user -----------------------------------------------------
+    self.next_slide()
 
-    pad = 0.12
-    fL, fR = field_left + pad, field_right - pad
-    fB, fT = field_bottom + pad, field_top - pad
-    fW, fH = fR - fL, fT - fB
+    # --- Two columns with vertical divider --------------------------------
+    # Column area bounds
+    content_top_y = line2.get_bottom()[1] - 0.35
+    content_bottom_y = y_bottom + 0.35
+    content_h = max(1.8, content_top_y - content_bottom_y)
+    content_center_y = 0.5 * (content_top_y + content_bottom_y)
 
-    def to_field(p01):
-        return np.array([fL + p01[0] * fW, fB + p01[1] * fH, 0.0])
+    # Divider x, animated bottom->top
+    divider_x = 0.0
+    divider = Line(
+        start=[divider_x, content_bottom_y, 0.0],
+        end=[divider_x, content_top_y, 0.0],
+        color=BLACK,
+        stroke_width=6,
+    )
+    self.play(Create(divider, run_time=0.7))
 
-    Pw = [to_field(p) for p in pts]
-    Qw = [to_field(p) for p in qxqy]
-    r_vis = min(fW, fH) / 70.0
+    # Column centers
+    left_cx = x_left + 0.5 * (divider_x - x_left) - 0.2
+    right_cx = x_right - 0.5 * (x_right - divider_x) + 0.2
 
-    dots = [
-        Dot(Pw[i], radius=r_vis, color=pc.blueGreen, fill_opacity=1.0)
-        for i in range(len(Pw))
-    ]
+    # Helpers to build a bullet list with Tex rows
+    def make_bullets(
+        labels,
+        font_size,
+        *,
+        bullet_color=pc.blueGreen,
+        line_gap=0.14,
+        left_pad=0.18
+    ):
+        """
+        Build a bullet list using utils.make_bullet_list (triangle bullets).
+        `labels` can be:
+          - list[str]
+          - or list[tuple[str, Any]] (the extra value is ignored for compatibility).
+        """
+        items = [lbl if isinstance(lbl, str) else lbl[0] for lbl in labels]
+        return make_bullet_list(
+            items,
+            bullet_color=bullet_color,
+            font_size=font_size,
+            line_gap=line_gap,
+            left_pad=left_pad,
+        )
 
-    # Grow particles in
+    # Left column: title on 2 lines + bullets
+    left_title = Tex(
+        r"Faiblement visqueux",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 4,
+    )
+    left_title.move_to([left_cx, content_center_y + 2.0, 0.0])
+
+    left_bullets = make_bullets(
+        [
+            (r"Cognac", BLACK),
+            (r"Eau", pc.blueGreen),
+            (r"Lait", BLACK),
+        ],
+        font_size=self.BODY_FONT_SIZE,
+    )
+    left_bullets.next_to(left_title, DOWN, buff=0.28, aligned_edge=LEFT)
+    # Re-anchor bullets to column center x
+    left_bullets.shift(LEFT * 1.5)
+
+    # Right column: title on 2 lines + bullets
+    right_title = Tex(
+        r"Hautement visqueux",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 4,
+    )
+    right_title.move_to([right_cx, content_center_y + 2.0, 0.0])
+
+    right_bullets = make_bullets(
+        [
+            (r"Huile", BLACK),
+            (r"Miel", BLACK),
+            (r"Mayonnaise", BLACK),
+        ],
+        font_size=self.BODY_FONT_SIZE,
+    )
+    right_bullets.next_to(right_title, DOWN, buff=0.28, aligned_edge=LEFT)
+    right_bullets.shift(LEFT * 1.5)
+
+    cols_group = VGroup(
+        left_title, left_bullets, right_title, right_bullets, divider
+    )
     self.play(
         LaggedStart(
-            *[GrowFromCenter(d) for d in dots], lag_ratio=0.03, run_time=0.9
+            FadeIn(left_title, shift=self.SHIFT_SCALE * RIGHT),
+            FadeIn(left_bullets, shift=self.SHIFT_SCALE * RIGHT),
+            FadeIn(right_title, shift=self.SHIFT_SCALE * LEFT),
+            FadeIn(right_bullets, shift=self.SHIFT_SCALE * LEFT),
+            lag_ratio=0.12,
+            run_time=0.8,
         )
     )
+
+    # --- Wait for user -----------------------------------------------------
     self.next_slide()
 
-    # ---------- Transform color to CSV colors ----------
-    self.play(
-        *[
-            dots[i]
-            .animate.set_color(rgb_to_color(cols[i]))
-            .set_fill(rgb_to_color(cols[i]), 1.0)
-            for i in range(len(dots))
-        ],
-        run_time=0.6,
-    )
+    # --- Clear columns and divider ----------------------------------------
+    self.play(FadeOut(cols_group, run_time=0.35))
 
-    # ---------- Build live equation with Integers (no overlapping MathTex) ---
-    # Start from 875 and |875-1027| = 152
-    left_tex = Tex(
-        r"\left|",
+    # --- Center equation (large) ------------------------------------------
+    eq_center = MathTex(
+        r"\mathbf{F}_i^v = \frac{m_i}{\rho_i}\,\mu\,\nabla^{2}\mathbf{v}",
         color=BLACK,
         font_size=self.BODY_FONT_SIZE + 10,
     )
-    minus_tex = Tex(
-        r"-1027\right| \;=\;",
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 10,
-    )
+    eq_center.move_to([0.0, content_center_y, 0.0])
+    self.play(FadeIn(eq_center, run_time=0.4))
 
-    rho_int = DecimalNumber(
-        875,
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 10,
-        num_decimal_places=0,
-        include_sign=False,
-        group_with_commas=False,
-    )
-    diff_int = DecimalNumber(
-        abs(875 - 1027),
-        color=BLACK,
-        font_size=self.BODY_FONT_SIZE + 10,
-        num_decimal_places=0,
-        include_sign=False,
-    )
-
-    eq_group = VGroup(left_tex, rho_int, minus_tex, diff_int).arrange(
-        RIGHT, buff=0.12, aligned_edge=DOWN
-    )
-    eq_group.move_to(eq_center)
-    rho_int.next_to(left_tex, RIGHT, buff=0.1)
-    minus_tex.next_to(rho_int, RIGHT, buff=0.3)
-    diff_int.next_to(minus_tex, RIGHT, buff=0.1)
-
-    # Clean switch: old MathTex out, new group in
-    self.wait(0.1)
+    # --- Wait for user -----------------------------------------------------
     self.next_slide()
 
-    self.remove(eq, eq2)
-    self.add(eq_group)
-
-    # ---------- Coupled animation --------------------------------------------
-    progress = ValueTracker(0.0)
-    rho_tracker = ValueTracker(875.0)
-
-    # Updaters only touch the Integer glyphs
-    def update_rho(m: Integer):
-        m.set_value(int(round(rho_tracker.get_value())))
-
-    def update_diff(m: Integer):
-        v = int(round(rho_tracker.get_value()))
-        m.set_value(abs(v - 1027))
-
-    rho_int.add_updater(update_rho)
-    diff_int.add_updater(update_diff)
-
-    # Cache start/end + colors for dots
-    start_pos = [d.get_center() for d in dots]
-    end_pos = Qw
-    start_col = [rgb_to_color(cols[i]) for i in range(len(dots))]
-    end_col = [pc.blueGreen for _ in dots]
-
-    def make_dot_updater(i):
-        def _upd(d: Dot):
-            t = progress.get_value()
-            d.move_to(start_pos[i] * (1.0 - t) + end_pos[i] * t)
-            col = interpolate_color(start_col[i], end_col[i], t)
-            d.set_color(col)
-            d.set_fill(col, 1.0)
-
-        return _upd
-
-    for i, d in enumerate(dots):
-        d.add_updater(make_dot_updater(i))
-
-    # Force arrow for one particle (index 5) that shrinks to 0
-    fp_idx = 7 if len(dots) > 0 else None
-    if fp_idx is not None:
-
-        def make_force_arrow():
-            t = progress.get_value()
-            start = start_pos[fp_idx] * (1.0 - t) + end_pos[fp_idx] * t
-            target = end_pos[fp_idx]
-            curr_end = start + (target - start) * (1.0 - t)
-            arr = Arrow(
-                start,
-                curr_end,
-                color=BLACK,
-                stroke_width=6,
-                buff=0.0,
-                tip_length=0.16,
-            )
-            arr.set_opacity(1.0 - t)
-            return arr
-
-        force_arrow = always_redraw(make_force_arrow)
-
-        fp_label = Tex(
-            r"$F^p$", color=BLACK, font_size=self.BODY_FONT_SIZE
-        ).add_updater(
-            lambda m: m.next_to(force_arrow, UP, buff=0.05).set_opacity(
-                1.0 - progress.get_value()
-            )
-        )
-        self.add(force_arrow, fp_label)
-
-    # Drive everything together for 10 seconds
-    self.play(
-        progress.animate.set_value(1.0),
-        rho_tracker.animate.set_value(1027.0),
-        run_time=10.0,
-        rate_func=linear,
+    # --- Transform to SPH viscosity form ----------------------------------
+    eq_sph = MathTex(
+        r"\mathbf{F}_i^{v} \simeq \frac{m_i}{\rho_i}"
+        r"\sum_j \frac{m_j}{\rho_j}"
+        r"\frac{\mathbf{v}_{ij}\cdot\mathbf{r}_{ij}}{\lVert\mathbf{r}_{ij}\rVert^{2}}"
+        r"\,\nabla W_{ij}",
+        color=BLACK,
+        font_size=self.BODY_FONT_SIZE + 6,
     )
+    eq_sph.move_to(eq_center.get_center())
 
-    # Cleanup updaters
-    for d in dots:
-        d.clear_updaters()
-    if fp_idx is not None:
-        self.remove(force_arrow, fp_label)
-    rho_int.clear_updaters()
-    diff_int.clear_updaters()
+    self.play(ReplacementTransform(eq_center, eq_sph), run_time=0.8)
 
+    # --- End slide ---------------------------------------------------------
     self.pause()
     self.clear()
     self.next_slide()

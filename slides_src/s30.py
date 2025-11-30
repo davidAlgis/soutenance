@@ -2,222 +2,248 @@ import numpy as np
 import palette_colors as pc
 from manim import *
 from slide_registry import slide
+from utils import make_bullet_list
 
 
 @slide(30)
 def slide_30(self):
-    # --- Top bar -----------------------------------------------------------
-    bar, footer = self._top_bar("Lancer de rayon et cœur RT")
+    """
+    Hybridation, forces d'Airy et zones.
+    Implements the sequence requested for slide 32.
+    """
+    # ------------------------------------------------------------------ Title
+    bar, footer = self._top_bar("Hybridation et forces d'Airy")
     self.add(bar)
     self.add_foreground_mobject(bar)
 
-    # ==== Intro line ====
-    intro = Tex(
-        r"Le lancer de rayon : une technique de rendu",
-        font_size=self.BODY_FONT_SIZE,
-        color=BLACK,
+    title_tex = Tex(
+        r"Preuve de concept :", color=BLACK, font_size=self.BODY_FONT_SIZE
     )
-    intro.next_to(
+    title_tex.next_to(
         self._current_bar, DOWN, buff=self.BODY_TOP_BUFF, aligned_edge=LEFT
     )
-    dx = (-config.frame_width / 2 + self.DEFAULT_PAD) - intro.get_left()[0]
-    intro.shift(RIGHT * (dx + 0.6))
+    dx_title = (
+        bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
+    ) - title_tex.get_left()[0]
+    title_tex.shift(RIGHT * dx_title)
+    self.play(FadeIn(title_tex, shift=RIGHT * self.SHIFT_SCALE), run_time=0.5)
 
-    # ---------------- Camera + Circle layout -------------------------------
-    bar_rect = bar.submobjects[0]
-    y_top = bar_rect.get_bottom()[1] - 0.20
-    x_left = -config.frame_width / 2 + 0.6
-    x_right = config.frame_width / 2 - 0.6
-    y_bottom = -config.frame_height / 2 + 0.6
-    area_w = x_right - x_left
-    area_h = y_top - y_bottom
+    def make_bullets(items):
+        bullet_group = make_bullet_list(
+            items,
+            bullet_color=pc.blueGreen,
+            font_size=self.BODY_FONT_SIZE,
+            line_gap=self.BODY_LINE_BUFF,
+            left_pad=0.25,
+        )
 
-    # Camera triangle (left, pointing RIGHT; aperture side on the RIGHT)
-    cam_w = min(1.6, area_w * 0.18)
-    cam_h = cam_w * 0.85
-    cam_center = np.array(
-        [x_left + cam_w * 1.1, (y_top + y_bottom) / 2.0 - 0.1, 0.0]
+        # Place the whole bullet group under the title, aligned with the bar padding
+        bullet_group.next_to(
+            title_tex,
+            DOWN,
+            buff=self.BODY_LINE_BUFF,
+            aligned_edge=LEFT,
+        )
+        dx = (
+            bar.submobjects[0].get_left()[0] + self.DEFAULT_PAD
+        ) - bullet_group.get_left()[0]
+        bullet_group.shift(RIGHT * dx)
+
+        # Extract only the Tex objects (index 1 in each row: VGroup(bullet, txt))
+        text_items = [row[1] for row in bullet_group]
+
+        return bullet_group, text_items
+
+    bullets_v1, texts_v1 = make_bullets(
+        ["Simulation 3D", "Methode de Tessendorf", "SPH"]
     )
-    p_apex = cam_center + np.array([-cam_w * 0.58, 0.0, 0.0])  # rightmost
-    p_bl = cam_center + np.array(
-        [+cam_w * 0.58, -cam_h * 0.58, 0.0]
-    )  # back bottom-left
-    p_tl = cam_center + np.array(
-        [+cam_w * 0.58, +cam_h * 0.58, 0.0]
-    )  # back top-left
+    self.play(FadeIn(bullets_v1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.3)
+    self.wait(0.1)
+    self.next_slide()
 
-    camera_tri = Polygon(p_apex, p_bl, p_tl, color=BLACK, stroke_width=4)
-    camera_label = Text(
-        "Camera", color=BLACK, weight=BOLD, font_size=self.BODY_FONT_SIZE
-    ).next_to(camera_tri, UP, buff=0.20)
+    bullets_v2, texts_v2 = make_bullets(
+        ["Simulation 2D", "Theorie des vagues d'Airy", "SPH"]
+    )
 
-    # Big circle (right)
-    circle_r = min(area_h * 0.35, area_w * 0.25)
-    circle_center = np.array([x_right - circle_r * 0.8, cam_center[1], 0.0])
-    obj_circle = Circle(
-        radius=circle_r, color=pc.blueGreen, stroke_width=6
-    ).move_to(circle_center)
-
-    self.play(FadeIn(intro, shift=RIGHT))
-    # Draw geometry
     self.play(
         AnimationGroup(
-            Create(camera_tri, run_time=0.5),
-            FadeIn(camera_label, run_time=0.3),
-            Create(obj_circle, run_time=0.6),
-            lag_ratio=0.15,
+            *[
+                TransformMatchingTex(t1, t2)
+                for t1, t2 in zip(texts_v1, texts_v2)
+            ],
+            lag_ratio=0.0,
+            run_time=0.8,
         ),
     )
+    # ------------------------------------------------------------------
+    # IMPORTANT PART: after the transform, keep only ONE bullet group
+    # ------------------------------------------------------------------
+    for t1, t2 in zip(texts_v1, texts_v2):
+        t1.become(t2)
+    self.remove(bullets_v2)
+
+    self.next_slide()
+
+    # ----------------------------------------- Clear bullets and the subtitle
+    self.play(
+        FadeOut(VGroup(title_tex, bullets_v1)),
+        FadeOut(bullets_v2),
+        run_time=0.3,
+    )
+
+    # ---------------------------------------------------- Cosine helper maker
+    def make_cosine_curve(a, k, x_min, x_max, color, samples=600):
+        X = np.linspace(x_min, x_max, samples)
+        pts = []
+        sx = config.frame_width / (x_max - x_min)
+        y0 = 0.0
+        for xv in X:
+            yv = a * np.cos(k * xv)
+            px = (xv - (x_min + x_max) * 0.5) * sx
+            py = y0 + yv * (config.frame_height * 0.25)
+            pts.append([px, py, 0.0])
+        path = VMobject()
+        path.set_points_smoothly(pts)
+        path.set_stroke(color=color, width=4)
+        return path
+
+    # ------------------------------------- First surface: 0.1*cos(0.3*x), [-10,10]
+    curve1 = make_cosine_curve(
+        a=0.06, k=2.5, x_min=-10.0, x_max=10.0, color=pc.blueGreen
+    )
+    self.play(Create(curve1, run_time=1.2))
+
+    self.next_slide()
+
+    # ----------------------------------------------------------- Boats on curve
+    boat_shape = [
+        [-1.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [2.0, 1.0, 0.0],
+        [0.5, 1.0, 0.0],
+        [0.0, 1.5, 0.0],
+        [-0.5, 1.0, 0.0],
+        [-2.0, 1.0, 0.0],
+    ]
+
+    def place_on_curve(x_screen):
+        return 0.1 * np.cos(1.2 * x_screen)
+
+    def make_boat(scale=0.25):
+        poly = Polygon(*boat_shape, color=pc.uclaGold, stroke_width=3)
+        poly.set_fill(pc.uclaGold, opacity=1.0)
+        poly.scale(scale)
+        return poly
+
+    xs = [-6.5, 0.5, 6.5]
+    boats = []
+    for xv in xs:
+        b = make_boat()
+        yv = place_on_curve(xv) * (config.frame_height * 0.25)
+        b.move_to([xv * (config.frame_width / 20.0), yv, 0.0])
+        self.add(b)
+        boats.append(b)
+
+    self.next_slide()
+
+    # ------------------------------------------------ Jelly-bean rectangle (right)
+    right_boat = boats[-1]
+    jb = Rectangle(
+        width=right_boat.width * 2.2,
+        height=right_boat.height * 2.2,
+        stroke_color=pc.uclaGold,
+        stroke_width=5,
+    )
+    jb.move_to(right_boat.get_center())
+    self.play(Create(jb, run_time=0.6))
+    self.wait(0.1)
+    self.next_slide()
+    # ---------------------------------------------- Clear all except the top bar
+    self.play(FadeOut(VGroup(curve1, *boats, jb), run_time=0.4))
+
+    # ------------------------------ Second surface: 0.2*cos(1.2*x), [-5, 5] + boat
+    curve2 = make_cosine_curve(
+        a=0.2, k=1.2, x_min=-5.0, x_max=5.0, color=pc.blueGreen
+    )
+    self.play(Create(curve2, run_time=1.0))
+
+    # Larger single boat (about 4x the earlier boats)
+    center_boat = make_boat(scale=1.0)  # 0.25 * 4 = 1.0
+    y_center = 0.2 * np.cos(1.2 * 0.0) * (config.frame_height * 0.25)
+    center_boat.move_to([0.0, y_center, 0.0])
+    self.add(center_boat)
+    self.add_foreground_mobject(center_boat)
 
     self.wait(0.1)
     self.next_slide()
 
-    # ---------------- Rays: start along the aperture edge ------------------
-    # Define a small "aperture segment" near the apex on the right side,
-    # then emit 3 rays from different points on that segment.
-    edge_top = p_tl
-    edge_bot = p_bl
-    start_pts = [
-        (1.0 - t) * edge_top + t * edge_bot for t in (0.15, 0.50, 0.85)
-    ]
+    # --------------------------------------- Uniform particle field (cornFlower)
+    x_min_px = -config.frame_width * 0.48
+    x_max_px = config.frame_width * 0.48
+    y_min_px = -config.frame_height * 0.48
+    y_max_px = 0.0
+    dx = config.frame_width / 18.0
+    dy = config.frame_height / 18.0
 
-    # Hit points on the LEFT side of the circle (angles around pi)
-    impact_angles = [np.pi * 0.92, np.pi, np.pi * 1.08]
-    impact_points = [
-        circle_center + circle_r * np.array([np.cos(a), np.sin(a), 0.0])
-        for a in impact_angles
-    ]
+    lines = []
+    y = y_min_px
+    while y <= y_max_px + 1e-6:
+        row = VGroup()
+        x = x_min_px
+        while x <= x_max_px + 1e-6:
+            d = Dot(point=[x, y, 0.0], radius=0.035, color=pc.cornflower)
+            row.add(d)
+            x += dx
+        lines.append(row)
+        y += dy
 
-    def grow_and_flash(start_pt, end_pt):
-        seg = VMobject().set_stroke(pc.uclaGold, width=6)
-        seg.set_points_as_corners(
-            np.vstack([start_pt, start_pt]).astype(float)
+    self.play(
+        LaggedStart(
+            *[GrowFromCenter(row) for row in lines],
+            lag_ratio=0.1,
+            run_time=1.0,
         )
-        dot = Dot(end_pt, color=pc.uclaGold, radius=0.06)
-
-        def _update(
-            mob, alpha, s=start_pt.astype(float), e=end_pt.astype(float)
-        ):
-            p = s + (e - s) * alpha
-            mob.set_points_as_corners(np.vstack([s, p]))
-
-        return Succession(
-            FadeIn(seg, run_time=0.01),
-            UpdateFromAlphaFunc(seg, _update, run_time=0.50, rate_func=smooth),
-            Flash(dot, color=pc.uclaGold, flash_radius=0.18, time_width=0.25),
-            FadeOut(seg, run_time=0.25),
-            FadeOut(dot, run_time=0.20),
-        )
-
-    ray_sequences = [
-        grow_and_flash(s, e) for s, e in zip(start_pts, impact_points)
-    ]
-    self.play(LaggedStart(*ray_sequences, lag_ratio=0.22))
+    )
+    self.add_foreground_mobject(center_boat)
     self.wait(0.1)
     self.next_slide()
 
-    # ---------------- Clear (keep bar) -------------------------------------
-    for mob in [intro, camera_tri, camera_label, obj_circle]:
-        if mob in self.mobjects:
-            self.remove(mob)
+    # ---------------------------------------------------- Arrows from top line
+    top_line = lines[-1]
+    boat_left = center_boat.get_left()[0]
+    boat_right = center_boat.get_right()[0]
 
-    # ---------------- GPU title + two-column layout ------------------------
-    gpu_title = Text(
-        "GPU", color=BLACK, weight=BOLD, font_size=self.BODY_FONT_SIZE + 10
-    )
-    gpu_title.next_to(self._current_bar, DOWN, buff=0.35)
-    self.play(FadeIn(gpu_title, run_time=0.3))
-
-    # Column centers
-    col_pad_x = 0.8
-    left_center = np.array(
-        [-config.frame_width * 0.22 - col_pad_x, -0.35, 0.0]
-    )
-    right_center = np.array(
-        [+config.frame_width * 0.22 + col_pad_x, -0.15, 0.0]
-    )
-
-    # -------- Left column: GPU grid (many squares), smaller & lower --------
-    left_title = Tex(
-        r"C\oe urs généraux", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
-    )
-    left_title.move_to([-config.frame_width * 0.22 - col_pad_x, 2.0, 0.0])
-
-    L_rows, L_cols = 8, 10
-    L_box_w, L_box_h = 0.42, 0.42  # smaller
-    L_gap = 0.07
-    L_total_w = L_cols * L_box_w + (L_cols - 1) * L_gap
-    L_total_h = L_rows * L_box_h + (L_rows - 1) * L_gap
-    L_top_left = left_center + np.array(
-        [-L_total_w / 2.0, +L_total_h / 2.0, 0.0]
-    )
-
-    left_boxes = []
-    for r in range(L_rows):
-        for c in range(L_cols):
-            x = L_top_left[0] + c * (L_box_w + L_gap) + L_box_w / 2.0
-            y = L_top_left[1] - r * (L_box_h + L_gap) - L_box_h / 2.0
-            rect = Rectangle(
-                width=L_box_w,
-                height=L_box_h,
-                stroke_opacity=1.0,
-                fill_opacity=0.03,
-                color=pc.blueGreen,
-            ).move_to([x, y, 0.0])
-            left_boxes.append(rect)
-
-    left_group = VGroup(*left_boxes)
+    arrows = VGroup()
+    for dot in top_line:
+        x0, y0, _ = dot.get_center()
+        if boat_left - 0.1 <= x0 <= boat_right + 0.1:
+            continue
+        jitter = (np.random.rand() - 0.5) * (dx * 0.25)
+        y_curve = (
+            0.2
+            * np.cos(1.2 * (x0 / (config.frame_width / 10.0)))
+            * (config.frame_height * 0.25)
+        )
+        # Longer and thicker arrows with larger tips
+        start = np.array([x0, y0, 0.0])
+        end = np.array([x0 + jitter, y_curve, 0.0])
+        arr = Arrow(
+            start=start,
+            end=end,
+            buff=0.0,
+            stroke_width=15,
+            color=pc.fernGreen,
+            max_tip_length_to_length_ratio=0.3,
+        )
+        arrows.add(arr)
 
     self.play(
-        AnimationGroup(
-            FadeIn(left_title, run_time=0.3),
-            FadeIn(left_group, run_time=0.5),
-            lag_ratio=0.1,
+        LaggedStart(
+            *[GrowArrow(a) for a in arrows], lag_ratio=0.05, run_time=1.0
         )
     )
 
-    self.next_slide()
-
-    # -------- Right column: 3x3 RT cores grid in pc.apple ------------------
-    right_title = Tex(
-        r"C\oe urs RT", font_size=self.BODY_FONT_SIZE + 5, color=BLACK
-    )
-    right_title.move_to([+config.frame_width * 0.22 + col_pad_x, +2.0, 0.0])
-
-    R_rows, R_cols = 3, 3
-    R_box_w, R_box_h = 0.85, 0.85
-    R_gap = 0.12
-    R_total_w = R_cols * R_box_w + (R_cols - 1) * R_gap
-    R_total_h = R_rows * R_box_h + (R_rows - 1) * R_gap
-    R_top_left = right_center + np.array(
-        [-R_total_w / 2.0, +R_total_h / 2.0, 0.0]
-    )
-
-    right_boxes = []
-    for r in range(R_rows):
-        for c in range(R_cols):
-            x = R_top_left[0] + c * (R_box_w + R_gap) + R_box_w / 2.0
-            y = R_top_left[1] - r * (R_box_h + R_gap) - R_box_h / 2.0
-            rect = Rectangle(
-                width=R_box_w,
-                height=R_box_h,
-                stroke_opacity=1.0,
-                fill_opacity=0.10,
-                color=pc.apple,
-            ).move_to([x, y, 0.0])
-            right_boxes.append(rect)
-
-    right_group = VGroup(*right_boxes)
-
-    self.play(
-        AnimationGroup(
-            FadeIn(right_title, run_time=0.3),
-            FadeIn(right_group, run_time=0.5),
-            lag_ratio=0.1,
-        )
-    )
-
-    # --- End slide ---------------------------------------------------------
+    # End of slide
     self.pause()
     self.clear()
     self.next_slide()
