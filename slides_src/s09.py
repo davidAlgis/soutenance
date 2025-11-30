@@ -109,8 +109,7 @@ def slide_09(self):
 
     # --- Transition 1 -> 2 ---
     self.play(FadeOut(img_1, shift=RIGHT * self.SHIFT_SCALE), run_time=0.4)
-
-    # =====================================================================
+# =====================================================================
     # PHASE 2: Fluid -> Solid (GIF)
     # =====================================================================
 
@@ -118,9 +117,7 @@ def slide_09(self):
     title_2 = create_title(
         "État de l'art de l'action du fluide sur le solide :"
     )
-    # Align exactly where title_1 was for smooth replacement
     title_2.move_to(title_1.get_center())
-    # Re-align left edge just in case length differs significantly centering logic
     title_2.align_to(title_1, LEFT)
 
     # 2. Replace Bullets
@@ -139,8 +136,9 @@ def slide_09(self):
         FadeIn(bullets_2, shift=RIGHT * self.SHIFT_SCALE),
     )
 
-    self.next_slide()
-    # 3. GIF Loading Logic (Kerner)
+    # --- 3. GIF Loading & Animation ---
+    # Note: We removed self.next_slide() here so it flows directly from text update
+    
     gif_path = "Figures/kerner.gif"
     display_gif = Group()  # Empty container if fail
 
@@ -149,12 +147,10 @@ def slide_09(self):
         pil_frames = []
         durations = []
         for frame in ImageSequence.Iterator(pil_img):
-            # Default to 100ms if duration is missing
             dur_ms = frame.info.get("duration", 100)
             durations.append(max(0.01, dur_ms / 1000.0))
             pil_frames.append(frame.convert("RGBA"))
 
-        # Convert frames to ImageMobjects
         frames_mobs = []
         for fr in pil_frames:
             arr = np.array(fr, dtype=np.uint8)
@@ -166,36 +162,34 @@ def slide_09(self):
         if frames_mobs:
             # Create the display object
             display_gif = frames_mobs[0].copy()
-            self.add(display_gif)
+            
+            # ANIMATION: Fade in the first frame IMMEDIATELY (no click required)
+            self.play(FadeIn(display_gif, shift=LEFT * self.SHIFT_SCALE))
 
-            # --- GIF DATA SETUP ---
+            # --- SETUP LOOPING LOGIC ---
             display_gif.frames = frames_mobs
             display_gif.durations = np.array(durations, dtype=float)
             display_gif.cum_durations = np.cumsum(display_gif.durations)
             display_gif.total_time = display_gif.cum_durations[-1]
             display_gif.time_elapsed = 0.0
 
-            # --- UPDATER ---
             def update_gif(mob, dt):
                 mob.time_elapsed += dt
-                # Loop the time
                 t = mob.time_elapsed % mob.total_time
-                # Find which frame corresponds to this time
                 idx = np.searchsorted(mob.cum_durations, t, side="right")
                 idx = min(idx, len(mob.frames) - 1)
                 mob.become(mob.frames[idx])
 
+            # Attach the updater
             display_gif.add_updater(update_gif)
             self.add(display_gif)
 
-            # --- CRITICAL FIX FOR ANIMATION ---
-            # 1. Tell slides to loop this section
+            # --- START LOOP ---
+            # This creates a pause point where the GIF keeps playing 
+            # until the user clicks 'Next'.
             self.next_slide(loop=True)
-
-            # 2. Actually RENDER the animation for the duration of the GIF.
-            # Manim will run the updater for 'total_time' seconds, creating
-            # a video clip of the GIF playing exactly once.
-            # Manim-slides will then loop this clip during the presentation.
+            
+            # Generate the video frames for one full cycle of the GIF
             self.wait(display_gif.total_time)
 
     else:
@@ -203,13 +197,15 @@ def slide_09(self):
         missing_txt = Text("GIF Missing", color=RED).move_to(img_center)
         self.add(missing_txt)
         display_gif = missing_txt
-        self.next_slide()
+        self.next_slide() # Wait here if GIF is missing
 
     # --- Transition 2 -> 3 ---
-    display_gif.remove_updater(update_gif)
+    # Stop the updater so it doesn't try to update while fading out
+    if hasattr(display_gif, "time_elapsed"):
+        display_gif.remove_updater(update_gif)
+
 
     self.next_slide()
-
     # Stop updater to prevent errors during fade out
     self.play(
         FadeOut(display_gif, shift=RIGHT * self.SHIFT_SCALE), run_time=0.4
